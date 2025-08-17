@@ -49,8 +49,8 @@
   - 3.3.5 Detailed grading according to rubric.
   - 3.3.6 Segment-level evaluation with comments and questions.
   - 3.3.7 Support for iterative improvement with chat.
-  - 3.3.8 Ability to export evaluations as PDFs.
-  - 3.3.9 Progress tracking via grading history and charts.
+  - 3.3.8 Ability to export evaluations as PDFs with progress information.
+  - 3.3.9 Progress tracking displayed in separate tab populated by evaluation data.
 
 ---
 

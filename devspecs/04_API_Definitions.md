@@ -92,7 +92,13 @@ Response:
     "opportunities": string,
     "rubric_scores": object,
     "segment_feedback": array,
-    "processing_time": number
+    "processing_time": number,
+    "progress_data": {
+      "historical_metrics": array,
+      "chart_data": object,
+      "trends": object,
+      "improvement_suggestions": array
+    }
   }
 }
 ```
@@ -172,32 +178,15 @@ Response:
 }
 ```
 
-### 4.3 Progress Tracking Endpoints
+### 4.3 Progress Tracking (Integrated with Evaluation)
 
-#### 4.3.1 Get Progress History
-**Questions to Answer**:
-- How do we aggregate progress data?
-- What time periods should we support?
-- How do we handle data privacy?
+**Note**: Progress tracking is now integrated with the evaluation endpoint. Progress data is automatically calculated and returned with each evaluation response, eliminating the need for a separate progress endpoint.
 
-**Proposed Endpoint**:
-```
-GET /api/progress/history
-Query Parameters:
-- session_id: string
-- time_period: string (day, week, month, all)
-- metric_type: string (optional)
-
-Response:
-{
-  "success": true,
-  "data": {
-    "metrics": array,
-    "chart_data": object,
-    "trends": object
-  }
-}
-```
+**Progress data is included in evaluation responses**:
+- Historical metrics are calculated automatically
+- Chart data is generated based on user session history
+- Trends are computed from previous evaluations
+- No separate API call required for progress information
 
 ### 4.4 Admin Endpoints
 

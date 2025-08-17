@@ -43,11 +43,11 @@
 
 2.6 **Progress Tracking**
 - 2.6.1 User submissions are stored with grading history.
-- 2.6.2 History is displayed as a chart showing progress over time.
+- 2.6.2 Progress data is automatically calculated and displayed with each evaluation.
 
 2.7 **PDF Export**
 - 2.7.1 After submission, a PDF can be downloaded.
-- 2.7.2 PDF includes the user text, overall evaluation, and segment feedback.
+- 2.7.2 PDF includes the user text, overall evaluation, segment feedback, and progress information.
 
 ---
 
@@ -66,7 +66,7 @@
 - 3.3.2 Robust error handling and logging required.
 
 3.4 **Security**
-- 3.4.1 Security not a priority in MVP.
+- 3.4.1 Authentication system implemented but disabled for MVP (can be enabled via configuration).
 
 3.5 **Maintainability**
 - 3.5.1 Maintainability is top priority.
@@ -105,11 +105,11 @@
 
 4.6 **Progress Tracking**
 - System records grading history.
-- Chart displays history and progress.
+- Progress data is automatically calculated and displayed with evaluations.
 
 4.7 **PDF Export**
 - PDF generated per submission.
-- PDF includes text, overall evaluation, segment feedback.
+- PDF includes text, overall evaluation, segment feedback, and progress information.
 
 4.8 **Non-Functional**
 - Response times acceptable.
@@ -138,7 +138,7 @@
 | 2.5.1  | Debug output accessible       | 4.5                 | TC-013       |
 | 2.5.2  | Raw prompts/responses shown   | 4.5                 | TC-014       |
 | 2.6.1  | Grading history recorded      | 4.6                 | TC-015       |
-| 2.6.2  | Chart shows progress          | 4.6                 | TC-016       |
+| 2.6.2  | Progress data with evaluation | 4.6                 | TC-016       |
 | 2.7.1  | PDF generated                 | 4.7                 | TC-017       |
 | 2.7.2  | PDF includes text/feedback    | 4.7                 | TC-018       |
 | 3.1.1  | Responsive system             | 4.8                 | TC-019       |

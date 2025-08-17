@@ -120,11 +120,13 @@ chat_messages (
 )
 ```
 
-### 3.5 Progress Tracking
+### 3.5 Progress Tracking (Integrated with Evaluations)
 **Questions to Answer**:
 - What metrics should we track for progress?
 - How do we aggregate data for charts?
 - Should we track trends over time periods?
+
+**Note**: Progress tracking is now integrated with evaluations. Progress data is automatically calculated and stored with each evaluation, eliminating the need for separate progress tracking.
 
 **Proposed Schema**:
 ```sql
@@ -157,7 +159,7 @@ progress_metrics (
 5.1 **Read Patterns**
 - (Pending) Define common query patterns for:
   - Retrieving evaluation history
-  - Generating progress charts
+  - Generating progress data integrated with evaluations
   - Loading configuration files
   - Fetching chat history
 

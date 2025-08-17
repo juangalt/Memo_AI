@@ -179,32 +179,24 @@
 - `FeedbackDisplay` - Show detailed feedback
 - `NavigationButtons` - Previous/Next/All segments
 
-### 5.4 Progress Tracking Page
+### 5.4 Progress Tracking (Integrated with Feedback Pages)
 **Questions to Answer**:
-- What type of charts should we use?
-- How do we display progress over time?
-- What metrics should be highlighted?
+- How should progress data be displayed alongside evaluation results?
+- What type of progress visualizations work best?
+- How do we show trends without overwhelming the user?
 
-**Proposed Layout**:
-```
-┌─────────────────────────────────────┐
-│ Progress Tracking                   │
-├─────────────────────────────────────┤
-│ [Time Period Selector]              │
-│                                     │
-│ [Progress Chart - Line/Bar]         │
-│                                     │
-│ [Key Metrics Display]               │
-│                                     │
-│ [Trend Analysis]                    │
-└─────────────────────────────────────┘
-```
+**Note**: Progress tracking is now integrated with evaluation results. Progress data is automatically displayed on the Overall Feedback and Detailed Feedback pages, eliminating the need for a separate Progress Tracking page.
+
+**Progress Data Display**:
+- Progress charts and metrics are shown alongside evaluation results
+- Historical trends are displayed in context with current evaluation
+- Time period selection is available within feedback pages
+- Progress insights are integrated with improvement suggestions
 
 **Components Needed**:
-- `TimePeriodSelector` - Choose time range
-- `ProgressChart` - Visual chart component
-- `MetricsDisplay` - Key performance indicators
-- `TrendAnalysis` - Progress insights
+- `ProgressChart` - Visual chart component (embedded in feedback pages)
+- `MetricsDisplay` - Key performance indicators (embedded in feedback pages)
+- `TrendAnalysis` - Progress insights (embedded in feedback pages)
 
 ### 5.5 Debug Page
 **Questions to Answer**:

@@ -69,7 +69,7 @@
 **Proposed E2E Test Scenarios**:
 - Complete text submission and evaluation flow
 - Chat functionality with LLM
-- Progress tracking and charting
+- Progress tracking integrated with evaluations
 - Admin configuration management
 - PDF export process
 
