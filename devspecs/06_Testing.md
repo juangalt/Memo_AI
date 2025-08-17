@@ -6,358 +6,127 @@
 - AI coding agents and human developers.
 
 1.2 **Purpose**
-- Defines the testing strategy, test types, and quality assurance approach for the Memo AI Coach project.
-- Builds directly on the UI/UX specifications in `05_UI_UX.md`.
+- Defines the testing strategy, test frameworks, and quality assurance processes for the Memo AI Coach project.
+- Builds directly on all previous specifications to ensure comprehensive test coverage.
 
 1.3 **Next Steps**
 - Review this file before proceeding to `07_Deployment.md`.
 
 ---
 
-## 2.0 Testing Philosophy
+## 2.0 Key High-Level Decisions Needed
 
-2.1 **Testing Approach**
-- **Decision**: Comprehensive testing for maintainability (per Requirements 3.5)
-- **Rationale**: Ensure system reliability and ease of maintenance
+### 2.1 Testing Framework Selection
+**Question**: What testing frameworks should we use for each component?
+- Frontend testing: Reflex testing patterns vs traditional web testing?
+- Backend testing: pytest vs unittest vs other Python frameworks?
+- Integration testing: FastAPI TestClient vs full application testing?
+- Should we use behavior-driven development (BDD) tools?
 
-2.2 **Test Coverage Goals**
-- **Decision**: (Pending)
-- **Questions**:
-  - What percentage of code coverage should we target?
-  - Should we focus on critical paths or comprehensive coverage?
-  - How do we measure test effectiveness?
+### 2.2 Test Environment Strategy
+**Question**: How should we structure test environments and data?
+- In-memory SQLite vs persistent test database?
+- Mock LLM responses vs test LLM calls vs hybrid approach?
+- How do we handle test data setup and teardown?
+- Should we use Docker for test isolation?
 
----
+### 2.3 LLM Testing Strategy
+**Question**: How do we test the core LLM evaluation functionality?
+- Mock LLM responses for consistent testing?
+- Use actual LLM calls with test prompts?
+- How do we test prompt engineering and response parsing?
+- What's the strategy for testing different LLM providers?
 
-## 3.0 Testing Pyramid
+### 2.4 Test Coverage and Quality Metrics
+**Question**: What are our testing standards and coverage requirements?
+- Minimum code coverage percentage (80%, 90%)?
+- Which components require 100% coverage (critical paths)?
+- How do we measure and enforce test quality?
+- Should we use mutation testing for robustness?
 
-3.1 **Unit Tests**
-- **Decision**: (Pending)
-- **Questions**:
-  - What testing framework should we use (pytest, unittest)?
-  - How do we test LLM integration components?
-  - Should we use mocking for external dependencies?
+### 2.5 Performance and Load Testing
+**Question**: How should we validate performance requirements?
+- Load testing strategy for concurrent users?
+- Performance benchmarks for LLM response times?
+- How do we test the 15-second submission response requirement?
+- Database performance testing under load?
 
-**Proposed Unit Test Areas**:
-- Data models and validation
-- API endpoint logic
-- Business logic components
-- Configuration management
-- PDF generation utilities
+### 2.6 End-to-End Testing Strategy
+**Question**: How should we test complete user workflows?
+- Browser automation tools (Selenium, Playwright)?
+- API testing vs UI testing vs both?
+- How do we test complex flows like evaluation → chat → PDF export?
+- Should we test across different browsers?
 
-3.2 **Integration Tests**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we test API endpoints with database integration?
-  - Should we use test databases or in-memory databases?
-  - How do we handle LLM API testing?
+### 2.7 Configuration and Admin Testing
+**Question**: How do we test the YAML configuration system?
+- Testing YAML validation and error handling?
+- Testing configuration version management?
+- How do we test admin functions without breaking production configs?
+- Testing the filesystem ↔ database configuration sync?
 
-**Proposed Integration Test Areas**:
-- API endpoint integration
-- Database operations
-- LLM service integration
-- Configuration file management
-- PDF export functionality
+### 2.8 Security and Privacy Testing
+**Question**: How do we validate security requirements?
+- Testing session isolation and data privacy?
+- Input sanitization and injection attack testing?
+- Authentication system testing (when enabled)?
+- How do we test the authentication on/off switch?
 
-3.3 **End-to-End Tests**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we use Selenium or Playwright for UI testing?
-  - How do we test the complete user workflow?
-  - Should we test with real LLM APIs or mocked responses?
+### 2.9 Continuous Integration Strategy
+**Question**: How should we automate testing in the development workflow?
+- Pre-commit hooks for code quality?
+- Automated test running on code changes?
+- How do we handle flaky tests (especially LLM-dependent ones)?
+- Test result reporting and failure notifications?
 
-**Proposed E2E Test Scenarios**:
-- Complete text submission and evaluation flow
-- Chat functionality with LLM
-- Progress tracking integrated with evaluations
-- Admin configuration management
-- PDF export process
-
----
-
-## 4.0 Test Environment Setup
-
-4.1 **Test Data Management**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we create and manage test data?
-  - Should we use fixtures or factories?
-  - How do we ensure test data isolation?
-
-4.2 **Test Database Strategy**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we use SQLite in-memory databases for tests?
-  - How do we handle database migrations in tests?
-  - Should we use database transactions for test isolation?
-
-4.3 **LLM API Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we use real LLM APIs in tests?
-  - How do we mock LLM responses?
-  - Should we have separate test API keys?
+### 2.10 Debug Mode Testing
+**Question**: How do we test debug functionality without exposing sensitive data?
+- Testing debug data collection and storage?
+- Ensuring debug mode doesn't leak sensitive information?
+- Testing debug output formatting and accessibility?
+- Performance impact testing of debug mode?
 
 ---
 
-## 5.0 Specific Test Categories
+## 3.0 Placeholder Sections
 
-### 5.1 Frontend Testing
-**Questions to Answer**:
-- How do we test Reflex components?
-- Should we use component testing libraries?
-- How do we test global state management?
+### 3.1 Test Architecture
+- (Pending) Test framework setup and configuration
+- (Pending) Test environment management
+- (Pending) Test data management strategies
 
-**Proposed Test Areas**:
-- Component rendering and behavior
-- User interactions and events
-- State management and persistence
-- Tab navigation functionality
-- Form validation and submission
+### 3.2 Unit Testing Specifications
+- (Pending) Backend component unit tests
+- (Pending) Frontend component unit tests
+- (Pending) Database layer unit tests
+- (Pending) LLM integration unit tests
 
-### 5.2 Backend API Testing
-**Questions to Answer**:
-- Should we use FastAPI's TestClient?
-- How do we test authentication and authorization?
-- How do we test error handling scenarios?
+### 3.3 Integration Testing Specifications
+- (Pending) API endpoint integration tests
+- (Pending) Database integration tests
+- (Pending) LLM provider integration tests
+- (Pending) Configuration system integration tests
 
-**Proposed Test Areas**:
-- API endpoint functionality
-- Request/response validation
-- Error handling and status codes
-- Rate limiting and security
-- Database integration
+### 3.4 End-to-End Testing Specifications
+- (Pending) User workflow tests
+- (Pending) Performance requirement validation
+- (Pending) Cross-browser compatibility tests
+- (Pending) Mobile responsiveness tests
 
-### 5.3 LLM Integration Testing
-**Questions to Answer**:
-- How do we test prompt generation?
-- How do we test response parsing?
-- How do we handle LLM API failures?
-
-**Proposed Test Areas**:
-- Prompt building and formatting
-- Response parsing and validation
-- Error handling for API failures
-- Context management
-- Debug mode functionality
-
-### 5.4 Database Testing
-**Questions to Answer**:
-- How do we test database migrations?
-- How do we test data integrity constraints?
-- How do we test performance with large datasets?
-
-**Proposed Test Areas**:
-- Database schema and migrations
-- CRUD operations
-- Data validation and constraints
-- Query performance
-- Data relationships
-
-### 5.5 Configuration Testing
-**Questions to Answer**:
-- How do we test YAML configuration validation?
-- How do we test configuration updates?
-- How do we test configuration rollbacks?
-
-**Proposed Test Areas**:
-- YAML syntax validation
-- Configuration schema validation
-- Configuration update workflows
-- Version management
-- Rollback functionality
+### 3.5 Test Data and Mocking
+- (Pending) Test data generation strategies
+- (Pending) LLM response mocking patterns
+- (Pending) Test configuration management
+- (Pending) Test database seeding
 
 ---
 
-## 6.0 Performance Testing
+## 4.0 Traceability Links
 
-6.1 **Load Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we test with realistic user loads?
-  - How do we simulate concurrent users?
-  - What performance benchmarks should we set?
-
-**Proposed Performance Tests**:
-- API response times under load
-- Database query performance
-- LLM API response times
-- PDF generation performance
-- Memory usage under load
-
-6.2 **Stress Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we test system limits?
-  - What happens under extreme load?
-  - How do we test failure recovery?
-
----
-
-## 7.0 Security Testing
-
-7.1 **Input Validation Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we test for injection attacks?
-  - How do we test input sanitization?
-  - Should we use automated security scanning?
-
-**Proposed Security Tests**:
-- SQL injection prevention
-- XSS prevention
-- Input validation and sanitization
-- Authentication and authorization
-- Rate limiting effectiveness
-
-7.2 **Data Protection Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we test data privacy?
-  - How do we test secure data handling?
-  - Should we test data encryption?
-
----
-
-## 8.0 Accessibility Testing
-
-8.1 **WCAG Compliance Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we use automated accessibility testing tools?
-  - How do we test keyboard navigation?
-  - Should we test with screen readers?
-
-**Proposed Accessibility Tests**:
-- Keyboard navigation
-- Screen reader compatibility
-- Color contrast compliance
-- Focus management
-- Alternative text for images
-
----
-
-## 9.0 Test Automation
-
-9.1 **CI/CD Integration**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we run tests on every commit?
-  - How do we handle test failures in CI?
-  - Should we have different test suites for different environments?
-
-**Proposed CI/CD Pipeline**:
-- Unit tests on every commit
-- Integration tests on pull requests
-- E2E tests on deployment
-- Performance tests on release candidates
-
-9.2 **Test Reporting**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we generate test reports?
-  - Should we track test metrics over time?
-  - How do we handle test flakiness?
-
----
-
-## 10.0 Manual Testing
-
-10.1 **User Acceptance Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - Who should perform UAT?
-  - What scenarios should be tested manually?
-  - How do we document manual test results?
-
-**Proposed Manual Test Scenarios**:
-- Complete user workflows
-- Edge cases and error conditions
-- UI/UX validation
-- Cross-browser compatibility
-- Mobile responsiveness
-
-10.2 **Exploratory Testing**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we allocate time for exploratory testing?
-  - How do we document exploratory test findings?
-  - Should we automate findings from exploratory testing?
-
----
-
-## 11.0 Test Data and Fixtures
-
-11.1 **Test Data Strategy**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we create realistic test data?
-  - Should we use factories or fixtures?
-  - How do we ensure test data consistency?
-
-**Proposed Test Data**:
-- Sample text submissions
-- Mock LLM responses
-- Test configurations
-- Sample evaluation results
-- Test user sessions
-
-11.2 **Test Environment Configuration**
-- **Decision**: (Pending)
-- **Questions**:
-  - How do we configure test environments?
-  - Should we use environment variables?
-  - How do we handle sensitive test data?
-
----
-
-## 12.0 Quality Metrics
-
-12.1 **Code Quality Metrics**
-- **Decision**: (Pending)
-- **Questions**:
-  - Should we use code coverage tools?
-  - What quality metrics should we track?
-  - How do we enforce quality standards?
-
-**Proposed Quality Metrics**:
-- Code coverage percentage
-- Cyclomatic complexity
-- Code duplication
-- Test execution time
-- Bug density
-
-12.2 **Performance Metrics**
-- **Decision**: (Pending)
-- **Questions**:
-  - What performance benchmarks should we set?
-  - How do we track performance regressions?
-  - Should we have performance budgets?
-
----
-
-## 13.0 Traceability Links
-
-- **Source of Truth**: `05_UI_UX.md`
+- **Source of Truth**: All previous specification files (`01-03`)
 - **Mapped Requirements**: 
   - All functional requirements (2.1-2.7)
-  - Non-functional requirements (3.1-3.5)
-  - Acceptance criteria (4.1-4.8)
-
----
-
-## 14.0 Open Questions and Decisions
-
-14.1 **Critical Decisions Needed**:
-- Testing framework selection
-- Test coverage targets
-- CI/CD integration strategy
-- Performance testing approach
-- Security testing methodology
-
-14.2 **Technical Decisions**:
-- Mocking strategy for external dependencies
-- Test data management approach
-- Test environment configuration
-- Quality metrics and thresholds
-- Test automation scope
+  - Performance requirements (3.1)
+  - Reliability requirements (3.3)
+  - Maintainability requirements (3.5)
+  - All acceptance criteria (4.1-4.8)
