@@ -14,151 +14,417 @@
 
 ---
 
-## 2.0 Key High-Level Decisions Needed
+## 2.0 Framework and Technology Stack
 
-### 2.1 Reflex Framework Implementation Strategy
-**Question**: How should we structure the Reflex application for optimal maintainability?
-- Component-based architecture vs page-based architecture?
-- How do we implement the global state manager in Reflex?
-- What's the strategy for code splitting and component reusability?
+### 2.1 Frontend Framework Decision ✅ **DECIDED**
+**Decision**: **Reflex** (Python-based reactive framework)
+**Rationale**: 
+- Aligns with backend Python stack for maintainability
+- Built-in state management capabilities
+- Fast development and deployment
+- Excellent for MVP with room for scaling
 
-### 2.2 Tab Navigation and State Persistence
+### 2.2 State Management Strategy ✅ **DECIDED**
+**Decision**: **Global State Manager** using Reflex's built-in capabilities
+**Implementation**:
+- Centralized state for all frontend components
+- Session data persistence across tab switches
+- Evaluation results with integrated progress data
+- Chat history and context maintenance
+
+---
+
+## 3.0 Key High-Level Decisions Needed
+
+### 3.1 Tab Navigation Implementation Strategy
 **Question**: How should we implement the tabbed interface with state preservation?
-- Native Reflex routing vs custom tab switching?
-- How do we ensure tab switching is fast (<1s as required)?
-- What data should persist across tabs vs what should reload?
+- **Options**: Native Reflex routing vs custom tab switching
+- **Requirement**: Tab switching must be fast (<1s as per Req 3.1.1)
+- **Consideration**: State persistence vs data reloading strategy
+- **Impact**: User experience and performance
 
-### 2.3 Visual Design and Theming Strategy
-**Question**: What should be the visual design approach for "clean and visually pleasing"?
-- Should we use a CSS framework (Tailwind, Bootstrap) or custom styles?
-- How do we implement consistent theming across components?
-- What's the color scheme and typography strategy?
+### 3.2 Visual Design and Theming Approach
+**Question**: What should be the visual design approach for "clean and visually pleasing" (Req 2.1.5)?
+- **Options**: CSS framework (Tailwind, Bootstrap) vs custom styles
+- **Consideration**: Consistency across components and maintainability
+- **Impact**: Development speed vs design flexibility
 
-### 2.4 Progress Visualization Design
-**Question**: How should we display progress tracking data in the dedicated tab?
-- What types of charts should we use (line charts, bar charts, progress meters)?
-- Should we use a charting library (Chart.js, D3) or custom visualizations?
-- How do we handle different time ranges and data aggregations?
+### 3.3 Progress Visualization Design
+**Question**: How should we display progress tracking data in the dedicated tab (Req 2.6)?
+- **Options**: Charting library (Chart.js, D3) vs custom visualizations
+- **Consideration**: Data types (line charts, bar charts, progress meters)
+- **Impact**: User understanding and engagement
 
-### 2.5 Responsive Design Strategy
+### 3.4 Responsive Design Strategy
 **Question**: How should the application adapt to different screen sizes?
-- Mobile-first vs desktop-first design approach?
-- How do tabs work on mobile devices?
-- What's the minimum supported screen size?
+- **Options**: Mobile-first vs desktop-first design approach
+- **Consideration**: Tab navigation on mobile devices
+- **Impact**: User accessibility and adoption
 
-### 2.6 Authentication UI Strategy
-**DECISION**: Conditional authentication UI based on configuration
-- **MVP Mode**: No login UI required, automatic session creation
-- **Production Mode**: Optional login modal/page when authentication enabled
-- **Admin Interface**: Authentication configuration toggle in admin panel
-- **Transition**: Seamless UI adaptation when switching authentication modes
+### 3.5 Loading States and User Feedback
+**Question**: How should we handle potentially long LLM response times (Req 3.1.2)?
+- **Options**: Loading spinners vs progress bars vs skeleton screens
+- **Consideration**: 15-second evaluation processing feedback
+- **Impact**: User perception of system responsiveness
 
-### 2.7 Loading States and User Feedback
-**Question**: How should we handle the potentially long LLM response times?
-- Loading spinners vs progress bars vs skeleton screens?
-- How do we provide feedback during 15-second evaluation processing?
-- Should we show estimated time remaining?
-
-### 2.8 Error Handling and User Messages
+### 3.6 Error Handling and User Messages
 **Question**: How should we display errors and success messages to users?
-- Toast notifications vs inline messages vs modal dialogs?
-- How do we handle network errors gracefully?
-- What's the strategy for user-friendly error messages?
-
-### 2.8 Form Design and Input Validation
-**Question**: How should we design the text input and admin forms?
-- Real-time validation vs submit-time validation?
-- How do we provide guidance for rubric and framework editing?
-- What's the strategy for handling large text inputs?
-
-### 2.9 Help and Documentation Integration
-**Question**: How should we implement the Help tab with rubric/framework resources?
-- Static content vs dynamic help based on context?
-- Inline help tooltips vs dedicated help sections?
-- How do we make complex rubrics and frameworks understandable?
-
-### 2.10 Accessibility and Usability
-**Question**: What accessibility standards should we target?
-- WCAG compliance level (A, AA, AAA)?
-- Keyboard navigation patterns?
-- Screen reader compatibility requirements?
+- **Options**: Toast notifications vs inline messages vs modal dialogs
+- **Consideration**: Network errors and user-friendly messaging
+- **Impact**: User experience and support burden
 
 ---
 
-## 3.0 Placeholder Sections
+## 4.0 Component Architecture
 
-### 3.1 Component Architecture
-- (Pending) Define Reflex component hierarchy
-- (Pending) State management patterns
-- (Pending) Component reusability guidelines
-
-### 3.2 Authentication UI Components
-
-#### 3.2.1 Session Management (MVP Mode)
-- **Auto-Session Creation**: Transparent session generation on app load
-- **Session Status Indicator**: Optional subtle indicator showing session active
-- **No Login Required**: Seamless access without authentication barriers
-
-#### 3.2.2 User Authentication (Production Mode)
+### 4.1 Page Structure (Based on Req 2.1.2)
 ```yaml
-LoginModal/Page:
+MainApplication:
   components:
-    - Username input field
-    - Password input field with visibility toggle
-    - Login button with loading state
-    - "Stay logged in" checkbox
-    - Error message display area
+    - TabNavigation (preserves session data)
+    - GlobalStateManager
+    - AuthenticationWrapper (conditional based on config)
+
+TabNavigation:
+  tabs:
+    - TextInputPage (default on load - Req 2.1.1)
+    - OverallFeedbackPage
+    - DetailedFeedbackPage
+    - ProgressTrackingPage (populated by evaluation data - Arch 4.1)
+    - DebugPage
+    - HelpPage
+    - AdminPage
+```
+
+### 4.2 Core Page Specifications
+
+#### 4.2.1 TextInputPage (Default Page - Req 2.1.1)
+```yaml
+TextInputPage:
+  components:
+    - TextInputArea (large, resizable text area)
+    - SubmitButton (with loading state)
+    - CharacterCount (optional)
+    - InfoBubble (explains text submission - Req 2.1.3)
+    - SessionStatus (subtle indicator)
   
-AdminAuthConfig:
-  components:
-    - Authentication toggle switch
-    - Session timeout configuration
-    - Max login attempts setting
-    - Real-time configuration preview
-    
-UserMenu (when authenticated):
-  components:
-    - Username/profile display
-    - Logout button
-    - Session expiry indicator
-    - Admin panel access (if admin)
+  behavior:
+    - Auto-focus on text area
+    - Real-time character count
+    - Submit validation (non-empty, length limits)
+    - Loading state during LLM processing
+    - Auto-navigate to OverallFeedbackPage on success
 ```
 
-#### 3.2.3 Admin User Management
+#### 4.2.2 OverallFeedbackPage (Req 2.2.3a)
 ```yaml
-UserManagement (Admin Panel):
+OverallFeedbackPage:
   components:
-    - User list table with search/filter
-    - Add new user modal
-    - Edit user inline forms
-    - User status toggle buttons
-    - Bulk actions for user management
+    - OverallScore (prominent display)
+    - StrengthsSection (Req 2.2.3a)
+    - OpportunitiesSection (Req 2.2.3a)
+    - RubricScores (summary view)
+    - ProgressData (integrated from evaluation - Req 2.6)
+    - ChatButton (initiates chat - Req 2.3.1)
+    - PDFExportButton (Req 2.7.1)
+    - InfoBubbles (explain each section - Req 2.1.3)
+  
+  data_source:
+    - Global state (evaluation results)
+    - Progress data (calculated during evaluation)
 ```
 
-### 3.3 Page Specifications
-- (Pending) Text Input Page design
-- (Pending) Overall Feedback Page layout
-- (Pending) Detailed Feedback Page structure
-- (Pending) Progress Tracking Page visualizations
-- (Pending) Debug Page interface
-- (Pending) Help Page content organization
-- (Pending) Admin Page forms and controls with authentication settings
+#### 4.2.3 DetailedFeedbackPage (Req 2.2.3b)
+```yaml
+DetailedFeedbackPage:
+  components:
+    - SegmentList (user text with feedback)
+    - SegmentComments (Req 2.2.3b)
+    - InsightQuestions (Req 2.2.3b)
+    - RubricBreakdown (detailed scoring)
+    - ProgressCharts (segment-level trends)
+    - InfoBubbles (explain detailed feedback)
+  
+  layout:
+    - Side-by-side: original text | feedback
+    - Expandable segments for readability
+```
 
-### 3.4 Visual Design System
-- (Pending) Color palette and typography
-- (Pending) Component styling guidelines
-- (Pending) Responsive breakpoints
-- (Pending) Animation and transition standards
+#### 4.2.4 ProgressTrackingPage (Req 2.6)
+```yaml
+ProgressTrackingPage:
+  components:
+    - OverallScoreTrend (line chart)
+    - RubricCategoryProgress (bar charts)
+    - SubmissionFrequency (time series)
+    - StrengthEvolution (word cloud/trends)
+    - ProgressMetrics (numerical summaries)
+    - TimeRangeSelector (week/month/quarter)
+  
+  data_source:
+    - Historical evaluations (calculated on-demand)
+    - Progress cache for performance
+```
 
-### 3.5 User Experience Flows
-- (Pending) Primary user journey mapping
-- (Pending) Error state handling
-- (Pending) Loading state presentations
-- (Pending) Success state confirmations
+#### 4.2.5 DebugPage (Req 2.5)
+```yaml
+DebugPage:
+  components:
+    - DebugToggle (enable/disable debug mode)
+    - PerformanceMetrics (response times, memory usage)
+    - RawPrompts (Req 2.5.2)
+    - RawResponses (Req 2.5.2)
+    - SystemLogs (filtered by level)
+    - TestTriggers (frontend/backend/connectivity/logging)
+  
+  access_control:
+    - Available to all users when debug mode enabled
+    - Sensitive data sanitization
+```
+
+#### 4.2.6 HelpPage (Req 2.1.4)
+```yaml
+HelpPage:
+  components:
+    - RubricExplanation (detailed rubric guide)
+    - FrameworkResources (communication frameworks)
+    - UsageInstructions (step-by-step guide)
+    - FAQSection (common questions)
+    - ContactInformation (support details)
+  
+  content:
+    - Static help content
+    - Dynamic help based on current context
+    - Links to external resources
+```
+
+#### 4.2.7 AdminPage (Req 2.4)
+```yaml
+AdminPage:
+  components:
+    - YAMLEditor (rubric, frameworks, context, prompt - Req 2.4.1)
+    - AuthenticationConfig (enable/disable toggle - Req 2.4.2)
+    - UserManagement (when authentication enabled)
+    - SessionManagement (Req 2.4.3)
+    - AuthenticationLogs (Req 2.4.3)
+    - SystemStatus (health checks)
+  
+  access_control:
+    - Admin-only access
+    - YAML validation before saving
+```
+
+### 4.3 Authentication UI Components
+
+#### 4.3.1 MVP Mode (Authentication Disabled)
+```yaml
+SessionManagement:
+  components:
+    - AutoSessionCreation (transparent on app load)
+    - SessionStatusIndicator (subtle, optional)
+    - NoLoginRequired (seamless access)
+  
+  behavior:
+    - Automatic session creation
+    - Session persistence across browser sessions
+    - No authentication barriers
+```
+
+#### 4.3.2 Production Mode (Authentication Enabled)
+```yaml
+AuthenticationUI:
+  components:
+    - LoginModal (username, password, remember me)
+    - UserMenu (profile, logout, admin access)
+    - SessionExpiryWarning
+    - PasswordReset (if implemented)
+  
+  behavior:
+    - JWT token management
+    - Session validation
+    - Secure cookie handling
+```
 
 ---
 
-## 4.0 Traceability Links
+## 5.0 Visual Design System
+
+### 5.1 Color Palette and Typography
+```yaml
+ColorScheme:
+  primary: "#2563eb" (blue)
+  secondary: "#64748b" (slate)
+  success: "#16a34a" (green)
+  warning: "#ca8a04" (yellow)
+  error: "#dc2626" (red)
+  background: "#ffffff" (white)
+  surface: "#f8fafc" (light gray)
+  text: "#1e293b" (dark slate)
+
+Typography:
+  font_family: "Inter, system-ui, sans-serif"
+  heading_sizes: [2rem, 1.5rem, 1.25rem, 1.125rem, 1rem]
+  body_size: "1rem"
+  line_height: 1.6
+```
+
+### 5.2 Component Styling Guidelines
+```yaml
+ButtonStyles:
+  primary: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+  secondary: "bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
+  danger: "bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+
+InputStyles:
+  text_area: "border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+  text_input: "border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+
+CardStyles:
+  default: "bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
+  elevated: "bg-white border border-gray-200 rounded-lg p-6 shadow-md"
+```
+
+### 5.3 Responsive Breakpoints
+```yaml
+Breakpoints:
+  mobile: "max-width: 640px"
+  tablet: "min-width: 641px, max-width: 1024px"
+  desktop: "min-width: 1025px"
+
+MobileAdaptations:
+  - Tab navigation becomes dropdown menu
+  - Side-by-side layouts stack vertically
+  - Touch-friendly button sizes (44px minimum)
+  - Simplified progress charts
+```
+
+---
+
+## 6.0 User Experience Flows
+
+### 6.1 Primary User Journey (Req 2.2)
+```yaml
+TextSubmissionFlow:
+  1. User lands on TextInputPage (Req 2.1.1)
+  2. User enters text in large text area
+  3. User clicks submit (loading state appears)
+  4. System processes with LLM (15s max - Req 3.1.2)
+  5. Results displayed on OverallFeedbackPage
+  6. User can navigate to DetailedFeedbackPage
+  7. User can initiate chat (Req 2.3.1)
+  8. User can export PDF (Req 2.7.1)
+  9. Progress data automatically calculated and displayed
+```
+
+### 6.2 Tab Navigation Flow (Req 2.1.2)
+```yaml
+TabSwitching:
+  - Fast switching (<1s - Req 3.1.1)
+  - State preservation across tabs
+  - No data reloading for cached content
+  - Smooth transitions between tabs
+  - Active tab indication
+```
+
+### 6.3 Error Handling Flow
+```yaml
+ErrorStates:
+  - Network errors: Retry button with user-friendly message
+  - Validation errors: Inline field validation with specific guidance
+  - LLM errors: Fallback message with debug option
+  - Session errors: Automatic session refresh
+  - System errors: Contact support with error details
+```
+
+### 6.4 Loading States Flow
+```yaml
+LoadingStates:
+  - Page load: Skeleton screens for content areas
+  - Text submission: Progress bar with estimated time
+  - Tab switching: Instant with cached data
+  - PDF generation: Download progress indicator
+  - Chat responses: Typing indicator
+```
+
+---
+
+## 7.0 Accessibility and Usability
+
+### 7.1 Accessibility Standards
+```yaml
+WCAGCompliance:
+  target_level: "AA"
+  requirements:
+    - Keyboard navigation support
+    - Screen reader compatibility
+    - Color contrast ratios (4.5:1 minimum)
+    - Focus indicators for all interactive elements
+    - Alt text for images and charts
+    - Semantic HTML structure
+```
+
+### 7.2 Usability Guidelines
+```yaml
+UsabilityPrinciples:
+  - Clear visual hierarchy
+  - Consistent navigation patterns
+  - Intuitive form design
+  - Helpful error messages
+  - Progressive disclosure of complexity
+  - Mobile-first responsive design
+```
+
+---
+
+## 8.0 Performance Requirements
+
+### 8.1 Loading Performance (Req 3.1.1)
+```yaml
+PerformanceTargets:
+  main_page_load: "< 1 second"
+  tab_switching: "< 1 second"
+  text_submission_response: "< 15 seconds"
+  progress_data_calculation: "< 2 seconds"
+  pdf_generation: "< 10 seconds"
+```
+
+### 8.2 Optimization Strategies
+```yaml
+OptimizationTechniques:
+  - Lazy loading of non-critical components
+  - Caching of evaluation results and progress data
+  - Efficient state management to prevent unnecessary re-renders
+  - Optimized chart rendering for large datasets
+  - Compressed static assets
+```
+
+---
+
+## 9.0 Implementation Guidelines
+
+### 9.1 Reflex Component Structure
+```yaml
+ComponentOrganization:
+  - Single responsibility per component
+  - Reusable component library
+  - Consistent prop interfaces
+  - Clear component hierarchy
+  - Separation of concerns (UI vs logic)
+```
+
+### 9.2 State Management Patterns
+```yaml
+StatePatterns:
+  - Global state for session and evaluation data
+  - Local state for UI interactions
+  - Computed state for derived data (progress calculations)
+  - Immutable state updates
+  - State persistence across page reloads
+```
+
+---
+
+## 10.0 Traceability Links
 
 - **Source of Truth**: `01_Requirements.md`, `02_Architecture.md`
 - **Mapped Requirements**: 
@@ -168,3 +434,9 @@ UserManagement (Admin Panel):
   - Information Bubbles (2.1.3)
   - Help Resources (2.1.4)
   - Fast Loading (3.1.1)
+  - Text Evaluation (2.2)
+  - Chat Integration (2.3)
+  - Admin Functions (2.4)
+  - Debug Mode (2.5)
+  - Progress Tracking (2.6)
+  - PDF Export (2.7)

@@ -133,19 +133,17 @@ A. The main input to the system is user-generated text submitted for evaluation.
 
 B. The primary outputs are:
    - Overall and segment-level evaluation results with integrated progress data.
-   - Progress tracking data calculated on-demand from evaluation history and displayed in separate tab.
+   - Progress tracking data automatically calculated with each evaluation and displayed in separate tab.
 
 C. Additional data flows include:
    - User-initiated chat interactions with the LLM, generating further input and output.
-   - Admin modifications of YAML configuration files via web interface, which must be validated before being applied.
-   - Admin modifications of authentication settings via database configuration interface.
+   - Admin submissions of YAML template files, which must be validated for correct format before being applied.
 
 **5.2 Data Movement Between Front-End, Back-End API, LLM Engine, and Database**
 
 A. **User Input (Front-End to Back-End API):**
-   - The user enters text or interacts with the UI (e.g., submits text for evaluation, requests chat, downloads PDF, or updates configurations).
+   - The user enters text or interacts with the UI (e.g., submits text for evaluation, requests chat, downloads PDF, or updates YAML configs).
    - The front-end sends an HTTP request (typically JSON payload) to the appropriate back-end API endpoint (e.g., `/evaluation`, `/chat`, `/admin`, `/export`, `/debug`).
-   - Session identification: server-generated session_id token sent with each request.
 
 B. **Back-End API Processing:**
    - The back-end receives the request and validates it through AuthorizationMiddleware (JWT + Session hybrid authentication implemented but disabled for MVP).
@@ -161,9 +159,8 @@ C. **LLM Engine Interaction:**
 
 D. **Database Operations:**
    - The back-end saves LLM results, evaluations, and any relevant metadata to the database (`EvaluationRepository`, `LogRepository`).
-   - Progress data is calculated on-demand from historical evaluations with optional caching (`ProgressDataAdapter`).
+   - Progress data is automatically calculated during evaluation processing using historical submissions and evaluations (`ProgressDataAdapter`).
    - Admin updates to YAML files are validated and stored (source files in filesystem, database copies for version tracking).
-   - Authentication configuration changes stored directly in database (`AuthConfigRepository`).
 
 5. **Response to Front-End:**
    - The back-end assembles the final response (evaluation results with integrated progress data, chat reply, PDF link with progress information, debug info, etc.).
@@ -212,11 +209,11 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 8. Frontend updates chat interface with response
 
 **Progress Tracking Flow (Req 2.6):**
-1. Progress data calculated on-demand when requested by frontend
+1. Progress data automatically calculated during evaluation processing
 2. Historical metrics queried from database (`ProgressDataAdapter`)
-3. Chart data generated from evaluation history with optional caching
+3. Chart data generated from evaluation history
 4. Trends computed from previous submissions
-5. Progress data returned as separate API response or included with evaluation
+5. Progress data included in evaluation response
 6. Frontend displays progress charts on feedback pages
 
 **Admin Functions Flow (Req 2.4):**
@@ -243,14 +240,13 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 5. User downloads PDF file
 
 **Authentication Flow (Req 3.4):**
-1. **MVP Mode (Authentication Disabled):**
-   - Backend generates secure session_id token on first request
-   - Session_id stored in database sessions table with metadata
+1. **Anonymous Mode (Authentication Optional):**
+   - Frontend generates secure session_id on first visit
    - All requests include session_id in headers/cookies
-   - Backend validates session existence and expiration via `SessionRepository`
+   - Backend validates session existence and expiration
    - Session data isolated by session_id
 
-2. **Production Mode (Authentication Enabled):**
+2. **Authenticated Mode (Authentication Required):**
    - User provides credentials → `/api/auth/login`
    - Backend validates credentials via `AuthenticationService`
    - JWT token generated with user_id and session_id claims
@@ -259,8 +255,8 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
    - Session metadata maintained in `SessionRepository`
 
 3. **Configuration Toggle:**
-   - Authentication mode controlled via database `auth_configuration` table
-   - Admin can toggle via web interface without code changes
+   - Authentication mode controlled via `auth.yaml` configuration
+   - No code changes required to switch between modes
    - Seamless transition maintains existing session data
 
 **5.4 Intermediate Results Storage and Retrieval**
@@ -284,11 +280,10 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Configuration validation results stored for audit trail
 
 **Session Context Management:**
-- User sessions identified by server-generated `session_id` across all tables
+- User sessions identified by `session_id` across all tables
 - Session data persists across tab switches via global state
 - Historical data linked to sessions for progress tracking
 - Session cleanup handled by scheduled maintenance
-- Session tokens stored in database for validation and metadata tracking
 
 **5.5 Data Integrity, Privacy, and Session Context**
 
@@ -387,6 +382,8 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **6.3 Progress Tracking Extensibility**
 - **Metrics**: New progress metrics added through `ProgressDataAdapter`
+- **Caching**: `progress_cache` table for performance optimization
+- **Cache Invalidation**: Triggered on new evaluations, expires after 1 hour
 - **Visualizations**: Chart types configurable via frontend components
 - **Time Periods**: Customizable time ranges for progress analysis
 - **Trends**: Extensible trend calculation algorithms
