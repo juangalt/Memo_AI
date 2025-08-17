@@ -90,6 +90,9 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - `AdminService`
 - `ExportService`
 - `DebugService`
+- `AuthenticationService` (JWT + Session hybrid management)
+- `SessionService` (session lifecycle and validation)
+- `AuthorizationMiddleware` (configurable authentication toggle)
 
 ### 4.3 LLM Engine Integration
 
@@ -106,9 +109,10 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 ### 4.4 Data Layer
 
-- Database: SQLite
+- Database: SQLite (for entire project lifecycle)
 - Schema: database tables to store user text submissions, LLM evaluation results, YAML configuration file copies (source files in filesystem), and system logs.
 - Store history and generate progress data integrated with evaluations.
+- Scalability: SQLite with WAL mode and optimizations for 100+ concurrent users
 
 **Suggested Components:**
 - `SubmissionRepository`
@@ -116,6 +120,9 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - `ConfigRepository`
 - `LogRepository`
 - `ProgressDataAdapter` (integrated with evaluation processing)
+- `UserRepository` (authentication credentials and profiles)
+- `SessionRepository` (session management and validation)
+- `AuthConfigRepository` (authentication configuration management)
 
 ---
 
@@ -126,20 +133,23 @@ A. The main input to the system is user-generated text submitted for evaluation.
 
 B. The primary outputs are:
    - Overall and segment-level evaluation results with integrated progress data.
-   - Progress tracking data automatically calculated with each evaluation and displayed in separate tab.
+   - Progress tracking data calculated on-demand from evaluation history and displayed in separate tab.
 
 C. Additional data flows include:
    - User-initiated chat interactions with the LLM, generating further input and output.
-   - Admin submissions of YAML template files, which must be validated for correct format before being applied.
+   - Admin modifications of YAML configuration files via web interface, which must be validated before being applied.
+   - Admin modifications of authentication settings via database configuration interface.
 
 **5.2 Data Movement Between Front-End, Back-End API, LLM Engine, and Database**
 
 A. **User Input (Front-End to Back-End API):**
-   - The user enters text or interacts with the UI (e.g., submits text for evaluation, requests chat, downloads PDF, or updates YAML configs).
+   - The user enters text or interacts with the UI (e.g., submits text for evaluation, requests chat, downloads PDF, or updates configurations).
    - The front-end sends an HTTP request (typically JSON payload) to the appropriate back-end API endpoint (e.g., `/evaluation`, `/chat`, `/admin`, `/export`, `/debug`).
+   - Session identification: server-generated session_id token sent with each request.
 
 B. **Back-End API Processing:**
-   - The back-end receives the request and validates it (authentication system implemented but disabled for MVP).
+   - The back-end receives the request and validates it through AuthorizationMiddleware (JWT + Session hybrid authentication implemented but disabled for MVP).
+   - Authentication flow: validates session_id in MVP mode, validates JWT + session in production mode.
    - For text evaluation or chat, the back-end:
      - Stores the user submission and context in the database (`SubmissionRepository`).
      - Builds a prompt using the context template, rubric, frameworks, and user text (`PromptBuilder`).
@@ -151,8 +161,9 @@ C. **LLM Engine Interaction:**
 
 D. **Database Operations:**
    - The back-end saves LLM results, evaluations, and any relevant metadata to the database (`EvaluationRepository`, `LogRepository`).
-   - Progress data is automatically calculated during evaluation processing using historical submissions and evaluations (`ProgressDataAdapter`).
+   - Progress data is calculated on-demand from historical evaluations with optional caching (`ProgressDataAdapter`).
    - Admin updates to YAML files are validated and stored (source files in filesystem, database copies for version tracking).
+   - Authentication configuration changes stored directly in database (`AuthConfigRepository`).
 
 5. **Response to Front-End:**
    - The back-end assembles the final response (evaluation results with integrated progress data, chat reply, PDF link with progress information, debug info, etc.).
@@ -201,11 +212,11 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 8. Frontend updates chat interface with response
 
 **Progress Tracking Flow (Req 2.6):**
-1. Progress data automatically calculated during evaluation processing
+1. Progress data calculated on-demand when requested by frontend
 2. Historical metrics queried from database (`ProgressDataAdapter`)
-3. Chart data generated from evaluation history
+3. Chart data generated from evaluation history with optional caching
 4. Trends computed from previous submissions
-5. Progress data included in evaluation response
+5. Progress data returned as separate API response or included with evaluation
 6. Frontend displays progress charts on feedback pages
 
 **Admin Functions Flow (Req 2.4):**
@@ -231,6 +242,27 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 4. PDF stored temporarily and URL returned to frontend
 5. User downloads PDF file
 
+**Authentication Flow (Req 3.4):**
+1. **MVP Mode (Authentication Disabled):**
+   - Backend generates secure session_id token on first request
+   - Session_id stored in database sessions table with metadata
+   - All requests include session_id in headers/cookies
+   - Backend validates session existence and expiration via `SessionRepository`
+   - Session data isolated by session_id
+
+2. **Production Mode (Authentication Enabled):**
+   - User provides credentials → `/api/auth/login`
+   - Backend validates credentials via `AuthenticationService`
+   - JWT token generated with user_id and session_id claims
+   - JWT stored in httpOnly cookie with CSRF token
+   - All requests validated through `AuthorizationMiddleware`
+   - Session metadata maintained in `SessionRepository`
+
+3. **Configuration Toggle:**
+   - Authentication mode controlled via database `auth_configuration` table
+   - Admin can toggle via web interface without code changes
+   - Seamless transition maintains existing session data
+
 **5.4 Intermediate Results Storage and Retrieval**
 
 **LLM Response Storage:**
@@ -252,10 +284,11 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Configuration validation results stored for audit trail
 
 **Session Context Management:**
-- User sessions identified by `session_id` across all tables
+- User sessions identified by server-generated `session_id` across all tables
 - Session data persists across tab switches via global state
 - Historical data linked to sessions for progress tracking
 - Session cleanup handled by scheduled maintenance
+- Session tokens stored in database for validation and metadata tracking
 
 **5.5 Data Integrity, Privacy, and Session Context**
 
@@ -267,11 +300,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Regular database integrity checks and backups
 
 **Privacy Protection:**
-- No user authentication required for MVP (session-based)
-- User data isolated by session_id
-- No personal information collected beyond submitted text
-- Debug data sanitized to remove sensitive information
-- Data retention policies for old submissions
+- JWT + Session hybrid authentication system (disabled for MVP, session-based isolation)
+- User data isolated by session_id in MVP mode, by user_id + session_id in production mode
+- No personal information collected beyond submitted text and optional authentication credentials
+- Debug data sanitized to remove sensitive information including authentication tokens
+- Data retention policies for old submissions and expired sessions
+- Secure session management with httpOnly cookies and CSRF protection
 
 **Session Context Maintenance:**
 - Global state manager maintains session data across tabs
@@ -313,11 +347,11 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - API versioning support for backward compatibility
 
 **Scalability Considerations:**
-- Database schema designed for horizontal scaling
+- SQLite with WAL mode for concurrent read/write operations
+- Database connection pooling and query optimization
 - Stateless API design supports load balancing
 - Caching layer ready for performance optimization
-- Microservice architecture possible for future phases
-- Containerization supports cloud deployment
+- Containerization supports cloud deployment with persistent volumes
 
 **Feature Extension Points:**
 - Additional evaluation frameworks via configuration
@@ -368,16 +402,16 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **6.5 API Extensibility**
 - **Versioning**: API versioning strategy for backward compatibility
 - **Endpoints**: New endpoints follow established patterns
-- **Authentication**: Ready for future authentication systems
-- **Rate Limiting**: Configurable rate limiting per endpoint
-- **Documentation**: Auto-generated OpenAPI documentation
+- **Authentication**: JWT + Session hybrid system ready for production deployment
+- **Rate Limiting**: Configurable rate limiting per session/user
+- **Documentation**: Auto-generated OpenAPI documentation with authentication schemas
 
 **6.6 Database Extensibility**
 - **Schema Evolution**: Migration scripts for schema changes
 - **Data Types**: JSON fields support flexible data structures
 - **Indexing**: Optimized for common query patterns
-- **Partitioning**: Ready for data partitioning strategies
-- **Replication**: Support for read replicas in future
+- **WAL Mode**: Write-Ahead Logging for concurrent access
+- **Performance**: Connection pooling and query optimization for scale
 
 **6.7 Integration Extensibility**
 - **Webhooks**: Event-driven integrations with external systems

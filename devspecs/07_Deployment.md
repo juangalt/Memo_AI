@@ -23,35 +23,42 @@
 - What's the strategy for YAML configuration files in containers?
 - Should we use Docker Compose for development vs production?
 
-### 2.2 Environment Configuration Management
+### 2.2 Authentication and Security Configuration
+**DECISION**: Environment-based authentication configuration with secure secrets management
+- **MVP Mode**: Authentication disabled by default, session-only isolation
+- **Production Mode**: JWT + Session hybrid with configurable toggle
+- **Secrets Management**: Environment variables for JWT secrets, bcrypt salt rounds
+- **Configuration**: Authentication settings in `auth.yaml` with environment overrides
+- **Security**: HTTPS enforcement, secure cookie settings, CSRF protection
+
+### 2.3 Environment Configuration Management
 **Question**: How should we manage different environments (dev/staging/production)?
 - Environment variables vs configuration files vs both?
 - How do we handle sensitive data (LLM API keys, database paths)?
 - What's the strategy for environment-specific YAML configurations?
-- How do we handle the authentication on/off switch across environments?
 
-### 2.3 Database Deployment and Persistence
+### 2.4 Database Deployment and Persistence
 **Question**: How should we handle SQLite database persistence in production?
 - Docker volumes vs external storage vs database migration to PostgreSQL?
 - Backup and recovery strategies in containerized environments?
 - How do we handle database migrations during deployments?
 - What's the scaling path from SQLite to PostgreSQL?
 
-### 2.4 LLM Provider Integration and API Management
+### 2.5 LLM Provider Integration and API Management
 **Question**: How should we manage LLM provider credentials and configurations?
 - API key management and rotation strategies?
 - How do we handle different LLM providers in different environments?
 - Rate limiting and cost management for LLM API calls?
 - Fallback strategies for LLM provider outages?
 
-### 2.5 Scaling and Load Balancing
+### 2.6 Scaling and Load Balancing
 **Question**: How should we prepare for scaling from 1 to 100+ users?
 - Horizontal scaling strategies for stateless applications?
 - How do we handle session persistence across multiple instances?
 - Load balancing requirements and strategies?
 - Database scaling considerations (connection pooling, read replicas)?
 
-### 2.6 Monitoring and Observability
+### 2.7 Monitoring and Observability
 **Question**: What monitoring should we implement for production operations?
 - Application health checks and readiness probes?
 - Performance monitoring for LLM response times?
@@ -100,17 +107,111 @@
 - (Pending) Docker Compose configurations
 - (Pending) Container orchestration strategies
 
-### 3.3 Environment Management
-- (Pending) Environment variable specifications
-- (Pending) Configuration file management
-- (Pending) Secret management strategies
+### 3.3 Authentication and Security Configuration
 
-### 3.4 Deployment Procedures
+#### 3.3.1 Environment Variables
+```yaml
+# Authentication Configuration
+AUTH_ENABLED=false  # Toggle for MVP vs Production
+JWT_SECRET_KEY=${JWT_SECRET_KEY}  # Required in production
+JWT_EXPIRATION_HOURS=24
+SESSION_TIMEOUT=3600  # seconds
+BCRYPT_ROUNDS=12
+
+# Database Configuration
+DATABASE_URL=sqlite:///data/memoai.db
+DATABASE_BACKUP_ENABLED=true
+
+# Security Settings
+HTTPS_ONLY=true  # Production only
+SECURE_COOKIES=true  # Production only
+CSRF_PROTECTION=true
+RATE_LIMIT_PER_MINUTE=60
+
+# LLM Provider
+LLM_PROVIDER=claude
+CLAUDE_API_KEY=${CLAUDE_API_KEY}
+```
+
+#### 3.3.2 Docker Compose Configuration
+```yaml
+# docker-compose.yml for MVP Mode
+version: '3.8'
+services:
+  memoai:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_ENABLED=false
+      - SESSION_TIMEOUT=3600
+      - DATABASE_URL=sqlite:///data/memoai.db
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      
+# docker-compose.prod.yml for Production Mode  
+version: '3.8'
+services:
+  memoai:
+    build: .
+    ports:
+      - "443:8080"
+    environment:
+      - AUTH_ENABLED=true
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - HTTPS_ONLY=true
+      - SECURE_COOKIES=true
+    volumes:
+      - memoai_data:/app/data
+      - memoai_config:/app/config
+    secrets:
+      - jwt_secret
+      - claude_api_key
+      
+volumes:
+  memoai_data:
+  memoai_config:
+  
+secrets:
+  jwt_secret:
+    external: true
+  claude_api_key:
+    external: true
+```
+
+#### 3.3.3 Authentication Configuration Files
+```yaml
+# config/auth.yaml
+authentication:
+  enabled: ${AUTH_ENABLED:-false}
+  mode: "jwt_session"  # jwt_session | session_only
+  jwt:
+    secret_key: ${JWT_SECRET_KEY}
+    algorithm: "HS256"
+    expiration_hours: ${JWT_EXPIRATION_HOURS:-24}
+  session:
+    timeout: ${SESSION_TIMEOUT:-3600}
+    secure_cookies: ${SECURE_COOKIES:-false}
+    csrf_protection: ${CSRF_PROTECTION:-true}
+  security:
+    bcrypt_rounds: ${BCRYPT_ROUNDS:-12}
+    max_login_attempts: 5
+    lockout_duration: 900
+    rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
+```
+
+### 3.4 Environment Management
+- (Pending) Additional environment variable specifications
+- (Pending) Configuration file management beyond authentication
+- (Pending) Secret rotation strategies
+
+### 3.5 Deployment Procedures
 - (Pending) Step-by-step deployment instructions
 - (Pending) Database migration procedures
 - (Pending) Configuration update procedures
 
-### 3.5 Scaling Strategies
+### 3.6 Scaling Strategies
 - (Pending) Horizontal scaling procedures
 - (Pending) Database scaling migration plans
 - (Pending) Performance optimization guidelines

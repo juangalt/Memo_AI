@@ -16,14 +16,22 @@
 
 ## 2.0 Key High-Level Decisions Needed
 
-### 2.1 Monitoring and Alerting Strategy
+### 2.1 Authentication and Security Maintenance
+**DECISION**: Ongoing authentication system maintenance and security updates
+- **JWT Secret Rotation**: Regular rotation of JWT secret keys (quarterly)
+- **Session Cleanup**: Automated cleanup of expired sessions and authentication logs
+- **Security Updates**: Regular updates of bcrypt rounds and security configurations
+- **User Management**: Admin tools for user account maintenance and audit logs
+- **Authentication Monitoring**: Track authentication failures, session patterns, security events
+
+### 2.2 Monitoring and Alerting Strategy
 **Question**: What monitoring should we implement for ongoing system health?
 - Application performance monitoring (APM) tools vs custom monitoring?
 - What metrics should trigger alerts (response times, error rates, resource usage)?
 - How do we monitor LLM provider performance and costs?
 - Should we implement user experience monitoring?
 
-### 2.2 Log Management and Analysis
+### 2.3 Log Management and Analysis
 **Question**: How should we handle log collection and analysis for troubleshooting?
 - Centralized logging vs local file logging?
 - Log retention policies and storage management?

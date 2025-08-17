@@ -35,8 +35,9 @@
 3.2 **Description**
 - A full-stack web application with separate front-end and back-end components.
 - Front-end: user interfaces and client-side logic.
-- Back-end: server operations, data persistence, and APIs.
+- Back-end: server operations, data persistence with SQLite, and APIs.
 - Both components run in Docker containers for deployment and scalability.
+- SQLite database provides simplicity and excellent performance for 100+ concurrent users.
 - The AI coding agent will build the system following these specifications to ensure **modularity**, **simplicity**, and **extensibility**.
 
 3.3 **Core Functionality**
@@ -50,7 +51,7 @@
   - 3.3.6 Segment-level evaluation with comments and questions.
   - 3.3.7 Support for iterative improvement with chat.
   - 3.3.8 Ability to export evaluations as PDFs with progress information.
-  - 3.3.9 Progress tracking displayed in separate tab populated by evaluation data.
+  - 3.3.9 Progress tracking displayed in separate tab with on-demand calculation and optional caching.
 
 ---
 

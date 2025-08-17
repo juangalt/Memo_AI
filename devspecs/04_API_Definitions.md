@@ -17,10 +17,11 @@
 ## 2.0 Key High-Level Decisions Needed
 
 ### 2.1 API Authentication Strategy
-**Question**: How should we implement the authentication system that's ready but disabled for MVP?
-- Should we use JWT tokens, session cookies, or API keys?
-- How do we handle the on/off switch for authentication?
-- What's the strategy for transitioning from session-based to authenticated users?
+**DECISION**: JWT + Session hybrid authentication system implemented
+- **MVP Mode**: Session-based authentication using secure session tokens
+- **Production Mode**: JWT tokens with httpOnly cookies + session validation
+- **Toggle**: Configuration-based enable/disable without code changes
+- **Transition**: Seamless transition maintaining existing session_id compatibility
 
 ### 2.2 Request/Response Format Standardization
 **Question**: What should be the standard API response format across all endpoints?
@@ -72,25 +73,165 @@
 
 ## 3.0 Placeholder Sections
 
-### 3.1 Endpoint Specifications
-- (Pending) Define all REST endpoints based on architecture
-- (Pending) Request/response schemas for each endpoint
-- (Pending) Authentication requirements per endpoint
+### 3.1 Authentication Endpoints
 
-### 3.2 Data Validation Rules
+#### 3.1.1 Session Management (MVP Mode)
+```yaml
+GET /api/sessions/create
+  description: Create anonymous session for MVP mode
+  response:
+    session_id: string (secure token)
+    expires_at: datetime
+    
+POST /api/sessions/validate
+  description: Validate session token
+  request:
+    session_id: string
+  response:
+    valid: boolean
+    expires_at: datetime
+```
+
+#### 3.1.2 User Authentication (Production Mode)
+```yaml
+POST /api/auth/login
+  description: User login with credentials
+  request:
+    username: string
+    password: string
+  response:
+    user: {id, username, is_admin}
+    session_id: string
+  cookies:
+    jwt_token: httpOnly, secure
+    csrf_token: string
+
+POST /api/auth/logout
+  description: User logout and session cleanup
+  response:
+    success: boolean
+
+GET /api/auth/verify
+  description: Verify JWT token and session
+  response:
+    user: {id, username, is_admin}
+    session_valid: boolean
+
+POST /api/auth/refresh
+  description: Refresh JWT token
+  response:
+    user: {id, username, is_admin}
+    expires_at: datetime
+```
+
+#### 3.1.3 User Management (Admin Only)
+```yaml
+POST /api/users
+  description: Create new user account
+  authentication: Admin required
+  request:
+    username: string
+    email: string (optional)
+    password: string
+    is_admin: boolean (default: false)
+
+GET /api/users
+  description: List all users
+  authentication: Admin required
+  response:
+    users: [{id, username, email, is_active, created_at}]
+
+PUT /api/users/{user_id}
+  description: Update user account
+  authentication: Admin or self
+  request:
+    username: string (optional)
+    email: string (optional)
+    is_active: boolean (optional)
+```
+
+### 3.2 Core Application Endpoints
+```yaml
+POST /api/evaluations/submit
+  description: Submit text for evaluation
+  authentication: Session required (any mode)
+  request:
+    text_content: string
+    session_id: string (MVP) | derived from JWT (Production)
+  response:
+    evaluation: {overall_score, strengths, opportunities, rubric_scores}
+    progress_data: {trends, metrics, charts}
+
+GET /api/evaluations/{evaluation_id}
+  description: Retrieve evaluation details
+  authentication: Session owner or admin
+  response:
+    evaluation: full evaluation object
+    progress_data: integrated progress information
+
+POST /api/chat/sessions
+  description: Start chat session after evaluation
+  authentication: Session required
+  request:
+    evaluation_id: integer
+  response:
+    chat_session_id: string
+    context_loaded: boolean
+
+POST /api/admin/config/{config_type}
+  description: Update configuration files
+  authentication: Admin required
+  request:
+    config_content: string (YAML)
+  response:
+    validation_result: {is_valid, errors}
+    
+GET /api/admin/auth/config
+  description: Get authentication configuration
+  authentication: Admin required
+  response:
+    auth_enabled: boolean
+    session_timeout: integer
+    max_login_attempts: integer
+
+PUT /api/admin/auth/config
+  description: Update authentication configuration
+  authentication: Admin required
+  request:
+    auth_enabled: boolean
+    session_timeout: integer
+    max_login_attempts: integer
+```
+
+### 3.3 Data Validation Rules
 - (Pending) Input validation patterns
 - (Pending) Output sanitization requirements
 - (Pending) Error response formats
 
-### 3.3 Performance Requirements
+### 3.4 Performance Requirements
 - (Pending) Response time targets
 - (Pending) Rate limiting policies
 - (Pending) Caching strategies
 
-### 3.4 Security Considerations
-- (Pending) Authentication implementation
-- (Pending) Authorization patterns
-- (Pending) Input sanitization requirements
+### 3.5 Security Considerations
+
+#### 3.5.1 Authentication Implementation
+- **JWT Configuration**: HS256 algorithm, configurable secret key rotation
+- **Session Security**: Secure random tokens (32 bytes), httpOnly cookies
+- **Password Policy**: bcrypt hashing with cost factor 12
+- **CSRF Protection**: Double-submit cookie pattern for state-changing operations
+
+#### 3.5.2 Authorization Patterns
+- **Middleware**: `AuthorizationMiddleware` validates all protected endpoints
+- **Role-based Access**: Admin vs regular user permissions
+- **Session Isolation**: Data access restricted by session_id/user_id
+- **Rate Limiting**: Per-session/user rate limits to prevent abuse
+
+#### 3.5.3 Input Sanitization Requirements
+- **Text Content**: XSS prevention, length limits (10,000 chars)
+- **Configuration**: YAML validation, schema enforcement
+- **Authentication**: Username/password input validation and sanitization
+- **Session Tokens**: Format validation, expiration checks
 
 ---
 

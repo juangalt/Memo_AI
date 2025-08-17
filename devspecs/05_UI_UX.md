@@ -46,13 +46,20 @@
 - How do tabs work on mobile devices?
 - What's the minimum supported screen size?
 
-### 2.6 Loading States and User Feedback
+### 2.6 Authentication UI Strategy
+**DECISION**: Conditional authentication UI based on configuration
+- **MVP Mode**: No login UI required, automatic session creation
+- **Production Mode**: Optional login modal/page when authentication enabled
+- **Admin Interface**: Authentication configuration toggle in admin panel
+- **Transition**: Seamless UI adaptation when switching authentication modes
+
+### 2.7 Loading States and User Feedback
 **Question**: How should we handle the potentially long LLM response times?
 - Loading spinners vs progress bars vs skeleton screens?
 - How do we provide feedback during 15-second evaluation processing?
 - Should we show estimated time remaining?
 
-### 2.7 Error Handling and User Messages
+### 2.8 Error Handling and User Messages
 **Question**: How should we display errors and success messages to users?
 - Toast notifications vs inline messages vs modal dialogs?
 - How do we handle network errors gracefully?
@@ -85,22 +92,65 @@
 - (Pending) State management patterns
 - (Pending) Component reusability guidelines
 
-### 3.2 Page Specifications
+### 3.2 Authentication UI Components
+
+#### 3.2.1 Session Management (MVP Mode)
+- **Auto-Session Creation**: Transparent session generation on app load
+- **Session Status Indicator**: Optional subtle indicator showing session active
+- **No Login Required**: Seamless access without authentication barriers
+
+#### 3.2.2 User Authentication (Production Mode)
+```yaml
+LoginModal/Page:
+  components:
+    - Username input field
+    - Password input field with visibility toggle
+    - Login button with loading state
+    - "Stay logged in" checkbox
+    - Error message display area
+  
+AdminAuthConfig:
+  components:
+    - Authentication toggle switch
+    - Session timeout configuration
+    - Max login attempts setting
+    - Real-time configuration preview
+    
+UserMenu (when authenticated):
+  components:
+    - Username/profile display
+    - Logout button
+    - Session expiry indicator
+    - Admin panel access (if admin)
+```
+
+#### 3.2.3 Admin User Management
+```yaml
+UserManagement (Admin Panel):
+  components:
+    - User list table with search/filter
+    - Add new user modal
+    - Edit user inline forms
+    - User status toggle buttons
+    - Bulk actions for user management
+```
+
+### 3.3 Page Specifications
 - (Pending) Text Input Page design
 - (Pending) Overall Feedback Page layout
 - (Pending) Detailed Feedback Page structure
 - (Pending) Progress Tracking Page visualizations
 - (Pending) Debug Page interface
 - (Pending) Help Page content organization
-- (Pending) Admin Page forms and controls
+- (Pending) Admin Page forms and controls with authentication settings
 
-### 3.3 Visual Design System
+### 3.4 Visual Design System
 - (Pending) Color palette and typography
 - (Pending) Component styling guidelines
 - (Pending) Responsive breakpoints
 - (Pending) Animation and transition standards
 
-### 3.4 User Experience Flows
+### 3.5 User Experience Flows
 - (Pending) Primary user journey mapping
 - (Pending) Error state handling
 - (Pending) Loading state presentations

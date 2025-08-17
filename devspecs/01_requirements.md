@@ -35,7 +35,9 @@
 - 2.3.2 The LLM uses as context: the submitted text (and past versions), grading rubric, communication frameworks, and context template.
 
 2.4 **Admin Functions**
-- 2.4.1 Admins can edit YAML files (`rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`).
+- 2.4.1 Admins can edit YAML configuration files (`rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`).
+- 2.4.2 Admins can configure authentication settings via web interface including enable/disable toggle.
+- 2.4.3 Admins can manage user sessions and view authentication logs.
 
 2.5 **Debug Mode**
 - 2.5.1 In debug mode, all users can review debug output.
@@ -43,7 +45,7 @@
 
 2.6 **Progress Tracking**
 - 2.6.1 User submissions are stored with grading history.
-- 2.6.2 Progress data is automatically calculated and displayed with each evaluation.
+- 2.6.2 Progress data is calculated on-demand from evaluation history with optional performance caching.
 
 2.7 **PDF Export**
 - 2.7.1 After submission, a PDF can be downloaded.
@@ -59,14 +61,19 @@
 
 3.2 **Scalability**
 - 3.2.1 MVP supports one user.
-- 3.2.2 Later phases support ~100 users.
+- 3.2.2 System scales to ~100 concurrent users using SQLite with WAL mode optimizations.
 
 3.3 **Reliability**
 - 3.3.1 High uptime is expected.
 - 3.3.2 Robust error handling and logging required.
 
 3.4 **Security**
-- 3.4.1 Authentication system implemented but disabled for MVP (can be enabled via configuration).
+- 3.4.1 JWT + Session hybrid authentication system implemented but disabled for MVP (can be enabled via database configuration).
+- 3.4.2 Session-based user isolation using server-generated secure session tokens stored in database.
+- 3.4.3 JWT tokens with httpOnly cookies for production phase with 100+ concurrent users.
+- 3.4.4 Configurable authentication toggle via admin web interface without code changes.
+- 3.4.5 Secure session management with expiration and automated cleanup.
+- 3.4.6 CSRF protection and rate limiting per session/user.
 
 3.5 **Maintainability**
 - 3.5.1 Maintainability is top priority.
@@ -95,9 +102,11 @@
 - LLM uses submitted text, history, rubric, frameworks, context template.
 
 4.4 **Admin Functions**
-- Admin can edit YAML files.
+- Admin can edit YAML configuration files via web interface.
 - YAML validated to prevent malformed input.
 - Debug mode toggle available.
+- Authentication configuration toggle via admin interface without code changes.
+- Session management and authentication logs accessible.
 
 4.5 **Debug Mode**
 - Debug shows raw prompts, raw responses, performance data.
@@ -105,7 +114,7 @@
 
 4.6 **Progress Tracking**
 - System records grading history.
-- Progress data is automatically calculated and displayed with evaluations.
+- Progress data is calculated on-demand with optional caching for performance.
 
 4.7 **PDF Export**
 - PDF generated per submission.
@@ -113,7 +122,7 @@
 
 4.8 **Non-Functional**
 - Response times acceptable.
-- Scales to ~100 users.
+- Scales to ~100 concurrent users using SQLite optimizations.
 - Error handling comprehensive.
 - Code modular, simple, and well-commented.
 
@@ -144,7 +153,7 @@
 | 3.1.1  | Responsive system             | 4.8                 | TC-019       |
 | 3.1.2  | LLM response within seconds   | 4.8                 | TC-020       |
 | 3.2.1  | MVP handles one user          | 4.8                 | TC-021       |
-| 3.2.2  | Scales to 100 users           | 4.8                 | TC-022       |
+| 3.2.2  | Scales to 100 users with SQLite | 4.8                 | TC-022       |
 | 3.3.1  | High uptime                   | 4.8                 | TC-023       |
 | 3.3.2  | Robust error handling         | 4.8                 | TC-024       |
 | 3.5.1  | Maintainability priority      | 4.8                 | TC-025       |
