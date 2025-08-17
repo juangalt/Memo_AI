@@ -91,3 +91,21 @@ Workflow:
 
 - Requirements: scalability (3.2), reliability (3.3), security (3.4), performance (3.1).
 - Architecture references: Docker deployment and scaling plan from `02_Architecture.md`.
+
+## 10.0 Deployment Directory Structure
+```
+/
+├── docker-compose.yml          # base compose file for development/MVP
+├── docker-compose.prod.yml     # production overrides
+├── frontend/
+│   ├── Dockerfile
+│   └── app/...
+├── backend/
+│   ├── Dockerfile
+│   └── app/...
+├── reverse-proxy/
+│   └── Caddyfile or nginx.conf
+├── .env.example                # sample environment variables
+└── devspecs/
+    └── *.md                    # project specifications
+```
