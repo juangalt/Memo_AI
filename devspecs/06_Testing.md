@@ -294,6 +294,43 @@ AdminTests:
     - Authentication logs and monitoring
 ```
 
+### 6.7 Configuration Management Testing [MVP] (Req 2.4)
+```yaml
+ConfigurationTests:
+  test_configuration_validation:
+    - YAML syntax validation for all 13 configuration files
+    - Schema validation against predefined rules
+    - Cross-configuration dependency validation
+    - Environment-specific configuration testing
+    - UTF-8 encoding validation
+  
+  test_configuration_categories:
+    - Business logic configs (rubric, frameworks, context, prompt)
+    - System security configs (auth, security)
+    - Component configs (frontend, backend)
+    - Infrastructure configs (database, llm)
+    - Operations configs (logging, monitoring, performance)
+  
+  test_configuration_changes:
+    - Version tracking functionality
+    - Rollback capability testing
+    - Admin UI configuration editing
+    - Startup validation with invalid configurations
+    - Hot-reload functionality where supported
+  
+  test_configuration_bulk_operations:
+    - Bulk validation of all configuration files
+    - Configuration export/import functionality
+    - Category-based configuration management
+    - Configuration consistency checks
+  
+  test_configuration_security:
+    - Admin-only access to configuration editing
+    - Audit trail for all configuration changes
+    - Validation prevents system corruption
+    - Secure handling of sensitive configuration data
+```
+
 ### 6.6 Debug Mode Testing (Req 2.5)
 ```yaml
 DebugTests:
@@ -323,6 +360,7 @@ PerformanceTests:
     - Text submission response < 15 seconds
     - Progress data calculation < 2 seconds
     - PDF generation < 10 seconds
+    - Configuration validation < 3 seconds
   
   test_concurrent_users:
     - Single user performance baseline
@@ -335,6 +373,13 @@ PerformanceTests:
     - Query performance under load
     - Connection pooling effectiveness
     - Database cleanup and maintenance
+    - Configuration version queries performance
+  
+  test_configuration_performance:
+    - Configuration file loading performance
+    - Startup validation time with all 13 config files
+    - Configuration change impact on system performance
+    - Hot-reload functionality performance
 ```
 
 ### 7.2 Load Testing Strategy

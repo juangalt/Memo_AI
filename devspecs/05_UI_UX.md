@@ -201,16 +201,63 @@ HelpPage:
 ```yaml
 AdminPage:
   components:
-    - YAMLEditor (rubric, frameworks, context, prompt - Req 2.4.1)
+    - ConfigurationManager (comprehensive YAML editing - Req 2.4.1-2.4.4)
     - AuthenticationConfig (enable/disable toggle - Req 2.4.2)
     - UserManagement (when authentication enabled)
-    - SessionManagement (Req 2.4.3)
-    - AuthenticationLogs (Req 2.4.3)
+    - SessionManagement (Req 2.4.5)
+    - AuthenticationLogs (Req 2.4.5)
     - SystemStatus (health checks)
   
   access_control:
     - Admin-only access
     - YAML validation before saving
+```
+
+#### 4.2.8 ConfigurationManagerPage [MVP] (Req 2.4)
+```yaml
+ConfigurationManagerPage:
+  components:
+    - ConfigurationCategoryTabs:
+        business_logic: ["rubric", "frameworks", "context", "prompt"]
+        system_security: ["auth", "security"]
+        component_config: ["frontend", "backend"]
+        infrastructure: ["database", "llm"]
+        operations: ["logging", "monitoring", "performance"]
+    - ConfigurationEditor:
+        yaml_syntax_highlighting: true
+        real_time_validation: true
+        auto_completion: true
+        line_numbers: true
+    - ConfigurationValidation:
+        schema_validation: true
+        real_time_feedback: true
+        error_highlighting: true
+    - ConfigurationHistory:
+        version_tracking: true
+        change_comparison: true
+        rollback_capability: true
+    - ConfigurationActions:
+        bulk_validation: true
+        export_import: true
+        category_filtering: true
+  
+  layout:
+    - Three-panel design: Categories | Editor | Validation
+    - Responsive design for mobile administration
+    - Full-screen editor mode available
+  
+  features:
+    - Live YAML syntax validation
+    - Category-based organization
+    - Version history and rollback
+    - Bulk validation of all configs
+    - Export/import configuration sets
+    - Real-time preview of changes
+  
+  access_control:
+    - Admin-only access
+    - Role-based configuration editing permissions
+    - Audit trail for all changes
 ```
 
 ### 4.3 Authentication UI Components
@@ -313,6 +360,23 @@ TextSubmissionFlow:
   7. User can initiate chat (Req 2.3.1)
   8. User can export PDF (Req 2.7.1)
   9. Progress data automatically calculated and displayed
+```
+
+### 6.5 Admin Configuration Flow (Req 2.4)
+```yaml
+ConfigurationManagementFlow:
+  1. Admin accesses AdminPage with authentication
+  2. Admin navigates to ConfigurationManager
+  3. Admin selects configuration category (5 categories)
+  4. Admin selects specific config file (13 total files)
+  5. YAML editor loads with syntax highlighting
+  6. Admin makes changes with real-time validation
+  7. System validates changes against schema
+  8. Admin previews changes before applying
+  9. Admin saves with optional change reason
+  10. System writes to filesystem and logs version
+  11. Configuration immediately available for use
+  12. Admin can view version history and rollback if needed
 ```
 
 ### 6.2 Tab Navigation Flow (Req 2.1.2)

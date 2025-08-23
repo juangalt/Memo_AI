@@ -99,7 +99,7 @@ MVPPhase:
     - Detailed feedback with segment-level evaluation (Req 2.2.3b)
     - Simple tab navigation (Req 2.1.2)
     - Session-based user identification (Req 3.4)
-    - Basic admin interface for YAML editing (Req 2.4.1)
+    - Comprehensive configuration management system (Req 2.4.1-2.4.4)
     - Debug mode implementation (Req 2.5)
   
   explicitly_excluded_from_mvp:
@@ -123,8 +123,10 @@ MVPPhase:
   success_criteria:
     - Users can submit text and receive evaluation
     - System handles basic error scenarios
-    - Admin can edit YAML configurations
+    - Admin can edit all 13 YAML configuration files across 5 categories
+    - Configuration changes are validated and version tracked
     - Debug mode accessible and functional
+    - Detailed feedback with segments functional
     - System is deployable and runnable
 ```
 
@@ -339,10 +341,12 @@ CoreFeatures:
     - Basic feedback display
     - Detailed feedback with segments
     - Simple frontend UI
+    - Configuration management foundation
   
   week_5_6:
     - Tab navigation
-    - Admin YAML editing
+    - Comprehensive configuration management system (13 YAML files)
+    - Configuration validation and version tracking
     - Debug mode implementation
     - Basic error handling
     - MVP deployment

@@ -338,7 +338,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Startup Validation Process:**
 - All YAML configuration files validated for syntax and structure on application startup
-- Required configuration files: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`, `auth.yaml`
+- Required configuration files: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`, `auth.yaml`, `security.yaml`, `frontend.yaml`, `backend.yaml`, `database.yaml`, `llm.yaml`, `logging.yaml`, `monitoring.yaml`, `performance.yaml`
 - Validation includes schema checking, required fields verification, and format consistency
 - Application fails to start if any configuration file is missing or invalid
 - Clear error messages provided for configuration issues
@@ -350,6 +350,31 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Required fields present for each configuration type
 - Schema validation against predefined rules
 - UTF-8 encoding for all files
+
+**Configuration File Categories:**
+
+**Business Logic Configuration:**
+- `rubric.yaml`: Grading criteria, scoring categories, evaluation rubrics
+- `frameworks.yaml`: Communication frameworks, methodologies, assessment approaches
+- `context.yaml`: LLM context templates, evaluation context structures
+- `prompt.yaml`: LLM prompt templates, instruction formats, response schemas
+
+**System Security Configuration:**
+- `auth.yaml`: Authentication modes, JWT settings, session management
+- `security.yaml`: Security policies, input validation rules, rate limiting, CSRF protection
+
+**Component Configuration:**
+- `frontend.yaml`: UI settings, component behavior, client-side features, theming
+- `backend.yaml`: API settings, service endpoints, middleware configuration
+
+**Infrastructure Configuration:**
+- `database.yaml`: Database connections, performance tuning, WAL mode settings, indexing strategies
+- `llm.yaml`: LLM provider settings, API configuration, timeout settings, provider switching
+
+**Operations Configuration:**
+- `logging.yaml`: Log levels, output formats, retention policies, structured logging
+- `monitoring.yaml`: Health checks, performance metrics, alerting thresholds, business metrics
+- `performance.yaml`: Caching strategies, connection pooling, optimization settings, resource limits
 
 **5.8 Extensibility and Future Enhancements**
 

@@ -305,7 +305,9 @@ DEBUG_MODE=false  # Production only
 LOG_LEVEL=INFO
 ```
 
-### 6.2 Authentication Configuration Files
+### 6.2 Configuration Files
+
+#### 6.2.1 Authentication Configuration
 ```yaml
 # config/auth.yaml
 authentication:
@@ -324,6 +326,246 @@ authentication:
     max_login_attempts: 5
     lockout_duration: 900
     rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
+```
+
+#### 6.2.2 Security Configuration
+```yaml
+# config/security.yaml
+security:
+  input_validation:
+    max_text_length: ${MAX_TEXT_LENGTH:-10000}
+    xss_protection: ${XSS_PROTECTION:-true}
+    sql_injection_protection: ${SQL_INJECTION_PROTECTION:-true}
+    file_upload_validation: ${FILE_UPLOAD_VALIDATION:-true}
+  
+  rate_limiting:
+    requests_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
+    submissions_per_hour: ${SUBMISSIONS_PER_HOUR:-10}
+    login_attempts_per_hour: ${LOGIN_ATTEMPTS_PER_HOUR:-5}
+    admin_operations_per_hour: ${ADMIN_OPS_PER_HOUR:-100}
+  
+  csrf_protection:
+    enabled: ${CSRF_PROTECTION:-true}
+    token_expiry: ${CSRF_TOKEN_EXPIRY:-3600}
+    cookie_name: ${CSRF_COOKIE_NAME:-memoai_csrf_token}
+  
+  headers:
+    hsts_enabled: ${HSTS_ENABLED:-true}
+    hsts_max_age: ${HSTS_MAX_AGE:-31536000}
+    content_security_policy: ${CSP_ENABLED:-true}
+    x_frame_options: ${X_FRAME_OPTIONS:-DENY}
+    x_content_type_options: ${X_CONTENT_TYPE_OPTIONS:-nosniff}
+```
+
+#### 6.2.3 Frontend Configuration
+```yaml
+# config/frontend.yaml
+frontend:
+  ui_settings:
+    theme: ${UI_THEME:-default}
+    language: ${UI_LANGUAGE:-en}
+    loading_timeout: ${LOADING_TIMEOUT:-30}
+    page_title: ${PAGE_TITLE:-Memo AI Coach}
+  
+  components:
+    text_input_max_chars: ${TEXT_INPUT_MAX_CHARS:-10000}
+    auto_save_interval: ${AUTO_SAVE_INTERVAL:-30}
+    session_timeout_warning: ${SESSION_TIMEOUT_WARNING:-300}
+    tab_switch_animation: ${TAB_ANIMATION:-true}
+  
+  features:
+    debug_mode_enabled: ${DEBUG_MODE_ENABLED:-true}
+    progress_charts_enabled: ${PROGRESS_CHARTS_ENABLED:-true}
+    help_tooltips_enabled: ${HELP_TOOLTIPS_ENABLED:-true}
+    keyboard_shortcuts: ${KEYBOARD_SHORTCUTS:-true}
+  
+  performance:
+    lazy_loading: ${LAZY_LOADING:-true}
+    cache_duration: ${CACHE_DURATION:-300}
+    api_timeout: ${API_TIMEOUT:-60}
+    chart_animation: ${CHART_ANIMATION:-true}
+```
+
+#### 6.2.4 Backend Configuration
+```yaml
+# config/backend.yaml
+backend:
+  api_settings:
+    cors_origins: ${CORS_ORIGINS:-["http://localhost:3000"]}
+    rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
+    request_timeout: ${REQUEST_TIMEOUT:-30}
+    max_request_size: ${MAX_REQUEST_SIZE:-10MB}
+  
+  middleware:
+    gzip_compression: ${GZIP_COMPRESSION:-true}
+    request_logging: ${REQUEST_LOGGING:-true}
+    performance_monitoring: ${PERFORMANCE_MONITORING:-true}
+    error_tracking: ${ERROR_TRACKING:-true}
+  
+  workers:
+    process_count: ${WORKER_PROCESSES:-1}
+    thread_count: ${WORKER_THREADS:-4}
+    worker_timeout: ${WORKER_TIMEOUT:-30}
+    max_requests_per_worker: ${MAX_REQUESTS_PER_WORKER:-1000}
+  
+  features:
+    auto_reload: ${AUTO_RELOAD:-false}
+    debug_toolbar: ${DEBUG_TOOLBAR:-false}
+    profiling_enabled: ${PROFILING_ENABLED:-false}
+```
+
+#### 6.2.5 Database Configuration
+```yaml
+# config/database.yaml
+database:
+  connection:
+    url: ${DATABASE_URL:-sqlite:///data/memoai.db}
+    pool_size: ${DB_POOL_SIZE:-20}
+    max_overflow: ${DB_MAX_OVERFLOW:-10}
+    pool_timeout: ${DB_POOL_TIMEOUT:-30}
+    pool_recycle: ${DB_POOL_RECYCLE:-3600}
+  
+  sqlite_settings:
+    wal_mode: ${WAL_MODE:-true}
+    synchronous: ${DB_SYNCHRONOUS:-NORMAL}
+    cache_size: ${DB_CACHE_SIZE:-10000}
+    temp_store: ${DB_TEMP_STORE:-memory}
+    journal_size_limit: ${JOURNAL_SIZE_LIMIT:-67108864}
+  
+  performance:
+    query_timeout: ${DB_QUERY_TIMEOUT:-30}
+    checkpoint_interval: ${WAL_CHECKPOINT_INTERVAL:-3600}
+    vacuum_interval: ${VACUUM_INTERVAL:-86400}
+    analyze_interval: ${ANALYZE_INTERVAL:-86400}
+  
+  backup:
+    enabled: ${BACKUP_ENABLED:-true}
+    interval: ${BACKUP_INTERVAL:-86400}
+    retention_days: ${BACKUP_RETENTION_DAYS:-7}
+    compression: ${BACKUP_COMPRESSION:-true}
+```
+
+#### 6.2.6 LLM Provider Configuration
+```yaml
+# config/llm.yaml
+llm:
+  provider:
+    name: ${LLM_PROVIDER:-claude}
+    api_key: ${CLAUDE_API_KEY}
+    base_url: ${LLM_BASE_URL:-https://api.anthropic.com}
+    model: ${LLM_MODEL:-claude-3-sonnet-20240229}
+  
+  request_settings:
+    timeout: ${LLM_TIMEOUT:-60}
+    retry_attempts: ${LLM_RETRY_ATTEMPTS:-3}
+    retry_delay: ${LLM_RETRY_DELAY:-1}
+    max_tokens: ${LLM_MAX_TOKENS:-4000}
+    temperature: ${LLM_TEMPERATURE:-0.7}
+  
+  performance:
+    connection_pool_size: ${LLM_POOL_SIZE:-10}
+    rate_limit_per_minute: ${LLM_RATE_LIMIT:-100}
+    batch_processing: ${LLM_BATCH_PROCESSING:-false}
+    response_streaming: ${LLM_STREAMING:-false}
+  
+  fallback:
+    enabled: ${LLM_FALLBACK_ENABLED:-false}
+    secondary_provider: ${LLM_FALLBACK_PROVIDER}
+    secondary_api_key: ${LLM_FALLBACK_API_KEY}
+    fallback_timeout: ${LLM_FALLBACK_TIMEOUT:-30}
+```
+
+#### 6.2.7 Logging Configuration
+```yaml
+# config/logging.yaml
+logging:
+  level: ${LOG_LEVEL:-INFO}
+  format: ${LOG_FORMAT:-json}  # json | text
+  
+  outputs:
+    console:
+      enabled: ${CONSOLE_LOGGING:-true}
+      level: ${CONSOLE_LOG_LEVEL:-INFO}
+      format: ${CONSOLE_LOG_FORMAT:-text}
+    file:
+      enabled: ${FILE_LOGGING:-true}
+      path: ${LOG_FILE_PATH:-/app/logs/app.log}
+      level: ${FILE_LOG_LEVEL:-INFO}
+      max_size: ${LOG_FILE_MAX_SIZE:-100MB}
+      max_files: ${LOG_FILE_MAX_FILES:-10}
+      rotation: ${LOG_ROTATION:-daily}
+  
+  structured:
+    include_timestamp: ${LOG_TIMESTAMP:-true}
+    include_request_id: ${LOG_REQUEST_ID:-true}
+    include_user_session: ${LOG_USER_SESSION:-true}
+    include_source_location: ${LOG_SOURCE_LOCATION:-false}
+  
+  retention:
+    days: ${LOG_RETENTION_DAYS:-30}
+    compression: ${LOG_COMPRESSION:-true}
+    cleanup_interval: ${LOG_CLEANUP_INTERVAL:-86400}
+```
+
+#### 6.2.8 Monitoring Configuration
+```yaml
+# config/monitoring.yaml
+monitoring:
+  health_checks:
+    enabled: ${HEALTH_CHECKS_ENABLED:-true}
+    interval: ${HEALTH_CHECK_INTERVAL:-30}
+    timeout: ${HEALTH_CHECK_TIMEOUT:-5}
+    endpoint: ${HEALTH_CHECK_ENDPOINT:-/health}
+  
+  metrics:
+    enabled: ${METRICS_ENABLED:-true}
+    endpoint: ${METRICS_ENDPOINT:-/metrics}
+    collection_interval: ${METRICS_INTERVAL:-60}
+    retention_days: ${METRICS_RETENTION_DAYS:-7}
+  
+  performance:
+    response_time_threshold: ${RESPONSE_TIME_THRESHOLD:-5000}
+    error_rate_threshold: ${ERROR_RATE_THRESHOLD:-0.05}
+    cpu_threshold: ${CPU_THRESHOLD:-80}
+    memory_threshold: ${MEMORY_THRESHOLD:-80}
+    disk_threshold: ${DISK_THRESHOLD:-85}
+  
+  alerting:
+    enabled: ${ALERTING_ENABLED:-false}
+    webhook_url: ${ALERT_WEBHOOK_URL}
+    email_notifications: ${ALERT_EMAIL_ENABLED:-false}
+    critical_threshold: ${CRITICAL_THRESHOLD:-0.1}
+    notification_cooldown: ${NOTIFICATION_COOLDOWN:-300}
+```
+
+#### 6.2.9 Performance Configuration
+```yaml
+# config/performance.yaml
+performance:
+  caching:
+    enabled: ${CACHE_ENABLED:-true}
+    backend: ${CACHE_BACKEND:-memory}  # memory | redis
+    ttl: ${CACHE_TTL:-3600}
+    max_size: ${CACHE_MAX_SIZE:-1000}
+    progress_cache_ttl: ${PROGRESS_CACHE_TTL:-3600}
+  
+  connection_pooling:
+    database_pool_size: ${DB_POOL_SIZE:-20}
+    llm_pool_size: ${LLM_POOL_SIZE:-10}
+    http_pool_size: ${HTTP_POOL_SIZE:-100}
+    connection_timeout: ${CONNECTION_TIMEOUT:-30}
+  
+  optimization:
+    lazy_loading: ${LAZY_LOADING:-true}
+    compression: ${COMPRESSION_ENABLED:-true}
+    static_file_caching: ${STATIC_CACHE_ENABLED:-true}
+    asset_minification: ${ASSET_MINIFICATION:-true}
+  
+  limits:
+    max_concurrent_requests: ${MAX_CONCURRENT_REQUESTS:-100}
+    max_request_size: ${MAX_REQUEST_SIZE:-10MB}
+    timeout_seconds: ${REQUEST_TIMEOUT:-30}
+    max_file_uploads: ${MAX_FILE_UPLOADS:-10}
 ```
 
 ### 6.3 Security Implementation

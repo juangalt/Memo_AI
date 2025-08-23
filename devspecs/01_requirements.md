@@ -35,9 +35,12 @@
 - 2.3.2 The LLM uses as context: the submitted text (and past versions), grading rubric, communication frameworks, and context template.
 
 2.4 **Admin Functions**
-- 2.4.1 Admins can edit YAML files (`rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`).
-- 2.4.2 Admins can configure authentication settings (`auth.yaml`) including enable/disable toggle.
-- 2.4.3 Admins can manage user sessions and view authentication logs.
+- 2.4.1 Admins can edit business logic YAML files (`rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`).
+- 2.4.2 Admins can configure system settings (`auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`).
+- 2.4.3 Admins can configure component settings (`frontend.yaml`, `backend.yaml`).
+- 2.4.4 Admins can configure operational settings (`logging.yaml`, `monitoring.yaml`, `performance.yaml`).
+- 2.4.5 Admins can manage user sessions and view authentication logs.
+- 2.4.6 All configuration changes are validated and version tracked.
 
 2.5 **Debug Mode**
 - 2.5.1 In debug mode, all users can review debug output.
@@ -102,11 +105,13 @@
 - LLM uses submitted text, history, rubric, frameworks, context template.
 
 4.4 **Admin Functions**
-- Admin can edit YAML files.
-- YAML validated to prevent malformed input.
+- Admin can edit all 13 YAML configuration files across 5 categories.
+- YAML validated to prevent malformed input with schema checking.
 - Debug mode toggle available.
 - Authentication configuration toggle without code changes.
 - Session management and authentication logs accessible.
+- Configuration version history and rollback functionality available.
+- Startup validation prevents system start with invalid configurations.
 
 4.5 **Debug Mode**
 - Debug shows raw prompts, raw responses, performance data.

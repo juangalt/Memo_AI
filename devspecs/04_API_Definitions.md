@@ -290,6 +290,62 @@ POST /api/v1/admin/debug/toggle
       timestamp: ISO8601
       request_id: uuid
     errors: []
+
+### Configuration Management Endpoints [MVP]
+
+GET /api/v1/admin/config/categories
+  description: Get all configuration categories and their purposes [MVP]
+  authentication: Admin required
+  response:
+    data:
+      categories:
+        business_logic: ["rubric", "frameworks", "context", "prompt"]
+        system_security: ["auth", "security"]
+        component_config: ["frontend", "backend"]
+        infrastructure: ["database", "llm"]
+        operations: ["logging", "monitoring", "performance"]
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
+
+POST /api/v1/admin/config/validate-all
+  description: Validate all configuration files [MVP]
+  authentication: Admin required
+  response:
+    data:
+      validation_results: {config_type: {is_valid, errors}}
+      overall_status: "valid" | "invalid"
+      failed_configs: array
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
+
+GET /api/v1/admin/config/bulk-export
+  description: Export all configuration files as ZIP [MVP]
+  authentication: Admin required
+  response:
+    Content-Type: application/zip
+    Content-Disposition: attachment; filename="memoai-config-export.zip"
+    File: configuration_export.zip
+
+POST /api/v1/admin/config/bulk-import
+  description: Import and validate multiple configuration files [MVP]
+  authentication: Admin required
+  request:
+    Content-Type: multipart/form-data
+    files: configuration files
+    validate_only: boolean (default: false)
+  response:
+    data:
+      imported_configs: array
+      validation_results: object
+      applied: boolean
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
 ```
 
 #### 3.2.2 Post-MVP Endpoints
@@ -352,7 +408,7 @@ GET /api/v1/export/pdf/{evaluation_id}
 - **Text Content**: Max 10,000 characters, XSS sanitization, UTF-8 encoding
 - **Session ID**: Format validation (UUID v4), expiration checks
 - **YAML Configuration**: Schema validation, syntax checking, required field validation, UTF-8 encoding
-- **Configuration Types**: Must be one of: 'rubric', 'frameworks', 'context', 'prompt', 'auth'
+- **Configuration Types**: Must be one of: 'rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance'
 - **Authentication**: Username/password length limits, character restrictions
 
 #### 3.3.2 Output Sanitization Requirements

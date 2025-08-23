@@ -122,7 +122,7 @@ evaluations (
 -- Track version history of YAML file changes made through admin UI
 configuration_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    config_type TEXT NOT NULL CHECK (config_type IN ('rubric', 'frameworks', 'context', 'prompt', 'auth')),
+    config_type TEXT NOT NULL CHECK (config_type IN ('rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance')),
     file_path TEXT NOT NULL,  -- Path to YAML file
     old_content TEXT,  -- Previous file content (NULL for first version)
     new_content TEXT NOT NULL,  -- New file content after change
@@ -213,7 +213,7 @@ progress_cache (computed from evaluations by user_session_id)
 
 4.3 **Data Integrity Rules**
 - User sessions identified by `session_id` across all tables
-- Configuration types restricted to: 'rubric', 'frameworks', 'context', 'prompt', 'auth'
+- Configuration types restricted to: 'rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance'
 - Chat message types restricted to: 'user', 'assistant'
 - YAML files are always read from filesystem (source of truth)
 - Configuration changes through admin UI are logged in configuration_versions table
@@ -246,6 +246,13 @@ progress_cache (computed from evaluations by user_session_id)
 - Index on `(config_type, changed_at)` for configuration version history queries
 - Progress cache to avoid recalculating metrics on every request
 - YAML files read directly from filesystem (simple and reliable)
+
+**Configuration File Access Patterns:**
+- **Business Logic Configs** (`rubric`, `frameworks`, `context`, `prompt`): Read on evaluation request, cached during processing
+- **System Security Configs** (`auth`, `security`): Read on startup and admin changes, applied immediately
+- **Component Configs** (`frontend`, `backend`): Read on component initialization, hot-reload supported
+- **Infrastructure Configs** (`database`, `llm`): Read on startup, some settings require restart
+- **Operations Configs** (`logging`, `monitoring`, `performance`): Read on startup and runtime, dynamic adjustment supported
 
 ---
 
