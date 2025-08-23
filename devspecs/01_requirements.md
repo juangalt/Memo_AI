@@ -68,11 +68,12 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 
 2.3 **Text Evaluation System**
 - 2.3.1 The system uses a grading rubric for evaluation.
-- 2.3.2 The system uses prompt templates for LLM interactions.
+- 2.3.2 The system uses prompt templates for LLM interactions, with backend dynamically generating prompts from rubric.yaml and prompt.yaml.
 - 2.3.3 The system provides overall strengths and improvement opportunities.
 - 2.3.4 The system provides detailed grading according to rubric.
 - 2.3.5 The system provides segment-level evaluation with comments and questions.
 - 2.3.6 The system provides immediate feedback after evaluation processing.
+- 2.3.7 The LLM responds in structured JSON format as defined in prompt.yaml response schemas.
 
 2.4 **Admin Functions**
 - 2.4.1 Admins can edit essential YAML files (4 files): `rubric.yaml`, `prompt.yaml`, `llm.yaml`, `auth.yaml`.
@@ -92,6 +93,8 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 - 3.1.1 General use should be very responsive.
 - 3.1.2 Text submission response: < 15 seconds (LLM processing).
 - 3.1.3 Performance validation requires real LLM testing to ensure < 15 seconds response time.
+- 3.1.4 LLM configuration includes performance optimization for <15 seconds requirement.
+- 3.1.5 Real-time performance monitoring and alerting for response time tracking.
 
 3.2 **Scalability**
 - 3.2.1 System supports 10-20 concurrent users.
@@ -134,11 +137,12 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 
 4.3 **Text Evaluation System**
 - Uses grading rubric for consistent evaluation standards.
-- Uses prompt templates for reliable LLM interactions.
+- Uses prompt templates for reliable LLM interactions, with backend dynamically generating prompts from rubric.yaml and prompt.yaml.
 - Provides comprehensive strengths and improvement opportunities analysis.
 - Provides detailed rubric-based grading with specific criteria.
 - Provides segment-level evaluation with targeted comments and questions.
 - Provides immediate feedback with clear processing status.
+- LLM responds in structured JSON format for reliable parsing and consistent data structure.
 
 4.4 **Admin Functions**
 - Admin can edit 4 essential YAML configuration files.
@@ -177,6 +181,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 | 2.3.4  | Detailed rubric grading       | 4.3                 | TC-013       |
 | 2.3.5  | Segment-level evaluation      | 4.3                 | TC-014       |
 | 2.3.6  | Immediate feedback processing | 4.3                 | TC-015       |
+| 2.3.7  | LLM JSON response format      | 4.3                 | TC-016       |
 
 | 2.4.1  | Admin edits YAML              | 4.4                 | TC-016       |
 | 2.4.2  | Configuration changes validated | 4.4                 | TC-017       |

@@ -188,7 +188,7 @@ GET /api/v1/auth/verify
 #### 4.1.1 Submit Text for Evaluation
 ```yaml
 POST /api/v1/evaluations/submit
-  description: Submit text for synchronous LLM evaluation with immediate feedback
+  description: Submit text for synchronous LLM evaluation with immediate feedback. Backend dynamically generates prompts from rubric.yaml and prompt.yaml, and LLM responds in JSON format.
   authentication: Session required
   request:
     text_content: string (max 10,000 chars)

@@ -146,9 +146,11 @@ evaluations (
 ### 3.5 Configuration Files
 **Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking (Req 2.3).
 
+**Backend Integration**: The backend dynamically generates prompts by combining framework definitions from rubric.yaml with template variables in prompt.yaml. This modular approach allows for flexible prompt generation while maintaining configuration separation.
+
 **Configuration Files**:
-- `rubric.yaml` - Grading criteria and scoring
-- `prompt.yaml` - LLM prompt templates
+- `rubric.yaml` - Grading criteria, scoring, and framework definitions
+- `prompt.yaml` - LLM prompt templates with dynamic variables for JSON response format
 - `llm.yaml` - LLM provider configuration
 - `auth.yaml` - Authentication settings
 
@@ -399,9 +401,25 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 
 **Frameworks Validation**:
 - Required `frameworks` field (object)
-- At least one framework must be defined
-- Each framework must have description (string, non-empty)
-- Supported frameworks: `pyramid_principle`, `scqa`, `healthcare_investment`
+- Required sub-fields: `framework_definitions`, `application_guidance`
+- `framework_definitions`: Object containing framework definitions (can be empty)
+- `application_guidance`: Object containing application guidance for different contexts
+
+**Framework Definitions Validation**:
+- Each framework definition must have: `name`, `description`, `role`, `application`, `scoring_focus`, `segment_focus`
+- `name`: String, non-empty, display name for the framework
+- `description`: String, non-empty, framework description
+- `role`: String, must be one of: "logical_structure", "narrative_clarity", "domain_specific"
+- `application`: String, non-empty, how to apply the framework
+- `scoring_focus`: String, non-empty, framework focus for scoring
+- `segment_focus`: String, non-empty, framework focus for segment analysis
+
+**Application Guidance Validation**:
+- Required sub-fields: `overall_evaluation`, `scoring_evaluation`, `segment_evaluation`, `domain_focus`
+- `overall_evaluation`: String, non-empty, guidance for overall evaluation
+- `scoring_evaluation`: String, non-empty, guidance for scoring evaluation
+- `segment_evaluation`: String, non-empty, guidance for segment evaluation
+- `domain_focus`: String, non-empty, domain-specific focus areas
 
 **Healthcare-Specific Validation**:
 - `description` must mention healthcare context
@@ -422,19 +440,35 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 **Templates Validation**:
 - Required `evaluation_prompt` template
 - Each template must have: `system_message`, `user_template`
-- `system_message`: String, non-empty, defines AI role
+- `system_message`: String, non-empty, defines AI role and must specify JSON response format
 - `user_template`: String, non-empty, contains template variables
 - Template variables must be defined in `prompt_variables`
+- `user_template` must contain: `{text_content}`, `{rubric_content}`, `{frameworks_section}`, `{framework_application_guidance}`
+- `system_message` must include instruction for LLM to respond in JSON format
 
 **Instructions Validation**:
 - Required sub-fields: `evaluation_guidelines`, `scoring_guidelines`, `segment_feedback_guidelines`
 - Each guideline list must be non-empty
 - Guidelines must be actionable and specific
+- Guidelines must contain: `{framework_evaluation_guidelines}`, `{framework_scoring_guidelines}`, `{framework_segment_guidelines}`
 
 **Response Schemas Validation**:
 - Required `evaluation_response` schema
 - Must define structure for: `overall_score`, `strengths`, `opportunities`, `rubric_scores`, `segment_feedback`
 - Data types must be specified for each field
+- `rubric_scores`: Generic description allowing dynamic rubric criteria
+- All response schemas must be valid JSON format specifications
+- Response schemas must include JSON validation rules for parsing
+
+**Prompt Variables Validation**:
+- Required fields: `text_content`, `rubric_content`, `frameworks_section`, `framework_application_guidance`
+- `text_content`: String, description of user's submitted text
+- `rubric_content`: String, description of evaluation rubric and criteria
+- `frameworks_section`: String, template for frameworks section (contains `{framework_list}`)
+- `framework_application_guidance`: String, template for framework application guidance
+- `framework_evaluation_guidelines`: String, template for evaluation guidelines
+- `framework_scoring_guidelines`: String, template for scoring guidelines
+- `framework_segment_guidelines`: String, template for segment guidelines
 
 **9.7.3 LLM Configuration (llm.yaml) Validation Rules**
 
@@ -456,12 +490,34 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 - `timeout`: Integer, 10-300 seconds
 - `max_retries`: Integer, 0-10
 - `max_tokens`: Integer, 100-8000
+- **Validation Fields**: `api_key_required`, `timeout_validation`, `max_retries_validation`, `max_tokens_validation` (all Boolean, must be true)
 
 **Request Settings Validation**:
 - Required fields: `max_text_length`, `min_text_length`
 - `max_text_length`: Integer, 1000-50000
 - `min_text_length`: Integer, 10-1000
 - `max_text_length` must be greater than `min_text_length`
+- **Validation Fields**: `max_text_length_validation`, `min_text_length_validation`, `text_length_validation` (all Boolean, must be true)
+
+**Performance Optimization Validation**:
+- Required fields: `target_response_time`, `max_response_time`, `performance_alerting`
+- `target_response_time`: Integer, 10-15 seconds (target under 15 seconds requirement)
+- `max_response_time`: Integer, 15 seconds (hard limit for Req 3.1.2)
+- `performance_alerting`: Boolean, must be true for production
+- `response_time_tracking`: Boolean, must be true
+- `max_concurrent_requests`: Integer, 1-10 (for 100+ user support)
+- `enable_response_caching`: Boolean, recommended for performance
+
+**Validation Rules Section**:
+- Required `validation_rules` section with explicit validation ranges
+- `timeout_range`: Array [10, 300] seconds
+- `max_retries_range`: Array [0, 10]
+- `max_tokens_range`: Array [100, 8000]
+- `max_text_length_range`: Array [1000, 50000]
+- `min_text_length_range`: Array [10, 1000]
+- `target_response_time`: Integer, 12 seconds (for <15 seconds requirement)
+- `max_response_time`: Integer, 15 seconds
+- `supported_providers`: Array ["claude", "openai", "gemini"]
 
 **9.7.4 Authentication Configuration (auth.yaml) Validation Rules**
 
@@ -497,12 +553,12 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 | Requirement ID | Requirement Description | Data Model Implementation | Status |
 |---------------|------------------------|---------------------------|---------|
 | 2.2.1 | Text input box available | Submissions table (3.3) - text_content field | ✅ Implemented |
-| 2.2.2 | Submission processed by LLM | Submissions table (3.3) - session tracking | ✅ Implemented |
+| 2.2.2 | Submission processed by LLM | Submissions table (3.3) - session tracking + LLM config (9.7.3) | ✅ Implemented |
 | 2.2.3a | Overall evaluation returned | Evaluations table (3.4) - overall_score, strengths, opportunities | ✅ Implemented |
 | 2.2.3b | Segment evaluation returned | Evaluations table (3.4) - segment_feedback JSON field | ✅ Implemented |
 | 2.2.4 | Evaluation processing straightforward | Evaluations table (3.4) - processing_time tracking | ✅ Implemented |
 | 2.3.1 | System uses grading rubric | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
-| 2.3.2 | System uses prompt templates | Configuration management (3.5) - prompt.yaml | ✅ Implemented |
+| 2.3.2 | System uses prompt templates | Configuration management (3.5) - modular prompt.yaml + llm.yaml (9.7.3) | ✅ Implemented |
 | 2.3.3 | Overall strengths/opportunities | Evaluations table (3.4) - strengths, opportunities fields | ✅ Implemented |
 | 2.3.4 | Detailed rubric grading | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
 | 2.3.5 | Segment-level evaluation | Evaluations table (3.4) - segment_feedback TEXT field | ✅ Implemented |
@@ -518,6 +574,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 | 3.4.3 | CSRF protection and rate limiting | Sessions table (3.2) - session tracking for rate limiting | ✅ Implemented |
 | 3.4.4 | Admin authentication | Users table (3.1) - is_admin field | ✅ Implemented |
 | 3.4.5 | Optional JWT authentication | Sessions table (3.2) - Ready for JWT extension | ⏳ Planned |
+| 3.1.2 | Text submission response: < 15 seconds | LLM config (9.7.3) - Performance optimization | ✅ Implemented |
 
 ---
 

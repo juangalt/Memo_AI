@@ -141,6 +141,35 @@ segment_evaluation:
     - "Implementation Planning Questions"
 
 frameworks:
-  pyramid_principle: "Barbara Minto's method for logical communication: Start with answer, group ideas MECE"
-  scqa: "Situation-Complication-Question-Answer framework for clear narratives"
-  healthcare_investment: "Healthcare-specific investment evaluation framework focusing on patient outcomes, compliance, and operational efficiency"
+  # Framework definitions with roles and application guidance for dynamic prompt generation
+  framework_definitions:
+    pyramid_principle:
+      name: "PYRAMID PRINCIPLE"
+      description: "Barbara Minto's method for logical communication: Start with answer, group ideas MECE"
+      role: "logical_structure"
+      application: "Use for logical structure evaluation and organization assessment"
+      scoring_focus: "Apply for logical structure evaluation"
+      segment_focus: "Apply to segment structure analysis"
+      
+    scqa:
+      name: "SCQA FRAMEWORK"
+      description: "Situation-Complication-Question-Answer framework for clear narratives"
+      role: "narrative_clarity"
+      application: "Use for narrative clarity assessment and communication evaluation"
+      scoring_focus: "Use for narrative clarity assessment"
+      segment_focus: "Apply to segment communication clarity"
+      
+    healthcare_investment:
+      name: "HEALTHCARE INVESTMENT FRAMEWORK"
+      description: "Healthcare-specific investment evaluation framework focusing on patient outcomes, compliance, and operational efficiency"
+      role: "domain_specific"
+      application: "Use for domain-specific evaluation and healthcare industry focus"
+      scoring_focus: "Apply for domain-specific evaluation"
+      segment_focus: "Apply to segment domain-specific analysis"
+  
+  # Framework application guidance for different contexts
+  application_guidance:
+    overall_evaluation: "Apply all available frameworks to ensure comprehensive evaluation covering logical structure, narrative clarity, and domain-specific requirements."
+    scoring_evaluation: "Apply the provided frameworks for scoring evaluation based on their respective roles."
+    segment_evaluation: "Apply the provided frameworks to segment analysis based on their respective roles."
+    domain_focus: "patient outcomes, compliance requirements, and operational efficiency"

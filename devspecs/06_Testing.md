@@ -405,18 +405,35 @@ ConfigurationTests:
       - Rubric hierarchy consistency
       - Required scoring fields presence
       - Grading criteria validation
+      # High Priority: Add modular framework testing
+      - Framework definitions validation (name, description, role, application)
+      - Application guidance validation (overall, scoring, segment evaluation)
+      - Dynamic framework generation testing
+      - Framework role validation (logical_structure, narrative_clarity, domain_specific)
     - prompt.yaml testing:
       - Template variable validation
       - Instruction format consistency
       - Required template sections
       - Prompt construction validation
       - LLM interaction templates
+      # High Priority: Add modular prompt testing
+      - Dynamic framework section generation
+      - Template variable population testing
+      - Modular prompt assembly testing
+      - Framework application guidance testing
     - llm.yaml testing:
       - Provider configuration validation
       - API endpoint configuration
       - Timeout and retry settings
       - Model selection validation
       - Claude provider configuration
+      # High Priority: Add performance optimization testing
+      - Performance optimization validation (<15 seconds requirement)
+      - Response time tracking and alerting
+      - Concurrent request handling (100+ user support)
+      - Response caching and optimization
+      - Validation rules compliance testing
+      - Environment-specific performance settings
     - auth.yaml testing:
       - Session configuration validation
       - Authentication method settings
@@ -651,6 +668,12 @@ ConfigurationManagementTests:
     - Required fields presence and format
     - Rubric application in evaluation process
     - Configuration change impact validation
+    # High Priority: Add modular framework testing
+    - Framework definitions structure validation
+    - Framework role and application validation
+    - Application guidance validation
+    - Dynamic framework generation testing
+    - Framework role assignment testing (logical_structure, narrative_clarity, domain_specific)
     
     # Detailed Rubric Validation Rules
     - Rubric structure validation:
@@ -701,6 +724,12 @@ ConfigurationManagementTests:
     - Response schema definitions
     - Prompt construction and validation
     - Template versioning and updates
+    # High Priority: Add modular prompt testing
+    - Dynamic framework section generation
+    - Template variable population testing
+    - Modular prompt assembly testing
+    - Framework application guidance integration
+    - Backend prompt generation testing
 
   test_llm_yaml:
     - LLM provider configuration (Claude)
@@ -709,6 +738,14 @@ ConfigurationManagementTests:
     - Timeout and retry configuration
     - Error handling and fallback settings
     - Provider-specific configuration validation
+    # High Priority: Add performance optimization testing
+    - Performance optimization validation (<15 seconds requirement)
+    - Response time tracking and alerting systems
+    - Concurrent request handling for 100+ users
+    - Response caching and optimization strategies
+    - Validation rules compliance and field validation
+    - Environment-specific performance configurations
+    - Real-time performance monitoring and reporting
 
   test_auth_yaml:
     - Session management configuration
@@ -739,6 +776,13 @@ PerformanceValidationTests:
     - Cost-controlled real LLM testing for validation
     - Performance regression detection with real LLM
     - Mock testing insufficient for performance validation
+    # High Priority: Add enhanced performance testing
+    - Target response time validation (12 seconds target)
+    - Performance alerting system testing (14 seconds threshold)
+    - Concurrent request performance testing (100+ user simulation)
+    - Response caching effectiveness validation
+    - Real-time performance monitoring validation
+    - Environment-specific performance testing (dev vs prod)
 
   test_llm_integration_performance:
     - Prompt construction performance optimization
@@ -1253,6 +1297,9 @@ EvolutionPlanning:
 | ERROR-001 | - | Standardized error responses | Reliability Testing - Error Responses | ✅ Implemented |
 | ERROR-002 | - | Error code consistency | Reliability Testing - Error Codes | ✅ Implemented |
 | CONFIG-001 | - | Individual YAML file validation with detailed rubric rules | Configuration Testing - File Validation (4.9) | ✅ Implemented |
+| LLM-001 | - | LLM performance optimization validation (<15 seconds) | LLM Testing - Performance Validation (4.10) | ✅ Implemented |
+| RUBRIC-001 | - | Modular framework definitions validation | Rubric Testing - Framework Validation (4.9) | ✅ Implemented |
+| PROMPT-001 | - | Modular prompt generation testing | Prompt Testing - Dynamic Generation (4.9) | ✅ Implemented |
 | CONFIG-002 | - | Configuration security | Configuration Testing - Security | ✅ Implemented |
 
 ---

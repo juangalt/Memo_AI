@@ -203,6 +203,7 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 
 - **Provider:** The system uses **Claude** as the default LLM provider, but the architecture allows for easy configuration to support alternative LLMs in the future.
 - **Prompt Engineering:** Prompts are constructed using the grading rubric and prompt template with the user's submitted text for reliable evaluations.
+- **Performance Optimization:** LLM integration includes performance optimization for <15 seconds response time requirement with real-time monitoring and alerting.
 - **Debugging:** The integration exposes debug data for troubleshooting and transparency, while ensuring that no sensitive information is leaked.
 
 **Component Explanations:**

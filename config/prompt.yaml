@@ -4,7 +4,7 @@
 templates:
   evaluation_prompt:
     system_message: |
-      You are an expert writing coach and evaluator. Your role is to provide comprehensive, constructive feedback on written text using a structured evaluation framework. You will analyze the text for overall quality, provide detailed rubric-based scoring, and offer specific segment-level feedback with actionable insights.
+      You are an expert writing coach and evaluator. Your role is to provide comprehensive, constructive feedback on written text using a structured evaluation framework. You will analyze the text for overall quality, provide detailed rubric-based scoring, and offer specific segment-level feedback with actionable insights. Always respond with valid JSON format.
 
     user_template: |
       Please evaluate the following text using the provided rubric and evaluation framework.
@@ -15,40 +15,48 @@ templates:
       EVALUATION RUBRIC:
       {rubric_content}
 
-      Please provide your evaluation in the following structured format:
+      {frameworks_section}
 
-      1. OVERALL SCORE: [Calculate weighted average score based on rubric]
-      2. STRENGTHS: [Identify 3-5 key strengths of the text]
-      3. OPPORTUNITIES FOR IMPROVEMENT: [Identify 3-5 specific areas for improvement]
-      4. DETAILED RUBRIC SCORING:
-         - Overall Structure: [score]/5 - [brief justification]
-         - Content Quality: [score]/5 - [brief justification]
-         - Clarity & Communication: [score]/5 - [brief justification]
-         - Technical Accuracy: [score]/5 - [brief justification]
-      5. SEGMENT-LEVEL FEEDBACK:
-         [For each significant segment of the text, provide:]
-         - Segment: "[exact text segment]"
-         - Comment: "[specific feedback on this segment]"
-         - Questions: ["thought-provoking question 1", "analytical question 2"]
+      Please provide your evaluation in the following JSON format:
 
-      Focus on providing constructive, actionable feedback that will help the writer improve their skills.
+      {
+        "overall_score": 4.2,
+        "strengths": [
+          "Clear executive summary with logical structure",
+          "Strong evidence-based arguments with credible sources",
+          "Effective use of financial metrics"
+        ],
+        "opportunities": [
+          "Strengthen risk mitigation strategies",
+          "Add more specific implementation timeline",
+          "Enhance strategic alignment section"
+        ],
+        "rubric_scores": {
+          "structure_and_logic": {"score": 4, "justification": "Clear organization with logical flow"},
+          "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
+          "clarity_style_financial_metrics": {"score": 4, "justification": "Effective financial metrics integration"},
+          "relevance_strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
+          "clear_opportunity_ask": {"score": 4, "justification": "Clear opportunity presentation"},
+          "risk_mitigation": {"score": 3, "justification": "Basic risk identification"},
+          "feasibility_implementation": {"score": 4, "justification": "Practical implementation plan"}
+        },
+        "segment_feedback": [
+          {
+            "segment": "The executive summary effectively...",
+            "comment": "Strong opening that clearly states the investment opportunity",
+            "questions": [
+              "How could this summary be even more compelling?",
+              "What additional context would strengthen the case?"
+            ],
+            "suggestions": [
+              "Consider adding a brief market context",
+              "Include a clear timeline for implementation"
+            ]
+          }
+        ]
+      }
 
-  segment_analysis:
-    system_message: |
-      You are analyzing a specific segment of text to provide targeted feedback and generate insightful questions that will help the writer develop their thinking and writing skills.
-
-    user_template: |
-      Analyze the following text segment and provide specific feedback and questions:
-
-      SEGMENT: {segment_text}
-
-      CONTEXT: This segment is part of a larger text about {topic_context}.
-
-      Please provide:
-      1. COMMENT: [Specific feedback on this segment's strengths and areas for improvement]
-      2. QUESTIONS: [2-3 thought-provoking questions that will help the writer develop their thinking on this topic]
-
-      Focus on constructive feedback that encourages deeper thinking and improved writing.
+      Focus on providing constructive, actionable feedback that will help the writer improve their skills. Ensure all scores are integers 1-5 and the overall_score is a decimal calculated as the weighted average. For each significant segment of the text, provide targeted feedback including comments, thought-provoking questions, and specific suggestions for improvement. {framework_application_guidance}
 
 instructions:
   evaluation_guidelines:
@@ -60,6 +68,10 @@ instructions:
     - "Maintain objectivity and fairness"
     - "Consider the writer's development level"
     - "Encourage critical thinking and reflection"
+    - "Always respond with valid JSON format"
+    - "Ensure all scores are integers 1-5"
+    - "Calculate overall_score as weighted average of rubric scores"
+    - "{framework_evaluation_guidelines}"
 
   scoring_guidelines:
     - "Use the full range of scores (1-5) appropriately"
@@ -67,6 +79,8 @@ instructions:
     - "Consider the relative importance of each criterion"
     - "Be consistent in your scoring approach"
     - "Focus on the quality of the writing, not personal preferences"
+    - "Ensure JSON format compliance for all responses"
+    - "{framework_scoring_guidelines}"
 
   segment_feedback_guidelines:
     - "Identify specific segments that need attention"
@@ -74,33 +88,34 @@ instructions:
     - "Ask questions that promote deeper thinking"
     - "Connect segment feedback to overall improvement"
     - "Be specific about what works and what could be improved"
+    - "Maintain JSON format consistency"
+    - "Include specific suggestions for each segment"
+    - "Provide thought-provoking questions for each segment"
+    - "{framework_segment_guidelines}"
 
 response_schemas:
   evaluation_response:
     overall_score: "decimal"
     strengths: "list of strings"
     opportunities: "list of strings"
-    rubric_scores:
-      overall_structure: "integer 1-5"
-      content_quality: "integer 1-5"
-      clarity_communication: "integer 1-5"
-      technical_accuracy: "integer 1-5"
+    rubric_scores: "object with score (integer 1-5) and justification (string) for each rubric criterion"
     segment_feedback:
       - segment: "string"
         comment: "string"
         questions: "list of strings"
-
-  segment_response:
-    comment: "string"
-    questions: "list of strings"
-    suggestions: "list of strings"
+        suggestions: "list of strings"
 
 prompt_variables:
   text_content: "The user's submitted text for evaluation"
   rubric_content: "The evaluation rubric and criteria"
   topic_context: "Context about the topic or subject area"
-  segment_text: "Specific text segment for analysis"
   evaluation_focus: "Specific aspect to focus evaluation on"
+  # Dynamic sections that will be populated by the backend
+  frameworks_section: "EVALUATION FRAMEWORKS:\nUse these frameworks to guide your evaluation:\n\n{framework_list}"
+  framework_application_guidance: "Apply the provided frameworks to ensure comprehensive evaluation."
+  framework_evaluation_guidelines: "Apply the provided frameworks for comprehensive evaluation."
+  framework_scoring_guidelines: "Apply the provided frameworks for scoring evaluation."
+  framework_segment_guidelines: "Apply the provided frameworks to segment analysis."
 
 error_handling:
   invalid_text: "Please provide valid text content for evaluation"
@@ -108,3 +123,5 @@ error_handling:
   text_too_short: "Text is too short for meaningful evaluation"
   invalid_format: "Text format is not supported"
   processing_error: "Unable to process evaluation request"
+  json_parsing_error: "Invalid JSON response format received"
+  json_validation_error: "JSON response does not match expected schema"

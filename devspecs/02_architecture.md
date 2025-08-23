@@ -204,14 +204,15 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 ### 4.3 LLM Engine Integration
 
 - **Provider:** The system uses **Claude** as the default LLM provider, but the architecture allows for easy configuration to support alternative LLMs in the future.
-- **Prompt Engineering:** Prompts are constructed using the grading rubric and prompt template with the user's submitted text for reliable evaluations.
+- **Backend Prompt Generation:** The backend dynamically generates prompts by combining content from rubric.yaml and prompt.yaml. The PromptBuilder component reads framework definitions from rubric.yaml and populates template variables in prompt.yaml to create customized prompts.
+- **JSON Response Format:** The LLM is configured to respond in structured JSON format as defined in prompt.yaml response schemas, ensuring reliable parsing and consistent data structure.
 - **Debugging:** The integration exposes debug data for troubleshooting and transparency, while ensuring that no sensitive information is leaked.
 
 **Component Explanations:**
 
 - `LLMConnector`: Handles all communication with the LLM provider (e.g., sending prompts to Claude and receiving responses). It abstracts the details of the LLM API, making it easy to swap providers if needed.
-- `PromptBuilder`: Responsible for assembling the final prompt sent to the LLM. It combines the rubric, prompt template, and user input into a structured prompt that guides the LLM to produce the desired evaluation.
-- `ResponseParser`: Processes and interprets the raw output from the LLM, extracting structured data such as overall feedback and segment-level evaluations for use by other backend services.
+- `PromptBuilder`: Responsible for dynamically assembling the final prompt sent to the LLM. It reads framework definitions from rubric.yaml and populates template variables in prompt.yaml to create customized prompts. It combines the rubric content, framework definitions, prompt templates, and user input into a structured prompt that guides the LLM to produce the desired evaluation in JSON format.
+- `ResponseParser`: Processes and interprets the JSON response from the LLM, extracting structured data such as overall feedback and segment-level evaluations for use by other backend services. It validates the JSON structure against the defined response schemas in prompt.yaml.
 - `DebugAdapter`: Collects and formats debug information related to LLM interactions (such as prompt/response pairs and timing data), ensuring that this information is available for diagnostics without exposing sensitive user or system data.
 
 ### 4.4 Data Layer
@@ -290,10 +291,10 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 1. User submits text via frontend → `TextInputPage`
 2. Frontend validates input and sends to `/api/evaluations/submit`
 3. Backend validates request and stores submission (`SubmissionRepository`)
-4. Backend constructs prompt using rubric and prompt template (`PromptBuilder`)
+4. Backend dynamically constructs prompt using rubric.yaml framework definitions and prompt.yaml templates (`PromptBuilder`)
 5. Backend sends prompt to LLM engine (`LLMConnector`)
-6. LLM processes and returns evaluation response
-7. Backend parses response into structured data (`ResponseParser`)
+6. LLM processes and returns JSON evaluation response
+7. Backend parses JSON response into structured data (`ResponseParser`)
 8. Backend stores evaluation (`EvaluationRepository`)
 9. Backend returns evaluation response to frontend
 10. Frontend updates `OverallFeedbackPage` and `DetailedFeedbackPage`
