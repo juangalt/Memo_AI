@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 03_Data_Model.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment  
 **Status**: Approved
 
@@ -38,11 +38,11 @@ Defines the data structures, database schema, and data relationships for the Mem
 ### 1.5 Traceability Summary
 | Requirement ID | Requirement Description | Data Model Implementation | Status |
 |---------------|------------------------|---------------------------|---------|
-| 2.2.1-2.2.4 | Text Submission Requirements | Submissions Entity (3.2) | ✅ Implemented |
-| 2.3.1-2.3.6 | Text Evaluation Requirements | Evaluations Entity (3.3) | ✅ Implemented |
+| 2.2.1-2.2.4 | Text Submission Requirements | Submissions Entity (3.3) | ✅ Implemented |
+| 2.3.1-2.3.6 | Text Evaluation Requirements | Evaluations Entity (3.4) | ✅ Implemented |
 | 2.4.1-2.4.3 | Admin Functions Requirements | Configuration Management | ✅ Implemented |
 | 2.5.1-2.5.3 | Debug Mode Requirements | Debug Data Storage | ✅ Implemented |
-| 3.4.1-3.4.5 | Security Requirements | Authentication Schema (3.1) | ✅ Implemented |
+| 3.4.1-3.4.5 | Security Requirements | Authentication Schema (3.1, 3.2) | ✅ Implemented |
 
 ### 1.6 Document Navigation
 - **Previous Document**: 02_Architecture.md
@@ -69,14 +69,30 @@ This section refers to the method used for interacting with the database from th
 
 ## 3.0 Core Data Entities
 
-### 3.1 Sessions and Authentication
+### 3.1 Users and Authentication
+**Based on Requirements**: Session-based authentication system (Req 3.4.1) with admin user support for system management.
+
+**Users Schema**:
+```sql
+users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,    -- Admin username
+    password_hash TEXT NOT NULL,      -- bcrypt hashed password
+    is_admin BOOLEAN DEFAULT FALSE,   -- Admin flag for elevated access
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### 3.2 Sessions and Session Management
 **Based on Requirements**: Session-based authentication system (Req 3.4.1). Session-based identification for users with admin support.
 
-**Schema**:
+**Sessions Schema**:
 ```sql
 sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT UNIQUE NOT NULL,  -- Secure random token
+    user_id INTEGER REFERENCES users(id),  -- Optional user reference (NULL for anonymous)
     is_admin BOOLEAN DEFAULT FALSE,   -- Admin flag for elevated access
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL,
@@ -84,7 +100,7 @@ sessions (
 );
 ```
 
-### 3.2 User Submissions
+### 3.3 User Submissions
 **Based on Requirements**: Session-based identification for all users.
 
 **Schema**:
@@ -97,7 +113,7 @@ submissions (
 );
 ```
 
-### 3.3 Evaluations
+### 3.4 Evaluations
 **Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b). Support debug mode with raw prompts/responses (Req 2.4).
 
 **Design Philosophy**: Simple synchronous evaluation system for reliable performance.
@@ -127,7 +143,7 @@ evaluations (
 );
 ```
 
-### 3.4 Configuration Files
+### 3.5 Configuration Files
 **Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking (Req 2.3).
 
 **Configuration Files**:
@@ -144,11 +160,13 @@ evaluations (
 
 4.1 **Key Relationships**
 ```
+users (1) ← (N) sessions
 sessions (1) ← (N) submissions
 submissions (1) ← (N) evaluations
 ```
 
 4.2 **Foreign Key Constraints and Cascading Behaviors**
+- `sessions.user_id` → `users.id` (optional, NULL for anonymous)
 - `evaluations.submission_id` → `submissions.id` (CASCADE DELETE)
 - `submissions.session_id` → `sessions.session_id` (CASCADE DELETE)
 
@@ -208,10 +226,11 @@ submissions (1) ← (N) evaluations
 7.1 **Indexing Strategy**
 ```sql
 -- Performance indexes optimized for SQLite
+CREATE INDEX idx_users_username ON users(username, is_active);
+CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active, expires_at);
 CREATE INDEX idx_submissions_session_date ON submissions(session_id, created_at);
 CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, created_at);
 CREATE INDEX idx_sessions_active ON sessions(session_id, is_active, expires_at);
-CREATE INDEX idx_users_login ON users(username, is_active);
 
 -- SQLite-specific optimizations
 PRAGMA journal_mode = WAL;  -- Enable Write-Ahead Logging for concurrency
@@ -346,34 +365,34 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 
 | Requirement ID | Requirement Description | Data Model Implementation | Status |
 |---------------|------------------------|---------------------------|---------|
-| 2.2.1 | Text input box available | Submissions table (3.2) - text_content field | ✅ Implemented |
-| 2.2.2 | Submission processed by LLM | Submissions table (3.2) - session tracking | ✅ Implemented |
-| 2.2.3a | Overall evaluation returned | Evaluations table (3.3) - overall_score, strengths, opportunities | ✅ Implemented |
-| 2.2.3b | Segment evaluation returned | Evaluations table (3.3) - segment_feedback JSON field | ✅ Implemented |
-| 2.2.4 | Evaluation processing straightforward | Evaluations table (3.3) - processing_time tracking | ✅ Implemented |
-| 2.3.1 | System uses grading rubric | Evaluations table (3.3) - rubric_scores TEXT field | ✅ Implemented |
-| 2.3.2 | System uses prompt templates | Configuration management (3.4) - prompt.yaml | ✅ Implemented |
-| 2.3.3 | Overall strengths/opportunities | Evaluations table (3.3) - strengths, opportunities fields | ✅ Implemented |
-| 2.3.4 | Detailed rubric grading | Evaluations table (3.3) - rubric_scores TEXT field | ✅ Implemented |
-| 2.3.5 | Segment-level evaluation | Evaluations table (3.3) - segment_feedback TEXT field | ✅ Implemented |
-| 2.3.6 | Immediate feedback processing | Evaluations table (3.3) - created_at timestamp | ✅ Implemented |
-| 2.4.1 | Admin edits YAML | Configuration management (3.4) - YAML file storage | ✅ Implemented |
-| 2.4.2 | Configuration changes validated | Configuration management (3.4) - Schema validation | ✅ Implemented |
-| 2.4.3 | Simple configuration management | Configuration management (3.4) - Direct file access | ✅ Implemented |
-| 2.5.1 | Debug output accessible | Evaluations table (3.3) - debug_enabled, raw_prompt, raw_response | ✅ Implemented |
-| 2.5.2 | Raw prompts/responses shown | Evaluations table (3.3) - raw_prompt, raw_response fields | ✅ Implemented |
-| 2.5.3 | Debug mode admin-only | Sessions table (3.1) - is_admin field | ✅ Implemented |
-| 3.4.1 | Session-based authentication | Sessions table (3.1) - session management | ✅ Implemented |
-| 3.4.2 | Secure session management | Sessions table (3.1) - expires_at, is_active fields | ✅ Implemented |
-| 3.4.3 | CSRF protection and rate limiting | Sessions table (3.1) - session tracking for rate limiting | ✅ Implemented |
-| 3.4.4 | Admin authentication | Sessions table (3.1) - is_admin field | ✅ Implemented |
-| 3.4.5 | Optional JWT authentication | Sessions table (3.1) - Ready for JWT extension | ⏳ Planned |
+| 2.2.1 | Text input box available | Submissions table (3.3) - text_content field | ✅ Implemented |
+| 2.2.2 | Submission processed by LLM | Submissions table (3.3) - session tracking | ✅ Implemented |
+| 2.2.3a | Overall evaluation returned | Evaluations table (3.4) - overall_score, strengths, opportunities | ✅ Implemented |
+| 2.2.3b | Segment evaluation returned | Evaluations table (3.4) - segment_feedback JSON field | ✅ Implemented |
+| 2.2.4 | Evaluation processing straightforward | Evaluations table (3.4) - processing_time tracking | ✅ Implemented |
+| 2.3.1 | System uses grading rubric | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
+| 2.3.2 | System uses prompt templates | Configuration management (3.5) - prompt.yaml | ✅ Implemented |
+| 2.3.3 | Overall strengths/opportunities | Evaluations table (3.4) - strengths, opportunities fields | ✅ Implemented |
+| 2.3.4 | Detailed rubric grading | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
+| 2.3.5 | Segment-level evaluation | Evaluations table (3.4) - segment_feedback TEXT field | ✅ Implemented |
+| 2.3.6 | Immediate feedback processing | Evaluations table (3.4) - created_at timestamp | ✅ Implemented |
+| 2.4.1 | Admin edits YAML | Configuration management (3.5) - YAML file storage | ✅ Implemented |
+| 2.4.2 | Configuration changes validated | Configuration management (3.5) - Schema validation | ✅ Implemented |
+| 2.4.3 | Simple configuration management | Configuration management (3.5) - Direct file access | ✅ Implemented |
+| 2.5.1 | Debug output accessible | Evaluations table (3.4) - debug_enabled, raw_prompt, raw_response | ✅ Implemented |
+| 2.5.2 | Raw prompts/responses shown | Evaluations table (3.4) - raw_prompt, raw_response fields | ✅ Implemented |
+| 2.5.3 | Debug mode admin-only | Users table (3.1) - is_admin field | ✅ Implemented |
+| 3.4.1 | Session-based authentication | Sessions table (3.2) - session management | ✅ Implemented |
+| 3.4.2 | Secure session management | Sessions table (3.2) - expires_at, is_active fields | ✅ Implemented |
+| 3.4.3 | CSRF protection and rate limiting | Sessions table (3.2) - session tracking for rate limiting | ✅ Implemented |
+| 3.4.4 | Admin authentication | Users table (3.1) - is_admin field | ✅ Implemented |
+| 3.4.5 | Optional JWT authentication | Sessions table (3.2) - Ready for JWT extension | ⏳ Planned |
 
 ---
 
 **Document ID**: 03_Data_Model.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment
 
 

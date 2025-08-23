@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 04_API_Definitions.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment  
 **Status**: Approved
 
@@ -93,12 +93,13 @@ All API responses follow a consistent structure:
 ## 3.0 Authentication and Authorization
 
 ### 3.1 Authentication Strategy
-**Session-Based Authentication System**:
-- **Session Management**: Secure session tokens for user isolation
-- **Admin Access**: Admin authentication for system management functions
-- **Future Enhancement**: JWT authentication can be added if complex user management is needed
+**Session-Based Authentication System with Admin Users**:
+- **Session Management**: Secure session tokens for user isolation (anonymous users)
+- **Admin Access**: Admin user accounts for system management functions
+- **User Accounts**: Admin users stored in users table with bcrypt password hashing
+- **Session-User Link**: Sessions can optionally link to admin users via user_id
 - **Simple Design**: Focuses on security without unnecessary complexity
-- **Scope**: Session-only authentication system
+- **Scope**: Session-based authentication with admin user accounts
 
 ### 3.2 Authentication Endpoints
 
@@ -364,6 +365,9 @@ GET /api/v1/admin/auth/status
 
 ### 6.5 Error Codes and Messages
 
+**Centralized Error Code Definitions**:
+All error codes are standardized across the system for consistent error handling.
+
 #### 6.5.1 Validation Errors
 - **VALIDATION_ERROR**: Input validation failures
   - `text_content`: Text content validation (empty, too long, invalid characters)
@@ -489,7 +493,7 @@ GET /api/v1/admin/auth/status
 #### 8.1.1 Authentication Strategy ✅ **RESOLVED**
 - **Decision**: Session-based authentication with JWT enhancement path
 - **Rationale**: Supports simplicity while providing clear upgrade path to production features
-- **Implementation**: Session-only system with documented JWT migration path
+- **Implementation**: Session-based system with admin user accounts and documented JWT migration path
 - **Future Enhancement**: JWT authentication can be added for production deployment with token-based authentication
 
 #### 8.1.2 Response Format ✅ **RESOLVED**
@@ -559,6 +563,6 @@ GET /api/v1/admin/auth/status
 ---
 
 **Document ID**: 04_API_Definitions.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment

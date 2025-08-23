@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment
 
 ---
@@ -80,6 +80,8 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **Data Layer**
 
   - Stores user submissions, evaluation history, and logs (Req 2.2, 2.4, 3.5).
+  - Admin user accounts for system management (Req 3.4.4).
+  - Session management for user isolation and authentication (Req 3.4.1).
   - YAML configuration files stored in filesystem, read directly each time.
   - Simple database schema focused on core evaluation functionality.
 
@@ -133,10 +135,10 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 │  Database Tables    │  Configuration Files │  Session Storage   │
 │  (Req 2.2.1-4)      │     (Req 2.4.1-3)    │   (Req 3.4.1-3)    │
 │                     │                      │                    │
-│  • submissions      │  • rubric.yaml       │  • Session tokens  │
-│  • evaluations      │  • prompt.yaml       │  • User sessions   │
-│  • users            │  • llm.yaml          │  • Admin sessions  │
-│  • sessions         │  • auth.yaml         │  • Rate limits     │
+│  • users            │  • rubric.yaml       │  • Session tokens  │
+│  • sessions         │  • prompt.yaml       │  • User sessions   │
+│  • submissions      │  • llm.yaml          │  • Admin sessions  │
+│  • evaluations      │  • auth.yaml         │  • Rate limits     │
 │                     │                      │                    │
 │  WAL Mode           │  Direct File Access  │  Secure Storage    │
 │  (Req 3.2.2)        │  (Req 2.4.3)         │  (Req 3.4.1-5)     │
@@ -146,7 +148,7 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 **Key Architecture Principles:**
 - **Modular Design**: Clear separation between frontend, backend, and data layers
 - **API-Driven**: RESTful API communication between frontend and backend
-- **Session-Based**: Secure session management for user isolation
+- **Session-Based**: Secure session management for user isolation (anonymous users with admin user accounts)
 - **Synchronous Processing**: Immediate feedback for evaluation requests
 - **Scalable**: SQLite with WAL mode supports 100+ concurrent users
 - **Maintainable**: Simple, focused components with clear responsibilities
@@ -224,7 +226,7 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 - `EvaluationRepository`
 - `ConfigRepository` (direct filesystem YAML operations)
 - `LogRepository`
-- `UserRepository` (authentication credentials and profiles)
+- `UserRepository` (admin user credentials and profiles)
 - `SessionRepository` (session management and validation)
 
 ---
@@ -557,10 +559,10 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 | 3.2.2 | Scales to 100+ users | SQLite WAL mode and optimizations | ✅ Implemented |
 | 3.3.1 | High uptime | Error handling and logging | ✅ Implemented |
 | 3.3.2 | Robust error handling | Comprehensive error handling | ✅ Implemented |
-| 3.4.1 | Session-based authentication | AuthenticationService (4.2) | ✅ Implemented |
-| 3.4.2 | Secure session management | SessionService (4.2) | ✅ Implemented |
+| 3.4.1 | Session-based authentication | AuthenticationService (4.2) with admin user accounts | ✅ Implemented |
+| 3.4.2 | Secure session management | SessionService (4.2) with user isolation | ✅ Implemented |
 | 3.4.3 | CSRF protection and rate limiting | AuthorizationMiddleware (4.2) | ✅ Implemented |
-| 3.4.4 | Admin authentication | AuthenticationService (4.2) | ✅ Implemented |
+| 3.4.4 | Admin authentication | AuthenticationService (4.2) with users table | ✅ Implemented |
 | 3.4.5 | Optional JWT authentication | Future enhancement ready | ⏳ Planned |
 | 3.5.1 | Maintainability priority | Modular architecture design | ✅ Implemented |
 | 3.5.2 | Maximum simplicity | Simple, focused component design | ✅ Implemented |
@@ -570,7 +572,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 ---
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.1  
-**Last Updated**: Implementation Phase (Updated with consistency fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment
 

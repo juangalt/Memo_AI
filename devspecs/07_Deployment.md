@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 07_Deployment.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment  
 **Status**: Approved
 
@@ -257,6 +257,19 @@ All port configurations are standardized across environments:
 - Development: Same ports as production for consistency
 - Production: Standard ports with firewall restrictions
 - Container: Internal port mapping for service discovery
+- Testing: Same ports as production for integration testing
+
+**Centralized Port Configuration**:
+```yaml
+# Standard Port Configuration (All Environments)
+Ports:
+  frontend: 8501      # Streamlit application
+  backend: 8000       # FastAPI REST API
+  traefik_http: 80    # HTTP traffic
+  traefik_https: 443  # HTTPS traffic
+  traefik_dashboard: 8080  # Traefik admin dashboard
+  health_check: 8000  # Health check endpoint
+```
 
 **Network Security**:
 - **Firewall**: Restrict access to required ports only
@@ -377,7 +390,7 @@ CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0
 
 #### 5.2.3 Backend Container (FastAPI)
 **Base Image**: python:3.9-slim  
-**Dependencies**: fastapi, uvicorn, sqlite3, anthropic, pyyaml
+**Dependencies**: fastapi, uvicorn, sqlite3, anthropic, pyyaml  
 
 **Database Initialization Script**:
 The backend container includes an `init_db.py` script that creates the complete database schema:
@@ -394,11 +407,24 @@ def init_database():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
+    # Create users table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            is_admin BOOLEAN DEFAULT FALSE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )
+    ''')
+    
     # Create sessions table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT UNIQUE NOT NULL,
+            user_id INTEGER REFERENCES users(id),
             is_admin BOOLEAN DEFAULT FALSE,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             expires_at DATETIME NOT NULL,
@@ -439,6 +465,8 @@ def init_database():
     ''')
     
     # Create indexes for performance
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username, is_active)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_user_active ON sessions(user_id, is_active, expires_at)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_submissions_session_date ON submissions(session_id, created_at)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_evaluations_submission ON evaluations(submission_id, created_at)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(session_id, is_active, expires_at)')
@@ -569,13 +597,12 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 **Environment Variables**:
 
 **Complete Environment Variable Reference**:
+All environment variables are documented with their purpose, default values, and usage.
+
 ```bash
 # Required Variables (must be set)
-DOMAIN=your-domain.com                    # Domain name for SSL certificates
-ADMIN_EMAIL=admin@your-domain.com         # Email for Let's Encrypt
 LLM_API_KEY=your-llm-api-key             # LLM provider API key
 SECRET_KEY=your-secret-key                # Session encryption key
-ADMIN_USERNAME=admin                      # Admin username
 ADMIN_PASSWORD=secure-password            # Admin password
 
 # Optional Variables (have defaults)
@@ -590,14 +617,22 @@ SESSION_TIMEOUT=3600                      # Session timeout in seconds
 MAX_CONCURRENT_USERS=100                  # Maximum concurrent users
 
 # Rate Limiting Configuration
-RATE_LIMIT_TEXT_SUBMISSIONS=20            # Text submissions per hour per session
-RATE_LIMIT_ADMIN_OPERATIONS=100           # Admin operations per hour per admin
-RATE_LIMIT_CONFIG_CHANGES=20              # Config changes per hour per admin
-RATE_LIMIT_GLOBAL_API=1000                # Global API requests per hour per IP
+RATE_LIMIT_PER_SESSION=20                 # Requests per hour per session
+RATE_LIMIT_PER_HOUR=1000                  # Global requests per hour per IP
 
-# Traefik Configuration
-TRAEFIK_ACME_EMAIL=${ADMIN_EMAIL}         # Let's Encrypt email
-TRAEFIK_DOMAIN=${DOMAIN}                  # Domain for Traefik routing
+# Traefik Configuration (optional for production)
+DOMAIN=your-domain.com                    # Domain name for SSL certificates
+ADMIN_EMAIL=admin@your-domain.com         # Email for Let's Encrypt
+
+# Database Configuration
+DATABASE_WAL_MODE=true                    # Enable WAL mode for SQLite
+DATABASE_BACKUP_ENABLED=true              # Enable automated backups
+DATABASE_BACKUP_RETENTION=28              # Backup retention in days
+
+# Security Configuration
+CSRF_PROTECTION=true                      # Enable CSRF protection
+XSS_PROTECTION=true                       # Enable XSS protection
+CONTENT_SECURITY_POLICY=true              # Enable CSP headers
 ```
 
 **Environment Variables**:
@@ -617,30 +652,19 @@ LLM_API_KEY=${LLM_API_KEY}
 LLM_MODEL=claude-3-sonnet-20240229
 LLM_TIMEOUT=30
 
-# Traefik Configuration
-TRAEFIK_ACME_EMAIL=${ADMIN_EMAIL}
-TRAEFIK_DOMAIN=${DOMAIN}
-
 # Security Configuration
 SECRET_KEY=${SECRET_KEY}
 SESSION_TIMEOUT=3600
-ADMIN_USERNAME=${ADMIN_USERNAME}
 ADMIN_PASSWORD=${ADMIN_PASSWORD}
-
-# Domain Configuration
-DOMAIN=${DOMAIN}
-ADMIN_EMAIL=${ADMIN_EMAIL}
 
 # Performance Configuration
 MAX_CONCURRENT_USERS=100
 RATE_LIMIT_PER_SESSION=20
 RATE_LIMIT_PER_HOUR=1000
 
-# Rate Limiting Configuration
-RATE_LIMIT_TEXT_SUBMISSIONS=20  # per hour per session
-RATE_LIMIT_ADMIN_OPERATIONS=100  # per hour per admin
-RATE_LIMIT_CONFIG_CHANGES=20  # per hour per admin
-RATE_LIMIT_GLOBAL_API=1000  # per hour per IP
+# Traefik Configuration (optional for production)
+DOMAIN=${DOMAIN}
+ADMIN_EMAIL=${ADMIN_EMAIL}
 ```
 
 ### 5.2 Configuration Files
@@ -649,6 +673,62 @@ RATE_LIMIT_GLOBAL_API=1000  # per hour per IP
 - `prompt.yaml`: LLM prompt templates and instruction formats
 - `llm.yaml`: LLM provider configuration and API settings
 - `auth.yaml`: Authentication settings and session management
+
+**Configuration File Override System**:
+The system implements a flexible configuration management approach where environment variables can override configuration file settings:
+
+```python
+# config_manager.py - Configuration file override system
+import yaml
+import os
+from pathlib import Path
+
+def load_config_with_overrides():
+    """Load configuration from files with environment variable overrides"""
+    config = {}
+    
+    # Load from config files
+    config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
+    config_dir = Path('/app/config')
+    
+    for filename in config_files:
+        file_path = config_dir / filename
+        if file_path.exists():
+            with open(file_path, 'r', encoding='utf-8') as f:
+                file_config = yaml.safe_load(f)
+                config[filename.replace('.yaml', '')] = file_config
+    
+    # Apply environment variable overrides
+    config = apply_env_overrides(config)
+    
+    return config
+
+def apply_env_overrides(config):
+    """Apply environment variable overrides to configuration"""
+    # LLM configuration overrides
+    if 'llm' in config:
+        if os.getenv('LLM_API_KEY'):
+            config['llm']['api_key'] = os.getenv('LLM_API_KEY')
+        if os.getenv('LLM_PROVIDER'):
+            config['llm']['provider'] = os.getenv('LLM_PROVIDER')
+        if os.getenv('LLM_MODEL'):
+            config['llm']['model'] = os.getenv('LLM_MODEL')
+        if os.getenv('LLM_TIMEOUT'):
+            config['llm']['timeout'] = int(os.getenv('LLM_TIMEOUT'))
+    
+    # Auth configuration overrides
+    if 'auth' in config:
+        if os.getenv('SESSION_TIMEOUT'):
+            config['auth']['session_timeout'] = int(os.getenv('SESSION_TIMEOUT'))
+        if os.getenv('ADMIN_PASSWORD'):
+            config['auth']['admin_password'] = os.getenv('ADMIN_PASSWORD')
+    
+    # Debug configuration overrides
+    if os.getenv('DEBUG_MODE'):
+        config['debug_mode'] = os.getenv('DEBUG_MODE').lower() == 'true'
+    
+    return config
+```
 
 **Configuration Validation**:
 - Startup validation of all 4 essential YAML files (rubric.yaml, prompt.yaml, llm.yaml, auth.yaml)
@@ -777,7 +857,7 @@ ProductionConfig:
    # Initialize database schema
    docker compose run backend python init_db.py
    ```
-   
+
    **Database Initialization Script Requirements**:
    The `init_db.py` script must create the database schema as defined in 03_Data_Model.md:
    - `sessions` table with session management
@@ -850,9 +930,11 @@ docker compose run backend python rollback_db.py
 - **ERROR**: Error conditions
 - **CRITICAL**: Critical system failures
 
-**Log Configuration**:
+**Standardized Logging Configuration**:
+All components use the same logging configuration for consistency across the system.
+
 ```python
-# Logging configuration
+# Standardized Logging Configuration
 LOGGING_CONFIG = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -1041,14 +1123,14 @@ LOGGING_CONFIG = {
 
 ### 11.1 Backup and Recovery
 **Backup Strategy**:
-- **Database Backups**: Weekly automated SQLite backups with verification
+- **Database Backups**: Weekly automated SQLite backups with basic verification
 - **Configuration Backups**: Version-controlled configuration files
 - **Log Backups**: Rotated log file archives
 - **Application Backups**: Container image backups
-- **Backup Verification**: Automated integrity checks and restore testing
+- **Backup Verification**: Basic integrity checks using PRAGMA integrity_check
 
 **Recovery Procedures**:
-- **Database Recovery**: Restore from backup with integrity checks
+- **Database Recovery**: Restore from backup with basic integrity verification
 - **Configuration Recovery**: Restore from version control
 - **Application Recovery**: Redeploy from container images
 - **Full System Recovery**: Complete environment restoration
@@ -1118,7 +1200,7 @@ certificatesresolvers:
 - **Retention Policy**: 4-week retention period (4 backup files)
 - **Backup Method**: SQLite backup API with WAL checkpoint
 - **Storage**: Local backup directory with rotation
-- **Verification**: Automated backup integrity checks
+- **Verification**: Basic integrity check using PRAGMA integrity_check
 
 **Configuration**:
 ```bash
@@ -1132,44 +1214,31 @@ certificatesresolvers:
 **Backup Script**:
 ```bash
 #!/bin/bash
-# backup_memoai.sh
+# backup_memoai.sh - Simplified backup with basic verification
 DATE=$(date +%Y%m%d)
 BACKUP_DIR="/app/backups"
 DB_PATH="/app/data/memoai.db"
+BACKUP_FILE="$BACKUP_DIR/memoai_$DATE.db"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
 
 # Perform SQLite backup with WAL checkpoint
 sqlite3 $DB_PATH "PRAGMA wal_checkpoint(FULL);"
-cp $DB_PATH "$BACKUP_DIR/memoai_$DATE.db"
+cp $DB_PATH "$BACKUP_FILE"
 
-# Verify backup integrity
-BACKUP_FILE="$BACKUP_DIR/memoai_$DATE.db"
+# Basic integrity verification
 if sqlite3 "$BACKUP_FILE" "PRAGMA integrity_check;" | grep -q "ok"; then
-    echo "Backup verification successful: $BACKUP_FILE"
-    
-    # Test backup restore capability
-    TEST_RESTORE_DIR="/tmp/test_restore_$DATE"
-    mkdir -p $TEST_RESTORE_DIR
-    cp "$BACKUP_FILE" "$TEST_RESTORE_DIR/test.db"
-    
-    if sqlite3 "$TEST_RESTORE_DIR/test.db" "SELECT COUNT(*) FROM sessions;" > /dev/null 2>&1; then
-        echo "Backup restore test successful"
-        rm -rf $TEST_RESTORE_DIR
-    else
-        echo "WARNING: Backup restore test failed"
-        rm -rf $TEST_RESTORE_DIR
-    fi
+    echo "Backup successful: $BACKUP_FILE"
 else
-    echo "ERROR: Backup verification failed: $BACKUP_FILE"
+    echo "ERROR: Backup failed - integrity check failed"
+    rm -f "$BACKUP_FILE"
     exit 1
 fi
 
 # Cleanup old backups (keep 4 weeks)
 find $BACKUP_DIR -name "memoai_*.db" -mtime +28 -delete
 
-# Log backup completion
 echo "Backup completed successfully: $BACKUP_FILE"
 ```
 
@@ -1235,16 +1304,35 @@ def check_database_connection():
         cursor.execute("PRAGMA journal_mode")
         journal_mode = cursor.fetchone()[0]
         
-        # Test basic query
+        # Test basic queries for all tables
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+        
         cursor.execute("SELECT COUNT(*) FROM sessions")
         session_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM submissions")
+        submission_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM evaluations")
+        evaluation_count = cursor.fetchone()[0]
+        
+        # Check database integrity
+        cursor.execute("PRAGMA integrity_check")
+        integrity_check = cursor.fetchone()[0]
         
         conn.close()
         
         return {
             "status": "healthy",
             "journal_mode": journal_mode,
-            "session_count": session_count
+            "integrity_check": integrity_check,
+            "table_counts": {
+                "users": user_count,
+                "sessions": session_count,
+                "submissions": submission_count,
+                "evaluations": evaluation_count
+            }
         }
     except Exception as e:
         return {
@@ -1652,6 +1740,6 @@ All critical design decisions have been resolved:
 ---
 
 **Document ID**: 07_Deployment.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment

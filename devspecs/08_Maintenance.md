@@ -120,7 +120,7 @@ WeeklyMaintenance:
     - Security event correlation
   
   data_maintenance:
-    - Database backup verification
+    - Database backup integrity verification
     - Data integrity checks
     - Configuration backup
     - Archive old data if needed
@@ -256,7 +256,7 @@ SQLiteMaintenance:
   data_integrity:
     - Regular integrity checks
     - Data corruption detection
-    - Backup verification
+    - Basic backup integrity verification
     - Recovery testing
   
   cleanup_procedures:
@@ -270,10 +270,9 @@ SQLiteMaintenance:
 ```yaml
 BackupProcedures:
   automated_backups:
-    - Daily incremental backups
     - Weekly full backups
-    - Backup verification and testing
-    - Off-site backup storage
+    - Basic backup integrity verification
+    - Local backup storage with rotation
   
   recovery_procedures:
     - Database restoration procedures
@@ -331,7 +330,7 @@ ConfigurationMaintenance:
     - Access pattern monitoring
   
   weekly_tasks:
-    - Configuration backup verification
+    - Configuration backup integrity verification
     - Cross-configuration dependency validation
     - Configuration performance impact assessment
     - Version history cleanup (retain 100 versions per config)

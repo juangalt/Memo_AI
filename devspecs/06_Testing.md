@@ -3,7 +3,7 @@
 
 **Document ID**: 06_Testing.md
 **Document Version**: 1.4
-**Last Updated**: Critical and High Impact Fixes Implementation (Complete traceability, architecture alignment, and comprehensive testing coverage)
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)
 **Next Review**: After initial deployment
 **Status**: Approved
 
@@ -480,8 +480,9 @@ AuthenticationTests:
     - Session token refresh mechanisms
   
   test_session_based_authentication:
-    - Session-based authentication system (Req 3.4.1)
-    - Secure session tokens for user isolation
+    - Session-based authentication system with admin user accounts (Req 3.4.1)
+    - Secure session tokens for user isolation (anonymous users)
+    - Admin user account management and authentication
     - Session creation and validation
     - Session expiration and cleanup
     - Cookie-based session management
@@ -502,6 +503,7 @@ AuthenticationTests:
   
   test_admin_authentication:
     - Admin authentication for system management functions (Req 3.4.4)
+    - Admin user account management with users table
     - Admin-only access to configuration editing
     - Admin-only access to debug information
     - User management operations
@@ -628,8 +630,9 @@ ThreeLayerArchitectureTests:
     - Performance monitoring across all layers
 
   test_authentication_layer:
-    - Session-based authentication across all layers (Req 3.4.1)
+    - Session-based authentication with admin user accounts across all layers (Req 3.4.1)
     - Admin authentication for system management (Req 3.4.4)
+    - Admin user account management and validation
     - Session isolation and data security
     - Authentication error handling and recovery
     - Session expiration and cleanup procedures
@@ -733,15 +736,15 @@ DatabaseSchemaTests:
     - Data type constraints validation
   
   test_data_model_compliance:
-    - Users table structure (id, username, password_hash, is_admin, created_at)
+    - Users table structure (id, username, password_hash, is_admin, created_at, is_active)
     - Sessions table structure (id, session_id, user_id, created_at, expires_at, is_active)
     - Submissions table structure (id, text_content, session_id, created_at)
     - Evaluations table structure (id, submission_id, overall_score, strengths, opportunities, rubric_scores, segment_feedback, llm_provider, llm_model, raw_prompt, raw_response, debug_enabled, processing_time, created_at)
   
   test_foreign_key_constraints:
+    - sessions.user_id → users.id (optional, NULL for anonymous)
     - evaluations.submission_id → submissions.id (CASCADE DELETE)
     - submissions.session_id → sessions.session_id (CASCADE DELETE)
-    - sessions.user_id → users.id (optional, NULL for anonymous)
     - Constraint violation testing
     - Cascading delete behavior validation
   
@@ -751,6 +754,7 @@ DatabaseSchemaTests:
     - Unique constraint enforcement
     - NOT NULL constraint validation
     - JSON field validation (rubric_scores, segment_feedback)
+    - User account data integrity
     - Session-based data isolation
     - Debug mode data storage validation
   
@@ -1359,5 +1363,5 @@ The testing specification is complete and ready for implementation:
 
 **Document ID**: 06_Testing.md
 **Document Version**: 1.4
-**Last Updated**: Critical and High Impact Fixes Implementation (Complete traceability, architecture alignment, and comprehensive testing coverage)
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)
 **Next Review**: After initial deployment
