@@ -339,32 +339,15 @@ EvaluationTests:
     - POST /api/v1/auth/login endpoint testing
     - POST /api/v1/auth/logout endpoint testing
     - GET /api/v1/auth/verify endpoint testing
-    - POST /api/v1/auth/refresh endpoint testing
     - Session token generation and validation
     - Session expiration handling
     - Authentication error responses
 
-  test_user_management_endpoints:
-    - POST /api/v1/users endpoint testing (admin-only)
-    - GET /api/v1/users endpoint testing (admin-only)
-    - PUT /api/v1/users/{user_id} endpoint testing
-    - User creation and modification
-    - Admin privilege enforcement
-    - User authentication validation
-
-  test_configuration_api_endpoints:
-    - GET /api/v1/admin/config/{config_type} endpoint testing
-    - POST /api/v1/admin/config/{config_type} endpoint testing
-    - Configuration validation responses
-    - Admin authorization enforcement
-    - YAML content handling
-  
-  test_debug_api_endpoints:
-    - GET /api/v1/debug/info endpoint testing
-    - POST /api/v1/admin/debug/toggle endpoint testing
-    - GET /api/v1/admin/auth/status endpoint testing
-    - Debug data formatting validation
-    - Admin-only access enforcement
+  test_admin_authentication:
+    - Admin authentication for system management functions (Req 3.4.4)
+    - Admin-only access to configuration editing
+    - Admin-only access to debug information
+    - Admin privilege validation
 
   test_three_layer_architecture:
     - Frontend Layer Testing (Streamlit components and session state)
@@ -524,12 +507,7 @@ AuthenticationTests:
     - User management operations
     - Admin privilege validation
   
-  test_user_management_endpoints:
-    - POST /api/v1/users endpoint testing (admin-only)
-    - GET /api/v1/users endpoint testing (admin-only)
-    - PUT /api/v1/users/{user_id} endpoint testing
-    - User creation and modification
-    - Admin privilege enforcement
+
 ```
 
 ### 4.6 API Integration Testing
@@ -679,7 +657,7 @@ PerformanceTests:
     - Configuration operations < 3 seconds
   
   test_llm_performance_validation:
-    - Real LLM testing required for < 15 seconds performance validation
+    - Real LLM testing required for < 15 seconds performance validation (Req 3.1.3)
     - Mock testing insufficient for performance requirement validation
     - Performance baseline establishment with real LLM responses
     - Cost-controlled real LLM testing for performance validation
@@ -1074,6 +1052,7 @@ EvolutionPlanning:
 | 2.5.3 | TC-021 | Debug mode admin-only | Debug Testing - Security | ✅ Implemented |
 | 3.1.1 | TC-022 | Responsive system | Performance Testing - Response Times | ✅ Implemented |
 | 3.1.2 | TC-023 | Text submission response: < 15 seconds (LLM processing) | Performance Testing - LLM Processing | ✅ Implemented |
+| 3.1.3 | TC-037 | Performance validation requires real LLM testing | Performance Testing - LLM Performance Validation | ✅ Implemented |
 | 3.2.1 | TC-024 | System handles 10-20 users | Scalability Testing - Concurrent Users | ✅ Implemented |
 | 3.2.2 | TC-025 | Scales to 100+ users | Scalability Testing - Load Testing | ✅ Implemented |
 | 3.3.1 | TC-026 | High uptime | Reliability Testing - System Stability | ✅ Implemented |
@@ -1109,7 +1088,7 @@ The testing strategy has been comprehensively updated for AI development workflo
 
 **Core Testing Approach:**
 - **AI Development-First LLM Testing**: Intelligent mock/real LLM switching with cost controls
-- **Complete Traceability**: Full mapping to test case IDs (TC-001 to TC-036) from requirements
+- **Complete Traceability**: Full mapping to test case IDs (TC-001 to TC-037) from requirements
 - **Architecture-Aligned Testing**: Three-layer testing approach consistent with system architecture
 - **Comprehensive API Coverage**: All endpoints from API definitions fully tested
 - **Performance Validation**: Real LLM testing required for <15 seconds performance validation

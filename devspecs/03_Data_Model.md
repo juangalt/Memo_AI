@@ -69,23 +69,15 @@ This section refers to the method used for interacting with the database from th
 
 ## 3.0 Core Data Entities
 
-### 3.1 Users and Authentication
+### 3.1 Sessions and Authentication
 **Based on Requirements**: Session-based authentication system (Req 3.4.1). Session-based identification for users with admin support.
 
 **Schema**:
 ```sql
-users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,  -- simple hash for authentication
-    is_admin BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT UNIQUE NOT NULL,  -- Secure random token
-    user_id INTEGER REFERENCES users(id),  -- NULL for anonymous sessions
+    is_admin BOOLEAN DEFAULT FALSE,   -- Admin flag for elevated access
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL,
     is_active BOOLEAN DEFAULT TRUE
@@ -93,7 +85,7 @@ sessions (
 ```
 
 ### 3.2 User Submissions
-**Based on Requirements**: Authentication system implemented from project start (Req 3.4.1). Session-based identification for all users.
+**Based on Requirements**: Session-based identification for all users.
 
 **Schema**:
 ```sql
@@ -370,12 +362,12 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 | 2.4.3 | Simple configuration management | Configuration management (3.4) - Direct file access | ✅ Implemented |
 | 2.5.1 | Debug output accessible | Evaluations table (3.3) - debug_enabled, raw_prompt, raw_response | ✅ Implemented |
 | 2.5.2 | Raw prompts/responses shown | Evaluations table (3.3) - raw_prompt, raw_response fields | ✅ Implemented |
-| 2.5.3 | Debug mode admin-only | Users table (3.1) - is_admin field | ✅ Implemented |
+| 2.5.3 | Debug mode admin-only | Sessions table (3.1) - is_admin field | ✅ Implemented |
 | 3.4.1 | Session-based authentication | Sessions table (3.1) - session management | ✅ Implemented |
 | 3.4.2 | Secure session management | Sessions table (3.1) - expires_at, is_active fields | ✅ Implemented |
 | 3.4.3 | CSRF protection and rate limiting | Sessions table (3.1) - session tracking for rate limiting | ✅ Implemented |
-| 3.4.4 | Admin authentication | Users table (3.1) - is_admin field | ✅ Implemented |
-| 3.4.5 | Optional JWT authentication | Users table (3.1) - Ready for JWT extension | ⏳ Planned |
+| 3.4.4 | Admin authentication | Sessions table (3.1) - is_admin field | ✅ Implemented |
+| 3.4.5 | Optional JWT authentication | Sessions table (3.1) - Ready for JWT extension | ⏳ Planned |
 
 ---
 

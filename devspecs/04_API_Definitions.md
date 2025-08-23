@@ -131,18 +131,18 @@ POST /api/v1/sessions/validate
     errors: []
 ```
 
-#### 3.2.2 User Authentication
+#### 3.2.2 Admin Authentication
 ```yaml
 POST /api/v1/auth/login
-  description: User login with credentials
+  description: Admin login with credentials
   authentication: None required
   request:
     username: string
     password: string
   response:
     data:
-    user: {id, username, is_admin}
     session_id: string
+    is_admin: boolean
     meta:
       timestamp: ISO8601
       request_id: uuid
@@ -152,7 +152,7 @@ POST /api/v1/auth/login
     csrf_token: string
 
 POST /api/v1/auth/logout
-  description: User logout and session cleanup
+  description: Admin logout and session cleanup
   authentication: Valid session required
   response:
     data:
@@ -163,74 +163,19 @@ POST /api/v1/auth/logout
     errors: []
 
 GET /api/v1/auth/verify
-  description: Verify session token and session
+  description: Verify session token and admin status
   authentication: Valid session required
   response:
     data:
-    user: {id, username, is_admin}
+    is_admin: boolean
     session_valid: boolean
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
-
-POST /api/v1/auth/refresh
-  description: Refresh session token
-  authentication: Valid session required
-  response:
-    data:
-    user: {id, username, is_admin}
-    expires_at: datetime
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
 ```
 
-#### 3.2.3 User Management (Admin Only)
-```yaml
-POST /api/v1/users
-  description: Create new user account
-  authentication: Admin required
-  request:
-    username: string
-    email: string (optional)
-    password: string
-    is_admin: boolean (default: false)
-  response:
-    data:
-      user: {id, username, email, is_admin, created_at}
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
 
-GET /api/v1/users
-  description: List all users
-  authentication: Admin required
-  response:
-    data:
-    users: [{id, username, email, is_active, created_at}]
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-
-PUT /api/v1/users/{user_id}
-  description: Update user account
-  authentication: Admin or self
-  request:
-    username: string (optional)
-    email: string (optional)
-    is_active: boolean (optional)
-  response:
-    data:
-      user: {id, username, email, is_active, updated_at}
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
 
 ---
 
@@ -288,6 +233,12 @@ GET /api/v1/evaluations/{evaluation_id}
 ### 4.2 Configuration Management Endpoints
 
 #### 4.2.1 Configuration Management
+**Essential Configuration Files**: The system manages 4 essential YAML configuration files:
+- `rubric.yaml`: Grading criteria and scoring rubrics
+- `prompt.yaml`: LLM prompt templates and instruction formats  
+- `llm.yaml`: LLM provider configuration and API settings
+- `auth.yaml`: Authentication settings and session management
+
 ```yaml
 GET /api/v1/admin/config/{config_type}
   description: Get current configuration file content
@@ -571,10 +522,10 @@ GET /api/v1/admin/auth/status
 5. Error handling and validation
 
 ### 10.2 Phase 2: Enhanced Features
-1. User management endpoints
-2. Progress tracking endpoints
-3. PDF export endpoints
-4. Advanced configuration features
+1. Progress tracking endpoints
+2. PDF export endpoints
+3. Advanced configuration features
+4. Enhanced authentication features
 
 ---
 

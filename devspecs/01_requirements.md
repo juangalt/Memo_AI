@@ -91,6 +91,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 3.1 **Performance**
 - 3.1.1 General use should be very responsive.
 - 3.1.2 Text submission response: < 15 seconds (LLM processing).
+- 3.1.3 Performance validation requires real LLM testing to ensure < 15 seconds response time.
 
 3.2 **Scalability**
 - 3.2.1 System supports 10-20 concurrent users.
