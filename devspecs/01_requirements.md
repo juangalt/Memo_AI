@@ -23,34 +23,36 @@
 - 2.1.4 The Help tab displays usage information and resources to learn the rubric and frameworks.
 - 2.1.5 The site must be visually clean but also pleasing.
 
-2.2 **Text Submission and Evaluation**
+2.2 **Text Submission and Evaluation [MVP]**
 - 2.2.1 The system provides a text input box for users.
-- 2.2.2 Upon submission, the system processes the text using an LLM.
+- 2.2.2 Upon submission, the system processes the text using an LLM asynchronously (designed async from inception).
 - 2.2.3 The system returns:
   - (a) Overall evaluation including strengths, opportunities, and rubric grading.
   - (b) Segment-level evaluation with comments and insight questions.
+- 2.2.4 Evaluation processing follows asynchronous patterns with status tracking and progress feedback.
 
-2.3 **Chat with LLM**
+2.3 **Chat with LLM [Post-MVP]**
 - 2.3.1 After receiving feedback, users can chat with an LLM.
 - 2.3.2 The LLM uses as context: the submitted text (and past versions), grading rubric, communication frameworks, and context template.
 
-2.4 **Admin Functions**
-- 2.4.1 Admins can edit business logic YAML files (`rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`).
-- 2.4.2 Admins can configure system settings (`auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`).
-- 2.4.3 Admins can configure component settings (`frontend.yaml`, `backend.yaml`).
-- 2.4.4 Admins can configure operational settings (`logging.yaml`, `monitoring.yaml`, `performance.yaml`).
+2.4 **Admin Functions [MVP]**
+- 2.4.1 Admins can edit business logic YAML files (4 files): `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`.
+- 2.4.2 Admins can configure system settings (4 files): `auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`.
+- 2.4.3 Admins can configure component settings (2 files): `frontend.yaml`, `backend.yaml`.
+- 2.4.4 Admins can configure operational settings (3 files): `logging.yaml`, `monitoring.yaml`, `performance.yaml`.
 - 2.4.5 Admins can manage user sessions and view authentication logs.
 - 2.4.6 All configuration changes are validated and version tracked.
+- 2.4.7 Total of 13 YAML configuration files across 4 categories.
 
-2.5 **Debug Mode**
+2.5 **Debug Mode [MVP]**
 - 2.5.1 In debug mode, all users can review debug output.
 - 2.5.2 Debug includes performance data, raw prompts, and raw responses.
 
-2.6 **Progress Tracking**
+2.6 **Progress Tracking [Post-MVP]**
 - 2.6.1 User submissions are stored with grading history.
 - 2.6.2 Progress data is automatically calculated and displayed with each evaluation.
 
-2.7 **PDF Export**
+2.7 **PDF Export [Post-MVP]**
 - 2.7.1 After submission, a PDF can be downloaded.
 - 2.7.2 PDF includes the user text, overall evaluation, segment feedback, and progress information.
 
@@ -63,17 +65,17 @@
 - 3.1.2 LLM submissions may take a few seconds.
 
 3.2 **Scalability**
-- 3.2.1 MVP supports one user.
-- 3.2.2 System scales to ~100 concurrent users using SQLite with WAL mode optimizations.
+- 3.2.1 MVP supports 10-20 concurrent users.
+- 3.2.2 System scales to 100+ concurrent users using SQLite with WAL mode optimizations.
 
 3.3 **Reliability**
 - 3.3.1 High uptime is expected.
 - 3.3.2 Robust error handling and logging required.
 
 3.4 **Security**
-- 3.4.1 JWT + Session hybrid authentication system implemented but disabled for MVP (can be enabled via configuration).
+- 3.4.1 JWT + Session hybrid authentication system implemented and enabled from MVP start.
 - 3.4.2 Session-based user isolation for MVP phase using secure session tokens.
-- 3.4.3 JWT tokens with httpOnly cookies for production phase with 100+ concurrent users.
+- 3.4.3 JWT tokens with httpOnly cookies for production phase scaling to 100+ concurrent users.
 - 3.4.4 Configurable authentication toggle without code changes.
 - 3.4.5 Secure session management with expiration and cleanup.
 - 3.4.6 CSRF protection and rate limiting per session/user.
@@ -97,8 +99,10 @@
 - Site is clean and visually pleasing.
 
 4.2 **Text Evaluation**
-- Returns consistent overall evaluation (strengths, weaknesses, rubric).
+- Returns consistent overall evaluation (strengths, weaknesses, rubric) via asynchronous processing.
 - Returns segment-level feedback with comments and questions.
+- Provides real-time status updates and progress feedback during evaluation processing.
+- Evaluation system designed asynchronous from inception for optimal user experience.
 
 4.3 **Chat with LLM**
 - Chat available after feedback.
@@ -127,7 +131,7 @@
 
 4.8 **Non-Functional**
 - Response times acceptable.
-- Scales to ~100 concurrent users using SQLite optimizations.
+- Scales to 100+ concurrent users using SQLite optimizations.
 - Error handling comprehensive.
 - Code modular, simple, and well-commented.
 
@@ -157,8 +161,8 @@
 | 2.7.2  | PDF includes text/feedback    | 4.7                 | TC-018       |
 | 3.1.1  | Responsive system             | 4.8                 | TC-019       |
 | 3.1.2  | LLM response within seconds   | 4.8                 | TC-020       |
-| 3.2.1  | MVP handles one user          | 4.8                 | TC-021       |
-| 3.2.2  | Scales to 10-20 users with SQLite | 4.8                 | TC-022       |
+| 3.2.1  | MVP handles 10-20 users       | 4.8                 | TC-021       |
+| 3.2.2  | Scales to 100+ users with SQLite | 4.8                 | TC-022       |
 | 3.3.1  | High uptime                   | 4.8                 | TC-023       |
 | 3.3.2  | Robust error handling         | 4.8                 | TC-024       |
 | 3.5.1  | Maintainability priority      | 4.8                 | TC-025       |

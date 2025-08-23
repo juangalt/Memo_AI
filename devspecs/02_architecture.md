@@ -23,15 +23,16 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 - **Backend Services**
 
-  - REST API layer providing endpoints for evaluation (with integrated progress data), chat, admin functions, debugging info and exports (Req 2.2–2.7).
-  - Handles orchestration between frontend requests and the LLM engine.
+  - REST API layer providing asynchronous evaluation endpoints (designed async from inception), chat, admin functions, debugging info and exports (Req 2.2–2.7).
+  - Handles orchestration between frontend requests and the LLM engine with async processing patterns.
   - Provides error handling, logging, and PDF generation (Req 2.7, 3.3).
 
 - **LLM Engine Integration**
 
-  - Connects with the chosen LLM provider.
+  - Connects with the chosen LLM provider for asynchronous evaluation processing.
   - Uses context template, rubric, frameworks, and user submissions to produce evaluations with integrated progress data (Req 2.2, 2.6).
   - Supports debug mode by exposing raw prompts, raw responses, and performance metrics (Req 2.5).
+  - Designed for async processing from inception to handle variable LLM response times gracefully.
 
 - **Data Layer**
 
@@ -88,14 +89,14 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
   - `/export` - PDF generation and download with direct file serving (Req 2.7) [Post-MVP]
 
 **Suggested Components:**
-- `EvaluationService` (asynchronous processing with status tracking) [MVP]
+- `EvaluationService` (asynchronous-first processing with status tracking - designed async from inception) [MVP]
 - `AdminService` (configuration management with hot-reload) [MVP]
 - `AuthenticationService` (JWT + Session hybrid management) [MVP]
 - `SessionService` (session lifecycle and validation) [MVP]
 - `AuthorizationMiddleware` (configurable authentication toggle) [MVP]
 - `DebugService` [MVP]
 - `RateLimitingService` (in-memory rate limiting for MVP) [MVP]
-- `FileServingService` (direct file serving with temporary storage) [MVP]
+- `FileService` (direct file serving with temporary storage) [MVP]
 - `ConfigurationService` (hot-reload for business logic configs) [MVP]
 - `ChatService` [Post-MVP]
 - `ExportService` [Post-MVP]
@@ -124,11 +125,11 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 **Suggested Components:**
 - `SubmissionRepository`
 - `EvaluationRepository`
-- `ConfigFileService` (direct filesystem YAML operations with hot-reload)
+- `ConfigRepository` (direct filesystem YAML operations with hot-reload)
 - `ConfigVersionRepository` (track admin changes)
 - `FileCleanupService` (automatic cleanup of temporary files after 24 hours)
 - `LogRepository`
-- `ProgressDataAdapter` (integrated with evaluation processing)
+- `ProgressAdapter` (integrated with evaluation processing)
 - `UserRepository` (authentication credentials and profiles)
 - `SessionRepository` (session management and validation)
 
@@ -343,8 +344,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **5.7 Application Startup and Validation**
 
 **Startup Validation Process:**
-- All YAML configuration files validated for syntax and structure on application startup
-- Required configuration files: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`, `auth.yaml`, `security.yaml`, `frontend.yaml`, `backend.yaml`, `database.yaml`, `llm.yaml`, `logging.yaml`, `monitoring.yaml`, `performance.yaml`
+- All 13 YAML configuration files validated for syntax and structure on application startup
+- Required configuration files (13 total):
+  - **Business Logic (4 files)**: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`
+  - **System Settings (4 files)**: `auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`
+  - **Component Settings (2 files)**: `frontend.yaml`, `backend.yaml`
+  - **Operational Settings (3 files)**: `logging.yaml`, `monitoring.yaml`, `performance.yaml`
 - Validation includes schema checking, required fields verification, and format consistency
 - Application fails to start if any configuration file is missing or invalid
 - Clear error messages provided for configuration issues

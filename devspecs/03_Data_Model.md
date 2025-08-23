@@ -63,7 +63,7 @@ sessions (
 
 auth_configuration (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    auth_enabled BOOLEAN DEFAULT TRUE,  -- Authentication enabled by default
+    auth_enabled BOOLEAN DEFAULT TRUE,  -- Authentication enabled from MVP start
     jwt_secret_key TEXT NOT NULL,
     session_timeout INTEGER DEFAULT 3600,  -- seconds
     max_login_attempts INTEGER DEFAULT 5,
@@ -93,6 +93,14 @@ submissions (
 
 ### 3.3 Evaluations [MVP]
 **Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b) [MVP]. Support debug mode with raw prompts/responses (Req 2.5) [MVP]. Progress data integrated with evaluations (Req 2.6).
+
+**Design Philosophy**: Asynchronous-first evaluation system designed from inception. All evaluations follow async pattern for consistent user experience and scalability. This is the initial schema - no synchronous version exists.
+
+**Schema Design Rationale**:
+- `status` field: Tracks evaluation lifecycle (queued → processing → completed/failed)
+- `progress_percentage`: Provides real-time user feedback during LLM processing
+- Timing fields: Enable performance monitoring and user experience optimization
+- Async fields integrated from day 1 for modern web application patterns
 
 **Schema**:
 ```sql
@@ -264,7 +272,9 @@ progress_cache (computed from evaluations by user_session_id)
 ## 6.0 Data Migration Strategy
 
 6.1 **Schema Evolution**
-- **Version-based migrations**: Numbered SQL files (001_initial.sql, 002_add_debug.sql)
+- **Initial Schema (001_initial.sql)**: Complete async-ready evaluation system designed from inception
+- **Asynchronous-first design**: No migration from synchronous version required - async fields included in initial deployment
+- **Future migrations**: Numbered SQL files for schema enhancements (002_add_feature.sql, 003_optimize_indexes.sql)
 - **Migration tracking**: `schema_migrations` table to track applied migrations
 - **Rollback capability**: Down migration scripts for each version
 - **Development workflow**: Apply migrations on application startup
@@ -350,17 +360,17 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 
 ### 9.2 Database Migration Strategy ✅ **DECIDED**
 
-**Decision**: **Version-based migrations** (implemented in Section 6.1)
+**Decision**: **Asynchronous-first schema with version-based migrations** (implemented in Section 6.1)
 
 **Alternatives Considered**:
-1. **Version-based migrations**: Numbered migration files (001_initial.sql, 002_add_debug.sql)
-2. **Schema comparison**: Compare current vs target schema and generate migrations
-3. **Recreate on schema changes**: Drop and recreate database (development only)
+1. **Synchronous-first with async migration**: Start simple, add async fields later
+2. **Dual-mode support**: Support both sync and async evaluation patterns
+3. **Asynchronous-first design**: Design async from inception (CHOSEN)
 
 **Rationale**: 
-- **Pros**: Explicit control, rollback capability, version tracking, works excellently with SQLite
-- **Cons**: Requires migration discipline
-- **Decision Basis**: Provides robust schema evolution with rollback capability, essential for production deployments
+- **Pros**: Consistent async patterns, modern web app design, no migration complexity, scalable from day 1
+- **Cons**: Slightly more complex initial implementation than basic CRUD
+- **Decision Basis**: Async-first design eliminates schema migration complexity while providing superior user experience and scalability
 
 ### 9.3 JSON Field Strategy for SQLite ✅ **DECIDED**
 

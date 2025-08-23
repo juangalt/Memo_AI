@@ -37,21 +37,22 @@
 - Front-end: user interfaces and client-side logic.
 - Back-end: server operations, data persistence with SQLite, and APIs.
 - Both components run in Docker containers for deployment and scalability.
-- SQLite database provides simplicity and good performance for 10-20 concurrent users (higher concurrency requires PostgreSQL migration).
+- SQLite database provides simplicity and good performance for MVP (10-20 concurrent users) and production (100+ concurrent users with WAL mode optimizations).
 - The AI coding agent will build the system following these specifications to ensure **modularity**, **simplicity**, and **extensibility**.
 
 3.3 **Core Functionality**
-- Provide text feedback based on:
-  - 3.3.1 A grading rubric.
-  - 3.3.2 Communication frameworks.
-  - 3.3.3 Defined context template.
+- Provide asynchronous text feedback (designed async from inception) based on:
+  - 3.3.1 A grading rubric [MVP]
+  - 3.3.2 Communication frameworks [MVP]
+  - 3.3.3 Defined context template [MVP]
 - Feedback includes:
-  - 3.3.4 Overall strengths and improvement opportunities.
-  - 3.3.5 Detailed grading according to rubric.
-  - 3.3.6 Segment-level evaluation with comments and questions.
-  - 3.3.7 Support for iterative improvement with chat.
-  - 3.3.8 Ability to export evaluations as PDFs with progress information.
-  - 3.3.9 Progress tracking displayed in separate tab populated by evaluation data.
+  - 3.3.4 Overall strengths and improvement opportunities [MVP]
+  - 3.3.5 Detailed grading according to rubric [MVP]
+  - 3.3.6 Segment-level evaluation with comments and questions [MVP]
+  - 3.3.7 Real-time processing status and progress feedback [MVP]
+  - 3.3.8 Support for iterative improvement with chat [Post-MVP]
+  - 3.3.9 Ability to export evaluations as PDFs with progress information [Post-MVP]
+  - 3.3.10 Progress tracking displayed in separate tab populated by evaluation data [Post-MVP]
 
 ---
 

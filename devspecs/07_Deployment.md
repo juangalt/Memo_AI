@@ -140,7 +140,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - AUTH_ENABLED=false
+      - AUTH_ENABLED=true
       - SESSION_TIMEOUT=3600
       - DATABASE_URL=sqlite:///data/memoai.db
       - LLM_PROVIDER=claude
@@ -160,7 +160,7 @@ services:
       - "3000:3000"
     environment:
       - BACKEND_URL=http://memoai-backend:8000
-      - AUTH_ENABLED=false
+      - AUTH_ENABLED=true
     volumes:
       - ./frontend/src:/app/src
     depends_on:
@@ -280,7 +280,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ### 6.1 Environment Variables
 ```yaml
 # Authentication Configuration
-AUTH_ENABLED=false  # Toggle for MVP vs Production
+AUTH_ENABLED=true  # Authentication enabled from MVP start
 JWT_SECRET_KEY=${JWT_SECRET_KEY}  # Required in production
 JWT_EXPIRATION_HOURS=24
 SESSION_TIMEOUT=3600  # seconds
@@ -311,7 +311,7 @@ LOG_LEVEL=INFO
 ```yaml
 # config/auth.yaml
 authentication:
-  enabled: ${AUTH_ENABLED:-false}
+  enabled: ${AUTH_ENABLED:-true}
   mode: "jwt_session"  # jwt_session | session_only
   jwt:
     secret_key: ${JWT_SECRET_KEY}
@@ -634,7 +634,7 @@ SecurityMeasures:
 ```yaml
 EnvironmentConfigs:
   development:
-    auth_enabled: false
+    auth_enabled: true
     debug_mode: true
     log_level: DEBUG
     database_url: "sqlite:///data/memoai_dev.db"

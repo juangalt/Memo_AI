@@ -76,8 +76,8 @@ GET /api/v1/sessions/create
   authentication: None required
   response:
     data:
-    session_id: string (secure token)
-    expires_at: datetime
+      session_id: string (secure token)
+      expires_at: datetime
     meta:
       timestamp: ISO8601
       request_id: uuid
@@ -90,8 +90,8 @@ POST /api/v1/sessions/validate
     session_id: string
   response:
     data:
-    valid: boolean
-    expires_at: datetime
+      valid: boolean
+      expires_at: datetime
     meta:
       timestamp: ISO8601
       request_id: uuid
@@ -204,12 +204,14 @@ PUT /api/v1/users/{user_id}
 ## 4.0 Core Application Endpoints
 
 ### 4.1 Text Evaluation Endpoints [MVP]
+**Design Philosophy**: All evaluation endpoints follow asynchronous-first design patterns. The system was designed from inception to handle LLM processing asynchronously for optimal user experience and scalability.
 
-#### 4.1.1 Submit Text for Evaluation (Asynchronous)
+#### 4.1.1 Submit Text for Evaluation (Asynchronous by Design)
 ```yaml
 POST /api/v1/evaluations/submit
-  description: Submit text for LLM evaluation with detailed feedback (asynchronous processing)
+  description: Submit text for LLM evaluation with detailed feedback (asynchronous-first design)
   authentication: Session required (any mode)
+  design_note: System designed async from inception for consistent UX and scalability
   request:
     text_content: string (max 10,000 chars)
     session_id: string (Anonymous) | derived from JWT (Authenticated)

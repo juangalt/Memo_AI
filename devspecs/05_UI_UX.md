@@ -61,11 +61,12 @@
 - **Consideration**: Tab navigation on mobile devices
 - **Impact**: User accessibility and adoption
 
-### 3.5 Loading States and User Feedback
-**Question**: How should we handle potentially long LLM response times (Req 3.1.2)?
-- **Options**: Loading spinners vs progress bars vs skeleton screens
-- **Consideration**: 15-second evaluation processing feedback
-- **Impact**: User perception of system responsiveness
+### 3.5 Loading States and User Feedback ✅ **DECIDED**
+**Decision**: **Progress bars with status updates** for asynchronous evaluation processing
+- **Rationale**: System designed async from inception - requires real-time progress feedback
+- **Implementation**: Status polling with progress percentage and estimated completion time
+- **User Experience**: Clear feedback during evaluation processing (queued → processing → completed)
+- **Impact**: Superior user experience for variable LLM response times
 
 ### 3.6 Error Handling and User Messages
 **Question**: How should we display errors and success messages to users?
@@ -112,8 +113,9 @@ TextInputPage:
     - Auto-focus on text area
     - Real-time character count
     - Submit validation (non-empty, length limits)
-    - Loading state during LLM processing
-    - Auto-navigate to OverallFeedbackPage on success
+    - Async processing with progress feedback (designed async from inception)
+    - Status polling for evaluation progress
+    - Auto-navigate to OverallFeedbackPage on completion
 ```
 
 #### 4.2.2 OverallFeedbackPage (Req 2.2.3a)
@@ -353,13 +355,14 @@ MobileAdaptations:
 TextSubmissionFlow:
   1. User lands on TextInputPage (Req 2.1.1)
   2. User enters text in large text area
-  3. User clicks submit (loading state appears)
-  4. System processes with LLM (15s max - Req 3.1.2)
-  5. Results displayed on OverallFeedbackPage
-  6. User can navigate to DetailedFeedbackPage
-  7. User can initiate chat (Req 2.3.1)
-  8. User can export PDF (Req 2.7.1)
-  9. Progress data automatically calculated and displayed
+  3. User clicks submit (async processing begins)
+  4. System queues evaluation with progress feedback (designed async from inception)
+  5. User sees real-time status updates (queued → processing → completed)
+  6. Results displayed on OverallFeedbackPage when complete
+  7. User can navigate to DetailedFeedbackPage
+  8. User can initiate chat (Req 2.3.1)
+  9. User can export PDF (Req 2.7.1)
+  10. Progress data automatically calculated and displayed
 ```
 
 ### 6.5 Admin Configuration Flow (Req 2.4)
@@ -403,7 +406,8 @@ ErrorStates:
 ```yaml
 LoadingStates:
   - Page load: Skeleton screens for content areas
-  - Text submission: Progress bar with estimated time
+  - Text submission: Real-time progress bar with status updates (async-first design)
+  - Evaluation processing: Status polling with progress percentage and estimated completion
   - Tab switching: Instant with cached data
   - PDF generation: Download progress indicator
   - Chat responses: Typing indicator
