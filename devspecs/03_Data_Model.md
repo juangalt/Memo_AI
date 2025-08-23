@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 03_Data_Model.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment  
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment  
 **Status**: Approved
 
 ---
@@ -60,9 +60,9 @@ Defines the data structures, database schema, and data relationships for the Mem
 
 2.2 **ORM/Query Layer**
 
-This section refers to the method used for interacting with the database from the application code. Instead of using a full-featured Object-Relational Mapper (ORM) like SQLAlchemy, the project uses the built-in `sqlite3` library and writes SQL queries directly ("Raw SQL"). This approach is chosen for its simplicity, transparency, and ease of maintenance, especially for an MVP (Minimum Viable Product). It allows developers to have direct control over database operations and schema evolution, and avoids the complexity and overhead of an ORM layer. See Section 10.1 for more details on this decision.
+This section refers to the method used for interacting with the database from the application code. Instead of using a full-featured Object-Relational Mapper (ORM) like SQLAlchemy, the project uses the built-in `sqlite3` library and writes SQL queries directly ("Raw SQL"). This approach is chosen for its simplicity, transparency, and ease of maintenance. It allows developers to have direct control over database operations and schema evolution, and avoids the complexity and overhead of an ORM layer. See Section 10.1 for more details on this decision.
 - **Decision**: SQLite3 + Raw SQL (see Section 10.1 for rationale)
-- **Rationale**: Aligns with MVP simplicity requirements and maintainability focus
+- **Rationale**: Aligns with simplicity requirements and maintainability focus
 - **Migration Strategy**: Version-based migration scripts (see Section 10.2)
 
 ---
@@ -77,7 +77,7 @@ This section refers to the method used for interacting with the database from th
 users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,  -- simple hash for MVP
+    password_hash TEXT NOT NULL,  -- simple hash for authentication
     is_admin BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -105,8 +105,8 @@ submissions (
 );
 ```
 
-### 3.3 Evaluations [MVP]
-**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b) [MVP]. Support debug mode with raw prompts/responses (Req 2.4) [MVP].
+### 3.3 Evaluations
+**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b). Support debug mode with raw prompts/responses (Req 2.4).
 
 **Design Philosophy**: Simple synchronous evaluation system for reliable performance.
 
@@ -135,8 +135,8 @@ evaluations (
 );
 ```
 
-### 3.4 Configuration Files [MVP]
-**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking for MVP (Req 2.3).
+### 3.4 Configuration Files
+**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking (Req 2.3).
 
 **Configuration Files**:
 - `rubric.yaml` - Grading criteria and scoring
@@ -195,9 +195,9 @@ submissions (1) ← (N) evaluations
 ## 6.0 Data Migration Strategy
 
 6.1 **Schema Evolution**
-- **Initial Schema (001_initial.sql)**: Complete async-ready evaluation system designed from inception
-- **Asynchronous-first design**: No migration from synchronous version required - async fields included in initial deployment
-- **Future migrations**: Numbered SQL files for schema enhancements (002_add_feature.sql, 003_optimize_indexes.sql)
+- **Initial Schema (001_initial.sql)**: Complete synchronous evaluation system designed for production
+- **Synchronous-first design**: Simple schema focused on immediate evaluation processing
+- **Future migrations**: Numbered SQL files for async features and schema enhancements (002_add_async.sql, 003_optimize_indexes.sql)
 - **Migration tracking**: `schema_migrations` table to track applied migrations
 - **Rollback capability**: Down migration scripts for each version
 - **Development workflow**: Apply migrations on application startup
@@ -217,14 +217,9 @@ submissions (1) ← (N) evaluations
 ```sql
 -- Performance indexes optimized for SQLite
 CREATE INDEX idx_submissions_session_date ON submissions(session_id, created_at);
-CREATE INDEX idx_submissions_user_session ON submissions(user_id, session_id, created_at);
-CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, evaluation_timestamp);
-
-CREATE INDEX idx_config_versions_type_date ON configuration_versions(config_type, changed_at);
+CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, created_at);
 CREATE INDEX idx_sessions_active ON sessions(session_id, is_active, expires_at);
-CREATE INDEX idx_sessions_user_activity ON sessions(user_id, last_activity);
 CREATE INDEX idx_users_login ON users(username, is_active);
-CREATE INDEX idx_users_email ON users(email, is_active);
 
 -- SQLite-specific optimizations
 PRAGMA journal_mode = WAL;  -- Enable Write-Ahead Logging for concurrency
@@ -255,12 +250,12 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 - **Database permissions**: Application has full access, no direct user access
 - **Admin functions**: Configuration editing through application only
 - **Session validation**: Verify session ownership before data access
-- **Authentication system**: JWT + Session hybrid infrastructure implemented from project start
+- **Authentication system**: Session-based authentication system implemented from project start
 - **User isolation**: Data access controlled by user_id and session_id
 - **Configuration security**: YAML files validated on startup and before each admin change
 - **Version tracking**: All admin configuration changes logged in database
 - **Password security**: bcrypt hashing for user passwords
-- **JWT security**: Configurable secret keys and token expiration
+- **Session security**: Configurable session tokens and expiration
 
 ---
 
@@ -282,17 +277,17 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 
 ### 9.2 Database Migration Strategy ✅ **DECIDED**
 
-**Decision**: **Asynchronous-first schema with version-based migrations** (implemented in Section 6.1)
+**Decision**: **Synchronous-first schema with async migration path** (implemented in Section 6.1)
 
 **Alternatives Considered**:
-1. **Synchronous-first with async migration**: Start simple, add async fields later
+1. **Synchronous-first with async migration**: Start simple, add async fields later (CHOSEN)
 2. **Dual-mode support**: Support both sync and async evaluation patterns
-3. **Asynchronous-first design**: Design async from inception (CHOSEN)
+3. **Asynchronous-first design**: Design async from inception
 
 **Rationale**: 
-- **Pros**: Consistent async patterns, modern web app design, no migration complexity, scalable from day 1
-- **Cons**: Slightly more complex initial implementation than basic CRUD
-- **Decision Basis**: Async-first design eliminates schema migration complexity while providing superior user experience and scalability
+- **Pros**: Simpler implementation, clear migration path, maintains user experience
+- **Cons**: Requires schema migration for async features
+- **Decision Basis**: Synchronous-first design aligns with simplicity while providing clear upgrade path to async processing for scalability
 
 ### 9.3 JSON Field Strategy for SQLite ✅ **DECIDED**
 
@@ -306,7 +301,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 **Rationale**: 
 - **Pros**: Universal SQLite compatibility, simpler deployment
 - **Cons**: No database-level JSON queries
-- **Decision Basis**: Prioritizes deployment simplicity over query capabilities, aligns with MVP simplicity requirements
+- **Decision Basis**: Prioritizes deployment simplicity over query capabilities, aligns with simplicity requirements
 
 ### 9.4 Data Retention and Cleanup ✅ **DECIDED**
 
@@ -336,7 +331,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 **Rationale**: 
 - **Pros**: Simple, stateless, persistent across browser sessions, secure server control
 - **Cons**: No cross-device continuity
-- **Decision Basis**: Provides seamless user experience in MVP mode while supporting transition to authenticated sessions in production
+- **Decision Basis**: Provides seamless user experience while supporting transition to authenticated sessions in production
 
 ### 9.6 Configuration Validation Strategy ✅ **DECIDED**
 
@@ -385,8 +380,8 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 ---
 
 **Document ID**: 03_Data_Model.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment
 
 

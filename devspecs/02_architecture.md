@@ -2,10 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment  
-**Status**: Approved
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment
 
 ---
 
@@ -63,7 +62,7 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
   - Provides the main user interface as tabbed navigation (Req 2.1).
   - Framework: Streamlit
   - Pages: Text Input, Overall Feedback, Detailed Feedback, Debug, Help, Admin.
-  - Supports fast load times (<1s main load, <15s submission response) and usability features (hover info bubbles, rubric/framework resources) (Req 3.1, 2.1).
+  - Supports fast load times (<1s main load, <15s text submission response) and usability features (hover info bubbles, rubric/framework resources) (Req 3.1, 2.1).
 
 - **Backend Services**
 
@@ -87,13 +86,77 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 ### Key Properties
 
 - Modular, API-driven architecture (Req 3.5).
-- Cloud-ready design that supports scaling from MVP single-user to 100+ users (Req 3.2).
+- Cloud-ready design that supports scaling from single-user to 100+ users (Req 3.2).
 - Emphasis on maintainability and error handling (Req 3.3, 3.5).
 
 ---
 
 ## 3.0 Architecture Diagram
-(To be defined. Ensure diagram components map to requirement IDs.)
+
+The Memo AI Coach system follows a three-layer architecture designed for clarity, maintainability, and scalability:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND LAYER                          │
+│                    (Streamlit - Req 2.1)                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Text Input  │ Overall Feedback │ Detailed Feedback │ Help     │
+│  (Req 2.1.1) │   (Req 2.2.3a)   │   (Req 2.2.3b)    │(Req 2.1.4)│
+│              │                  │                   │          │
+│  Debug       │ Admin            │ Session State     │          │
+│(Req 2.5.1-3) │(Req 2.4.1-3)     │ Management       │          │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼ HTTP/JSON
+┌─────────────────────────────────────────────────────────────────┐
+│                      BACKEND LAYER                             │
+│                    (FastAPI - Req 2.2)                         │
+├─────────────────────────────────────────────────────────────────┤
+│  EvaluationService  │  AdminService  │  AuthenticationService   │
+│   (Req 2.2.1-4)     │  (Req 2.4.1-3) │     (Req 3.4.1-5)        │
+│                     │                │                          │
+│  LLMConnector       │  DebugService  │  SessionService          │
+│   (Req 2.3.1-6)     │  (Req 2.5.1-3) │     (Req 3.4.2-3)        │
+│                     │                │                          │
+│  PromptBuilder      │  ConfigService │  AuthorizationMiddleware │
+│   (Req 2.3.1-2)     │  (Req 2.4.2-3) │     (Req 3.4.3-4)        │
+│                     │                │                          │
+│  ResponseParser     │  Rate Limiting │  Error Handling          │
+│   (Req 2.3.3-6)     │  (Req 3.4.3)   │     (Req 3.3.2)          │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼ SQL/File I/O
+┌─────────────────────────────────────────────────────────────────┐
+│                        DATA LAYER                              │
+│                    (SQLite + YAML)                             │
+├─────────────────────────────────────────────────────────────────┤
+│  Database Tables    │  Configuration Files │  Session Storage   │
+│  (Req 2.2.1-4)      │     (Req 2.4.1-3)    │   (Req 3.4.1-3)    │
+│                     │                      │                    │
+│  • submissions      │  • rubric.yaml       │  • Session tokens  │
+│  • evaluations      │  • prompt.yaml       │  • User sessions   │
+│  • users            │  • llm.yaml          │  • Admin sessions  │
+│  • sessions         │  • auth.yaml         │  • Rate limits     │
+│                     │                      │                    │
+│  WAL Mode           │  Direct File Access  │  Secure Storage    │
+│  (Req 3.2.2)        │  (Req 2.4.3)         │  (Req 3.4.1-5)     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Architecture Principles:**
+- **Modular Design**: Clear separation between frontend, backend, and data layers
+- **API-Driven**: RESTful API communication between frontend and backend
+- **Session-Based**: Secure session management for user isolation
+- **Synchronous Processing**: Immediate feedback for evaluation requests
+- **Scalable**: SQLite with WAL mode supports 100+ concurrent users
+- **Maintainable**: Simple, focused components with clear responsibilities
+
+**Component Mapping to Requirements:**
+- **Frontend Components**: Implement Req 2.1 (User Interface)
+- **Backend Services**: Implement Req 2.2-2.5 (Text Submission, Evaluation, Admin, Debug)
+- **Data Layer**: Implement Req 3.4 (Security) and support Req 3.2 (Scalability)
+- **Performance**: Optimized for Req 3.1 (Performance targets)
+- **Maintainability**: Designed for Req 3.5 (Maintainability requirements)
 
 ---
 
@@ -122,19 +185,19 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **API Style**: REST (simple, maintainable, industry-standard).
 - **Framework**: **FastAPI** (lightweight, automatic OpenAPI documentation).
 - **Endpoint Organization**: Grouped by functional domain to align with requirements:
-  - `/evaluations/submit` - Text submission for LLM evaluation [MVP]
-  - `/evaluations/{id}` - Retrieve evaluation results with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
-  - `/admin/config/*` - YAML configuration file management [MVP]
-  - `/debug` - Debug output, performance metrics, raw prompts/responses (admin-only, Req 2.4) [MVP]
+  - `/evaluations/submit` - Text submission for LLM evaluation
+  - `/evaluations/{id}` - Retrieve evaluation results with detailed feedback (Req 2.2.3a, 2.2.3b)
+  - `/admin/config/*` - YAML configuration file management
+  - `/debug` - Debug output, performance metrics, raw prompts/responses (admin-only, Req 2.4)
 
 **Suggested Components:**
-- `EvaluationService` (synchronous LLM evaluation processing) [MVP]
-- `AdminService` (simple configuration management) [MVP]
-- `AuthenticationService` (session-based authentication with admin support) [MVP]
-- `SessionService` (session lifecycle and validation) [MVP]
-- `AuthorizationMiddleware` (session-based authorization) [MVP]
-- `DebugService` [MVP]
-- `ConfigurationService` (direct filesystem configuration management) [MVP]
+- `EvaluationService` (synchronous LLM evaluation processing)
+- `AdminService` (simple configuration management)
+- `AuthenticationService` (session-based authentication with admin support)
+- `SessionService` (session lifecycle and validation)
+- `AuthorizationMiddleware` (session-based authorization)
+- `DebugService`
+- `ConfigurationService` (direct filesystem configuration management)
 
 ### 4.3 LLM Engine Integration
 
@@ -253,7 +316,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Authentication Flow (Req 3.4):**
 1. **Session-Based Authentication:**
-   - Frontend generates secure session_id on first visit
+   - Backend generates secure session_id on first request
    - All requests include session_id in headers/cookies
    - Backend validates session existence and expiration
    - Session data isolated by session_id
@@ -265,8 +328,9 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
    - Admin sessions tracked in `SessionRepository`
 
 3. **Future Enhancement:**
-   - Advanced authentication features can be added if complex user management is needed
-   - Current session-based approach provides sufficient isolation for MVP
+   - JWT authentication can be implemented for production deployment
+   - Current session-based approach provides sufficient isolation
+   - Enhanced user management features can be added as needed
 
 **5.4 Intermediate Results Storage and Retrieval**
 
@@ -284,9 +348,9 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Configuration Storage:**
 - YAML configurations stored in filesystem as source of truth
-- Version control maintained in `configuration_versions` table for admin changes
 - Configuration files read directly from filesystem each time
 - Startup validation ensures all YAML files are present and valid
+- Simple filesystem-based configuration management
 
 **Session Context Management:**
 - User sessions identified by `session_id` across all tables
@@ -339,6 +403,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Debug information available to administrators
 - Error recovery mechanisms for critical system failures
 - Monitoring and alerting for system health
+
+**Rate Limiting Implementation:**
+- In-memory rate limiting suitable for single-instance deployment
+- Per-session rate limiting for text submissions and admin operations
+- Rate limit data lost on server restart (acceptable for development)
+- Database-backed rate limiting recommended for production multi-instance deployment
 
 **5.7 Application Startup and Validation**
 
@@ -482,8 +552,8 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 | 2.5.2 | Raw prompts/responses shown | Backend Services (4.2) - DebugService | ✅ Implemented |
 | 2.5.3 | Debug mode admin-only | Backend Services (4.2) - AuthorizationMiddleware | ✅ Implemented |
 | 3.1.1 | Responsive system | Performance optimizations throughout | ✅ Implemented |
-| 3.1.2 | LLM response within seconds | LLM Engine Integration (4.3) - Optimized processing | ✅ Implemented |
-| 3.2.1 | MVP handles 10-20 users | Scalable architecture design | ✅ Implemented |
+| 3.1.2 | Text submission response: < 15 seconds (LLM processing) | LLM Engine Integration (4.3) - Optimized processing | ✅ Implemented |
+| 3.2.1 | System handles 10-20 users | Scalable architecture design | ✅ Implemented |
 | 3.2.2 | Scales to 100+ users | SQLite WAL mode and optimizations | ✅ Implemented |
 | 3.3.1 | High uptime | Error handling and logging | ✅ Implemented |
 | 3.3.2 | Robust error handling | Comprehensive error handling | ✅ Implemented |
@@ -500,7 +570,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 ---
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment
+**Document Version**: 1.1  
+**Last Updated**: Implementation Phase (Updated with consistency fixes)  
+**Next Review**: After initial deployment
 

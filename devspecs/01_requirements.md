@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 01_Requirements.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment  
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment  
 **Status**: Approved
 
 ---
@@ -90,10 +90,10 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 
 3.1 **Performance**
 - 3.1.1 General use should be very responsive.
-- 3.1.2 LLM submissions may take a few seconds.
+- 3.1.2 Text submission response: < 15 seconds (LLM processing).
 
 3.2 **Scalability**
-- 3.2.1 MVP supports 10-20 concurrent users.
+- 3.2.1 System supports 10-20 concurrent users.
 - 3.2.2 System scales to 100+ concurrent users using SQLite with WAL mode optimizations.
 
 3.3 **Reliability**
@@ -119,7 +119,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 
 4.1 **GUI**
 - Main page load < 1s.
-- Submission response < 15s.
+- Text submission response: < 15 seconds (LLM processing).
 - Tab switching preserves session data and is fast.
 - Info bubbles explain each section.
 - Help tab shows rubric/framework resources.
@@ -185,8 +185,8 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 | 2.5.3  | Debug mode admin-only         | 4.5                 | TC-021       |
 
 | 3.1.1  | Responsive system             | 4.6                 | TC-022       |
-| 3.1.2  | LLM response within seconds   | 4.6                 | TC-023       |
-| 3.2.1  | MVP handles 10-20 users       | 4.6                 | TC-024       |
+| 3.1.2  | Text submission response: < 15 seconds (LLM processing) | 4.6                 | TC-023       |
+| 3.2.1  | System handles 10-20 users       | 4.6                 | TC-024       |
 | 3.2.2  | Scales to 100+ users with SQLite | 4.6                 | TC-025       |
 | 3.3.1  | High uptime                   | 4.6                 | TC-026       |
 | 3.3.2  | Robust error handling         | 4.6                 | TC-027       |
@@ -203,7 +203,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 ---
 
 **Document ID**: 01_Requirements.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment
 

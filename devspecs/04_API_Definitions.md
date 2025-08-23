@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 04_API_Definitions.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment  
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment  
 **Status**: Approved
 
 ---
@@ -98,13 +98,14 @@ All API responses follow a consistent structure:
 - **Admin Access**: Admin authentication for system management functions
 - **Future Enhancement**: JWT authentication can be added if complex user management is needed
 - **Simple Design**: Focuses on security without unnecessary complexity
+- **Scope**: Session-only authentication system
 
 ### 3.2 Authentication Endpoints
 
-#### 3.2.1 Session Management (Anonymous Mode)
+#### 3.2.1 Session Management
 ```yaml
 GET /api/v1/sessions/create
-  description: Create anonymous session for MVP mode
+  description: Create new session for user
   authentication: None required
   response:
     data:
@@ -130,7 +131,7 @@ POST /api/v1/sessions/validate
     errors: []
 ```
 
-#### 3.2.2 User Authentication (Production Mode)
+#### 3.2.2 User Authentication
 ```yaml
 POST /api/v1/auth/login
   description: User login with credentials
@@ -147,7 +148,7 @@ POST /api/v1/auth/login
       request_id: uuid
     errors: []
   cookies:
-    jwt_token: httpOnly, secure
+    session_token: httpOnly, secure
     csrf_token: string
 
 POST /api/v1/auth/logout
@@ -162,7 +163,7 @@ POST /api/v1/auth/logout
     errors: []
 
 GET /api/v1/auth/verify
-  description: Verify JWT token and session
+  description: Verify session token and session
   authentication: Valid session required
   response:
     data:
@@ -174,8 +175,8 @@ GET /api/v1/auth/verify
     errors: []
 
 POST /api/v1/auth/refresh
-  description: Refresh JWT token
-  authentication: Valid JWT required
+  description: Refresh session token
+  authentication: Valid session required
   response:
     data:
     user: {id, username, is_admin}
@@ -235,7 +236,7 @@ PUT /api/v1/users/{user_id}
 
 ## 4.0 Core Application Endpoints
 
-### 4.1 Text Evaluation Endpoints [MVP]
+### 4.1 Text Evaluation Endpoints
 **Design Philosophy**: Simple synchronous evaluation system for reliable performance.
 
 #### 4.1.1 Submit Text for Evaluation
@@ -284,7 +285,7 @@ GET /api/v1/evaluations/{evaluation_id}
     404: Evaluation not found or not accessible
 ```
 
-### 4.2 Configuration Management Endpoints [MVP]
+### 4.2 Configuration Management Endpoints
 
 #### 4.2.1 Configuration Management
 ```yaml
@@ -319,7 +320,7 @@ POST /api/v1/admin/config/{config_type}
 
 
 
-### 4.3 Debug and System Management Endpoints [MVP]
+### 4.3 Debug and System Management Endpoints
 
 #### 4.3.1 Debug Information
 ```yaml
@@ -410,27 +411,116 @@ GET /api/v1/admin/auth/status
 }
 ```
 
+### 6.5 Error Codes and Messages
+
+#### 6.5.1 Validation Errors
+- **VALIDATION_ERROR**: Input validation failures
+  - `text_content`: Text content validation (empty, too long, invalid characters)
+  - `session_id`: Session ID format or expiration validation
+  - `config_content`: YAML configuration validation (syntax, schema, required fields)
+  - `username`: Username validation (length, characters, uniqueness)
+  - `password`: Password validation (length, complexity)
+
+#### 6.5.2 Authentication Errors
+- **UNAUTHORIZED**: Authentication required but not provided
+- **INVALID_SESSION**: Session token invalid or expired
+- **ADMIN_REQUIRED**: Admin privileges required for operation
+- **INVALID_CREDENTIALS**: Username/password combination invalid
+
+#### 6.5.3 Authorization Errors
+- **FORBIDDEN**: User lacks permission for requested operation
+- **SESSION_OWNERSHIP**: User attempting to access another session's data
+- **RATE_LIMITED**: User has exceeded rate limits
+
+#### 6.5.4 System Errors
+- **LLM_ERROR**: LLM provider communication failure
+- **CONFIGURATION_ERROR**: Configuration file access or validation failure
+- **DATABASE_ERROR**: Database operation failure
+- **INTERNAL_ERROR**: Unexpected system error
+
+#### 6.5.5 Resource Errors
+- **NOT_FOUND**: Requested resource not found
+- **EVALUATION_NOT_FOUND**: Evaluation ID not found or not accessible
+- **CONFIG_NOT_FOUND**: Configuration file not found
+- **USER_NOT_FOUND**: User account not found
+
+### 6.6 Error Response Examples
+
+#### 6.6.1 Text Submission Validation Error
+```json
+{
+  "data": null,
+  "meta": {
+    "timestamp": "2024-01-01T12:00:00Z",
+    "request_id": "req-12345"
+  },
+  "errors": [
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Text content validation failed",
+      "field": "text_content",
+      "details": "Text content exceeds maximum length of 10,000 characters"
+    }
+  ]
+}
+```
+
+#### 6.6.2 Authentication Error
+```json
+{
+  "data": null,
+  "meta": {
+    "timestamp": "2024-01-01T12:00:00Z",
+    "request_id": "req-12346"
+  },
+  "errors": [
+    {
+      "code": "INVALID_SESSION",
+      "message": "Session token is invalid or expired",
+      "field": "session_id",
+      "details": "Please create a new session"
+    }
+  ]
+}
+```
+
+#### 6.6.3 LLM Processing Error
+```json
+{
+  "data": null,
+  "meta": {
+    "timestamp": "2024-01-01T12:00:00Z",
+    "request_id": "req-12347"
+  },
+  "errors": [
+    {
+      "code": "LLM_ERROR",
+      "message": "LLM processing failed",
+      "field": null,
+      "details": "Unable to process evaluation request. Please try again."
+    }
+  ]
+}
+```
+
 ---
 
 ## 7.0 Performance and Rate Limiting
 
 ### 7.1 Response Time Targets
 - **Page Load**: < 1 second
-- **Text Submission**: < 60 seconds (LLM processing)
-- **Chat Messages**: < 5 seconds
+- **Text Submission**: < 15 seconds (LLM processing)
 - **Admin Operations**: < 3 seconds
-- **Progress Data**: < 2 seconds (cached)
 - **Configuration Operations**: < 3 seconds
 
 ### 7.2 Rate Limiting Policies (In-Memory Implementation)
 - **Text Submissions**: 20 per hour per session (in-memory tracking)
-- **Chat Messages**: 50 per hour per session (in-memory tracking)
 - **Admin Operations**: 100 per hour per admin user (in-memory tracking)
 - **Configuration Changes**: 20 per hour per admin user (in-memory tracking)
 - **Global API**: 1000 requests per hour per IP (in-memory tracking)
 - **Headers**: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
 - **Implementation**: Sliding window algorithm with in-memory storage
-- **Scope**: Per-instance rate limiting (suitable for single-instance MVP deployment)
+- **Scope**: Per-instance rate limiting (suitable for single-instance deployment)
 - **Future Enhancement**: Database-backed rate limiting for multi-instance deployments
 
 ### 7.3 Caching Strategies
@@ -446,9 +536,10 @@ GET /api/v1/admin/auth/status
 ### 8.1 Resolved Design Decisions
 
 #### 8.1.1 Authentication Strategy ✅ **RESOLVED**
-- **Decision**: Hybrid JWT + Session system with configuration toggle
-- **Rationale**: Supports MVP (session-only) and production (JWT + session) modes
-- **Implementation**: Seamless transition maintaining session_id compatibility
+- **Decision**: Session-based authentication with JWT enhancement path
+- **Rationale**: Supports simplicity while providing clear upgrade path to production features
+- **Implementation**: Session-only system with documented JWT migration path
+- **Future Enhancement**: JWT authentication can be added for production deployment with token-based authentication
 
 #### 8.1.2 Response Format ✅ **RESOLVED**
 - **Decision**: Standardized JSON response structure with data/meta/errors
@@ -456,9 +547,9 @@ GET /api/v1/admin/auth/status
 - **Implementation**: All endpoints follow same response pattern
 
 #### 8.1.3 Configuration Management ✅ **RESOLVED**
-- **Decision**: Comprehensive 13-file YAML configuration system
-- **Rationale**: Separation of concerns, version tracking, admin control
-- **Implementation**: Category-based organization with validation and versioning
+- **Decision**: 4 essential YAML configuration files for complete system management
+- **Rationale**: Separation of concerns, admin control, simple maintenance
+- **Implementation**: Essential files organization with validation and direct filesystem access
 
 ---
 
@@ -466,12 +557,13 @@ GET /api/v1/admin/auth/status
 
 - **File handling**: Direct file serving with temporary storage and automatic cleanup
 - **Configuration**: Hot-reload for business logic configs, restart for system configs
-- **Rate limiting**: In-memory implementation for MVP deployment
+- **Rate limiting**: In-memory implementation for development deployment
 - **Documentation**: Auto-generated OpenAPI/Swagger from FastAPI code
+- **Future Enhancements**: Chat functionality and advanced features can be added in future phases
 
 ## 10.0 Implementation Priority
 
-### 10.1 Phase 1: MVP Core
+### 10.1 Phase 1: Core Development
 1. Authentication endpoints (session management)
 2. Text evaluation endpoints (submit, status, results)
 3. Basic configuration management
@@ -479,11 +571,10 @@ GET /api/v1/admin/auth/status
 5. Error handling and validation
 
 ### 10.2 Phase 2: Enhanced Features
-1. Complete configuration management system
-2. User management endpoints
-3. Chat functionality endpoints
-4. Progress tracking endpoints
-5. PDF export endpoints
+1. User management endpoints
+2. Progress tracking endpoints
+3. PDF export endpoints
+4. Advanced configuration features
 
 ---
 
@@ -502,9 +593,9 @@ GET /api/v1/admin/auth/status
 | 2.3.4 | Detailed rubric grading | Response format in /api/v1/evaluations/{id} | ✅ Implemented |
 | 2.3.5 | Segment-level evaluation | Response format in /api/v1/evaluations/{id} | ✅ Implemented |
 | 2.3.6 | Immediate feedback processing | Real-time response in /api/v1/evaluations/submit | ✅ Implemented |
-| 2.4.1 | Admin edits YAML | PUT /api/v1/admin/config/{file} | ✅ Implemented |
-| 2.4.2 | Configuration changes validated | Validation in /api/v1/admin/config/{file} | ✅ Implemented |
-| 2.4.3 | Simple configuration management | GET/PUT /api/v1/admin/config/* | ✅ Implemented |
+| 2.4.1 | Admin edits YAML | POST /api/v1/admin/config/{config_type} | ✅ Implemented |
+| 2.4.2 | Configuration changes validated | Validation in /api/v1/admin/config/{config_type} | ✅ Implemented |
+| 2.4.3 | Simple configuration management | GET/POST /api/v1/admin/config/* | ✅ Implemented |
 | 2.5.1 | Debug output accessible | GET /api/v1/debug/info | ✅ Implemented |
 | 2.5.2 | Raw prompts/responses shown | GET /api/v1/debug/info | ✅ Implemented |
 | 2.5.3 | Debug mode admin-only | Authorization middleware on /api/v1/debug/* | ✅ Implemented |
@@ -517,6 +608,6 @@ GET /api/v1/admin/auth/status
 ---
 
 **Document ID**: 04_API_Definitions.md  
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After MVP deployment
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment
