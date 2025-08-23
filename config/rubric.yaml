@@ -1,0 +1,146 @@
+# Business Memo Evaluation Rubric for Healthcare Investment Projects
+# Memo AI Coach - Rubric Configuration
+
+rubric:
+  name: "Business Memo Evaluation Rubric for Healthcare Investment Projects"
+  description: "This rubric is designed to evaluate business memos explaining internal investment projects in a healthcare company to senior leaders. It focuses on logical structure, evidence-based arguments, clarity with financial emphasis, strategic fit, actionable opportunities, risk handling, and practical feasibility."
+  total_weight: 100
+  scoring_scale: "1-5"  # 1: Poor, 2: Fair, 3: Good, 4: Very Good, 5: Excellent
+
+  criteria:
+    - name: "Structure and Logic"
+      description: "Assesses the memo's organization, including a clear executive summary, logical flow (e.g., problem → analysis → recommendation), and coherent progression of ideas without gaps or redundancy."
+      scoring_guidance:
+        1: "Severely disorganized, lacking any clear structure or executive summary; ideas jump erratically, making it nearly impossible to follow the logic."
+        2: "Basic structure present but flawed, with some gaps, redundancies, or unclear transitions; requires significant effort to understand the flow."
+        3: "Adequate organization with a logical flow and summary, but minor issues like occasional redundancies or weak transitions persist."
+        4: "Strong structure with smooth, coherent progression; executive summary is clear, and ideas build logically with minimal flaws."
+        5: "Exemplary structure; seamless logic that effortlessly guides the reader, with a concise executive summary and flawless progression."
+      weight: 15
+
+    - name: "Arguments and Evidence"
+      description: "Evaluates the strength of claims, supported by credible data sources (e.g., market research, internal benchmarks, or clinical studies). Avoids unsubstantiated opinions."
+      scoring_guidance:
+        1: "Arguments are weak, anecdotal, or entirely unsubstantiated; little to no evidence provided, leading to low credibility."
+        2: "Some arguments supported by basic evidence, but many claims remain vague or rely on weak sources; inconsistencies undermine strength."
+        3: "Arguments are generally solid with moderate evidence from credible sources; some claims could be better supported, but overall persuasive."
+        4: "Strong, well-supported arguments with diverse, high-quality evidence tailored to healthcare; few unsubstantiated points."
+        5: "Outstanding arguments backed by robust, comprehensive evidence from multiple credible sources; perfectly tailored and irrefutable in context."
+      weight: 20
+
+    - name: "Clarity, Style, and Use of Financial Metrics"
+      description: "Reviews writing quality for conciseness, professionalism, and accessibility (no jargon overload). Specifically, examines effective integration of key financial metrics (e.g., ROI, NPV, payback period, cost-benefit analysis) to quantify the investment's value."
+      scoring_guidance:
+        1: "Writing is unclear, wordy, unprofessional, with excessive jargon or errors; financial metrics are absent or grossly misused."
+        2: "Somewhat clear but often verbose or awkward; limited use of financial metrics, with some inaccuracies or irrelevance."
+        3: "Generally clear and professional style; financial metrics are included and mostly accurate, though integration could be smoother."
+        4: "Very clear, concise, and engaging writing; effective use of relevant financial metrics that enhance understanding and persuasion."
+        5: "Exceptionally crisp, professional, and accessible style; masterful integration of accurate, insightful financial metrics that strongly support the case."
+      weight: 15
+
+    - name: "Relevance and Strategic Alignment"
+      description: "Measures how well the project ties to the company's overall goals, such as improving patient outcomes, operational efficiency, or competitive positioning in healthcare, without extraneous details."
+      scoring_guidance:
+        1: "Project is largely irrelevant or misaligned with company goals; includes many extraneous details that distract from the core message."
+        2: "Some relevance but weak alignment; connections to strategic goals are vague, with noticeable irrelevant content."
+        3: "Adequately relevant with clear ties to goals; minimal extraneous details, though linkages could be more explicit."
+        4: "Highly relevant and well-aligned; strong, direct connections to strategic priorities without unnecessary information."
+        5: "Perfectly aligned with compelling relevance; seamless integration with company goals, focused entirely on essential elements."
+      weight: 15
+
+    - name: "Clear Opportunity and Ask"
+      description: "Examines the articulation of the investment opportunity (e.g., problem solved, benefits in healthcare delivery) and the specific request (e.g., funding amount, timeline, resources needed)."
+      scoring_guidance:
+        1: "Opportunity and ask are vague, incomplete, or poorly articulated; fails to convey benefits or specifics, leaving the reader confused."
+        2: "Basic outline of opportunity and ask, but lacks detail or justification; benefits are mentioned but not compelling."
+        3: "Clear opportunity with a specific ask; benefits and requests are adequately described, though could be more persuasive."
+        4: "Well-articulated opportunity with a precise, justified ask; compelling benefits that encourage action."
+        5: "Exceptionally clear and motivating opportunity; precise, fully justified ask that directly invites informed decision-making."
+      weight: 15
+
+    - name: "Risk Mitigation"
+      description: "Assesses identification of potential risks (e.g., regulatory hurdles, operational challenges, financial uncertainties in healthcare) and proposed mitigation strategies, showing foresight."
+      scoring_guidance:
+        1: "Risks are ignored, downplayed, or not identified; no mitigation strategies, showing a lack of foresight."
+        2: "Few risks mentioned with superficial mitigations; analysis is incomplete and unrealistic."
+        3: "Key risks identified with basic mitigation strategies; demonstrates some foresight but lacks depth."
+        4: "Comprehensive risk identification with practical, proactive mitigations; strong foresight in healthcare context."
+        5: "Thorough, insightful risk analysis with innovative, realistic mitigations; exemplifies exceptional prudence and planning."
+      weight: 15
+
+    - name: "Feasibility and Implementation"
+      description: "Evaluates the practicality of the project, including a high-level plan for execution, timelines, resource allocation, and any healthcare-specific considerations like compliance or integration with existing systems."
+      scoring_guidance:
+        1: "Highly unrealistic with no plan or details; ignores practicalities like timelines, resources, or compliance."
+        2: "Basic plan but lacks detail; feasibility is questionable, with overlooked healthcare considerations."
+        3: "Adequate plan with reasonable timelines and resources; addresses key feasibilities but could be more detailed."
+        4: "Strong, practical plan with clear steps, timelines, and allocations; effectively handles healthcare specifics."
+        5: "Highly feasible with a detailed, viable implementation plan; demonstrates complete readiness for internal execution."
+      weight: 5
+
+scoring_categories:
+  - name: "structure_and_logic"
+    max_score: 5
+    weight: 15
+  - name: "arguments_and_evidence"
+    max_score: 5
+    weight: 20
+  - name: "clarity_style_financial_metrics"
+    max_score: 5
+    weight: 15
+  - name: "relevance_strategic_alignment"
+    max_score: 5
+    weight: 15
+  - name: "clear_opportunity_ask"
+    max_score: 5
+    weight: 15
+  - name: "risk_mitigation"
+    max_score: 5
+    weight: 15
+  - name: "feasibility_implementation"
+    max_score: 5
+    weight: 5
+
+evaluation_framework:
+  strengths_identification:
+    - "Clear executive summary and logical structure"
+    - "Strong evidence-based arguments with credible sources"
+    - "Effective use of financial metrics and analysis"
+    - "Strategic alignment with healthcare company goals"
+    - "Compelling investment opportunity presentation"
+    - "Comprehensive risk identification and mitigation"
+    - "Practical and feasible implementation plan"
+    - "Professional healthcare industry communication"
+
+  improvement_opportunities:
+    - "Strengthen executive summary and logical flow"
+    - "Add more credible evidence and data sources"
+    - "Improve financial metrics integration and accuracy"
+    - "Enhance strategic alignment with company objectives"
+    - "Clarify investment opportunity and specific ask"
+    - "Expand risk analysis and mitigation strategies"
+    - "Develop more detailed implementation timeline"
+    - "Refine healthcare-specific terminology and context"
+
+segment_evaluation:
+  comment_categories:
+    - "Structure and Logic"
+    - "Arguments and Evidence"
+    - "Financial Metrics and Clarity"
+    - "Strategic Alignment"
+    - "Opportunity and Ask"
+    - "Risk Mitigation"
+    - "Implementation Feasibility"
+
+  question_types:
+    - "Clarification Questions"
+    - "Evidence and Data Questions"
+    - "Financial Analysis Questions"
+    - "Strategic Alignment Questions"
+    - "Risk Assessment Questions"
+    - "Implementation Planning Questions"
+
+frameworks:
+  pyramid_principle: "Barbara Minto's method for logical communication: Start with answer, group ideas MECE"
+  scqa: "Situation-Complication-Question-Answer framework for clear narratives"
+  healthcare_investment: "Healthcare-specific investment evaluation framework focusing on patient outcomes, compliance, and operational efficiency"

@@ -1,0 +1,178 @@
+# Authentication Settings and Session Management
+# Memo AI Coach - Authentication Configuration
+
+session_management:
+  session_timeout: 3600
+  session_cleanup_interval: 300
+  max_sessions_per_user: 5
+  session_token_length: 32
+  session_token_alphabet: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  secure_cookies: true
+  http_only_cookies: true
+  same_site_policy: "lax"
+
+authentication_methods:
+  session_based:
+    enabled: true
+    primary_method: true
+    anonymous_sessions: true
+    session_validation: true
+    
+  admin_authentication:
+    enabled: true
+    username_field: "username"
+    password_field: "password"
+    bcrypt_rounds: 12
+    max_login_attempts: 5
+    lockout_duration: 900
+    password_min_length: 8
+    password_complexity: true
+
+security_settings:
+  csrf_protection:
+    enabled: true
+    token_length: 32
+    token_expiry: 3600
+    header_name: "X-CSRF-Token"
+    
+  rate_limiting:
+    enabled: true
+    requests_per_session_per_hour: 20
+    requests_per_admin_per_hour: 100
+    global_requests_per_hour: 1000
+    rate_limit_window: 3600
+    
+  input_validation:
+    max_username_length: 50
+    min_username_length: 3
+    username_allowed_chars: "a-zA-Z0-9_-"
+    max_password_length: 128
+    min_password_length: 8
+    password_requirements:
+      - "At least one uppercase letter"
+      - "At least one lowercase letter"
+      - "At least one digit"
+      - "At least one special character"
+      
+  data_protection:
+    encrypt_sensitive_data: true
+    hash_passwords: true
+    salt_rounds: 12
+    session_data_encryption: true
+    audit_logging: true
+
+admin_credentials:
+  default_admin:
+    username: "admin"
+    password_hash: "${ADMIN_PASSWORD_HASH}"
+    is_admin: true
+    is_active: true
+    created_at: "2024-01-01T00:00:00Z"
+    
+  admin_roles:
+    super_admin:
+      permissions:
+        - "system_configuration"
+        - "user_management"
+        - "debug_access"
+        - "backup_management"
+        - "log_access"
+        
+    admin:
+      permissions:
+        - "configuration_management"
+        - "debug_access"
+        - "log_access"
+
+session_storage:
+  database_storage:
+    enabled: true
+    table_name: "sessions"
+    cleanup_enabled: true
+    cleanup_interval: 300
+    
+  memory_storage:
+    enabled: false
+    max_sessions: 1000
+    cleanup_enabled: true
+    
+  redis_storage:
+    enabled: false
+    redis_url: "redis://localhost:6379"
+    key_prefix: "memoai:session:"
+    expiry_handling: "redis"
+
+user_management:
+  user_registration:
+    enabled: false
+    require_email_verification: false
+    require_admin_approval: false
+    
+  user_profiles:
+    enabled: false
+    profile_fields:
+      - "username"
+      - "email"
+      - "created_at"
+      - "last_login"
+      
+  password_policy:
+    min_length: 8
+    max_length: 128
+    require_uppercase: true
+    require_lowercase: true
+    require_digits: true
+    require_special_chars: true
+    prevent_common_passwords: true
+    password_history: 5
+
+audit_logging:
+  enabled: true
+  log_events:
+    - "login_success"
+    - "login_failure"
+    - "logout"
+    - "session_creation"
+    - "session_expiry"
+    - "admin_action"
+    - "configuration_change"
+    - "security_event"
+    
+  log_retention:
+    retention_days: 90
+    archive_enabled: true
+    archive_compression: true
+
+error_handling:
+  authentication_errors:
+    invalid_credentials: "Invalid username or password"
+    account_locked: "Account temporarily locked due to multiple failed attempts"
+    session_expired: "Session has expired. Please log in again"
+    insufficient_permissions: "Insufficient permissions for this action"
+    
+  validation_errors:
+    username_invalid: "Username must be 3-50 characters and contain only letters, numbers, underscores, and hyphens"
+    password_weak: "Password does not meet security requirements"
+    session_invalid: "Invalid session token"
+    
+  rate_limit_errors:
+    session_rate_limited: "Too many requests from this session. Please try again later"
+    admin_rate_limited: "Too many admin operations. Please try again later"
+    global_rate_limited: "Service temporarily unavailable due to high traffic"
+
+environment_specific:
+  development:
+    debug_mode: true
+    session_timeout: 7200
+    rate_limiting: false
+    secure_cookies: false
+    audit_logging: true
+    
+  production:
+    debug_mode: false
+    session_timeout: 3600
+    rate_limiting: true
+    secure_cookies: true
+    audit_logging: true
+    csrf_protection: true
+    input_validation: true
