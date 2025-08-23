@@ -96,9 +96,16 @@ MVPPhase:
   core_features:
     - Text submission and evaluation (Req 2.2)
     - Basic overall feedback display (Req 2.2.3a)
+    - Detailed feedback with segment-level evaluation (Req 2.2.3b)
     - Simple tab navigation (Req 2.1.2)
     - Session-based user identification (Req 3.4)
     - Basic admin interface for YAML editing (Req 2.4.1)
+    - Debug mode implementation (Req 2.5)
+  
+  explicitly_excluded_from_mvp:
+    - Chat functionality (Req 2.3) - Deferred to Phase 2
+    - PDF export functionality (Req 2.7) - Deferred to Phase 2
+    - Progress tracking with charts (Req 2.6) - Deferred to Phase 2
   
   technical_implementation:
     - Backend API with FastAPI
@@ -117,28 +124,29 @@ MVPPhase:
     - Users can submit text and receive evaluation
     - System handles basic error scenarios
     - Admin can edit YAML configurations
+    - Debug mode accessible and functional
     - System is deployable and runnable
 ```
 
 ### 4.2 Phase 2: Feature Enhancement (Weeks 7-12)
 ```yaml
 EnhancementPhase:
-  objective: "Add advanced features and improve user experience"
+  objective: "Add advanced features and improve user experience (Post-MVP Features)"
   
   new_features:
-    - Detailed feedback with segment-level evaluation (Req 2.2.3b)
-    - Chat functionality after evaluation (Req 2.3)
     - Progress tracking with charts (Req 2.6)
-    - PDF export functionality (Req 2.7)
     - Enhanced admin functions (Req 2.4.2, 2.4.3)
-    - Debug mode implementation (Req 2.5)
+    - Chat functionality after evaluation (Req 2.3) [Post-MVP]
+    - PDF export functionality (Req 2.7) [Post-MVP]
   
   technical_improvements:
-    - Enhanced database schema
+    - Enhanced database schema for progress tracking and debug
     - Improved state management
     - Better error handling and validation
     - Performance optimizations
     - Enhanced security features
+    - Chat system implementation
+    - PDF generation system
   
   quality_gates:
     - All functional requirements implemented
@@ -150,8 +158,8 @@ EnhancementPhase:
     - Complete user workflow functional
     - Admin functions fully operational
     - Progress tracking working
+    - Chat functionality operational
     - PDF export functional
-    - Debug mode accessible
 ```
 
 ### 4.3 Phase 3: Scaling and Optimization (Weeks 13-18)
@@ -329,11 +337,13 @@ CoreFeatures:
   week_3_4:
     - Text submission and evaluation
     - Basic feedback display
+    - Detailed feedback with segments
     - Simple frontend UI
   
   week_5_6:
     - Tab navigation
     - Admin YAML editing
+    - Debug mode implementation
     - Basic error handling
     - MVP deployment
 ```
@@ -342,19 +352,18 @@ CoreFeatures:
 ```yaml
 EnhancedFeatures:
   week_7_8:
-    - Detailed feedback implementation
-    - Segment-level evaluation
-    - Enhanced database schema
+    - Progress tracking foundation
+    - Enhanced database schema for progress
+    - Enhanced admin functions
   
   week_9_10:
-    - Chat functionality
-    - Progress tracking
-    - Chart visualization
+    - Progress tracking with charts
+    - Enhanced admin functions
   
   week_11_12:
-    - PDF export
-    - Debug mode
-    - Enhanced admin functions
+    - Chat functionality [Post-MVP]
+    - PDF export [Post-MVP]
+    - Advanced feature integration
 ```
 
 ### 6.3 Advanced Features Delivery Order

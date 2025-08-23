@@ -35,7 +35,8 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 - **Data Layer**
 
-  - Stores user submissions, evaluation history, YAML configuration files, and logs (Req 2.6, 2.4, 3.5).
+  - Stores user submissions, evaluation history, configuration version tracking, and logs (Req 2.6, 2.4, 3.5).
+  - YAML configuration files stored in filesystem, read directly each time
   - Enables charting for progress tracking integrated with evaluations (Req 2.6).
 
 ### Key Properties
@@ -77,35 +78,36 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **API Style**: REST (simple, maintainable, industry-standard).
 - **Framework**: **FastAPI** (lightweight, async-friendly, automatic OpenAPI documentation).
 - **Endpoint Organization**: Grouped by functional domain to align with requirements:
-  - `/evaluation` - Text submission and LLM evaluation processing (Req 2.2)
-  - `/chat` - LLM chat interactions with context (Req 2.3)
-  - `/progress` - User submission history and progress tracking (Req 2.6)
-  - `/admin` - YAML configuration file management (Req 2.4)
-  - `/export` - PDF generation and download (Req 2.7)
-  - `/debug` - Debug output, performance metrics, raw prompts/responses (Req 2.5)
+  - `/evaluation` - Text submission and LLM evaluation processing with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
+  - `/admin` - YAML configuration file management (Req 2.4) [MVP]
+  - `/debug` - Debug output, performance metrics, raw prompts/responses (Req 2.5) [MVP]
+  - `/chat` - LLM chat interactions with context (Req 2.3) [Post-MVP]
+  - `/progress` - User submission history and progress tracking (Req 2.6) [Post-MVP]
+  - `/export` - PDF generation and download (Req 2.7) [Post-MVP]
 
 **Suggested Components:**
-- `EvaluationService` (includes progress calculation)
-- `ChatService`
-- `AdminService`
-- `ExportService`
-- `DebugService`
-- `AuthenticationService` (JWT + Session hybrid management)
-- `SessionService` (session lifecycle and validation)
-- `AuthorizationMiddleware` (configurable authentication toggle)
+- `EvaluationService` (includes progress calculation) [MVP]
+- `AdminService` [MVP]
+- `AuthenticationService` (JWT + Session hybrid management) [MVP]
+- `SessionService` (session lifecycle and validation) [MVP]
+- `AuthorizationMiddleware` (configurable authentication toggle) [MVP]
+- `DebugService` [MVP]
+- `ChatService` [Post-MVP]
+- `ExportService` [Post-MVP]
 
 ### 4.3 LLM Engine Integration
 
-- Provider: **Claude** (default), configurable for future alternatives.
-- Prompt engineering: combine context template, rubric, frameworks, and user text.
-- Future enhancement: Use RAG
-- Expose debug data without leaking sensitive info.
+- **Provider:** The system uses **Claude** as the default LLM provider, but the architecture allows for easy configuration to support alternative LLMs in the future.
+- **Prompt Engineering:** Prompts are constructed by combining the context template, grading rubric, communication frameworks, and the user's submitted text to ensure high-quality, context-aware LLM responses.
+- **Future Enhancement:** Retrieval-Augmented Generation (RAG) is planned for future versions to further improve response relevance and accuracy.
+- **Debugging:** The integration exposes debug data for troubleshooting and transparency, while ensuring that no sensitive information is leaked.
 
-**Suggested Components:**
-- `LLMConnector`
-- `PromptBuilder`
-- `ResponseParser`
-- `DebugAdapter`
+**Component Explanations:**
+
+- `LLMConnector`: Handles all communication with the LLM provider (e.g., sending prompts to Claude and receiving responses). It abstracts the details of the LLM API, making it easy to swap providers if needed.
+- `PromptBuilder`: Responsible for assembling the final prompt sent to the LLM. It merges the context template, rubric, frameworks, and user input into a structured prompt that guides the LLM to produce the desired output.
+- `ResponseParser`: Processes and interprets the raw output from the LLM, extracting structured data such as overall feedback, segment-level evaluations, and chat responses for use by other backend services.
+- `DebugAdapter`: Collects and formats debug information related to LLM interactions (such as prompt/response pairs and timing data), ensuring that this information is available for diagnostics without exposing sensitive user or system data.
 
 ### 4.4 Data Layer
 
@@ -117,12 +119,12 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 **Suggested Components:**
 - `SubmissionRepository`
 - `EvaluationRepository`
-- `ConfigRepository`
+- `ConfigFileService` (direct filesystem YAML operations)
+- `ConfigVersionRepository` (track admin changes)
 - `LogRepository`
 - `ProgressDataAdapter` (integrated with evaluation processing)
 - `UserRepository` (authentication credentials and profiles)
 - `SessionRepository` (session management and validation)
-- `AuthConfigRepository` (authentication configuration management)
 
 ---
 
@@ -137,7 +139,7 @@ B. The primary outputs are:
 
 C. Additional data flows include:
    - User-initiated chat interactions with the LLM, generating further input and output.
-   - Admin submissions of YAML template files, which must be validated for correct format before being applied.
+   - Admin submissions of YAML template files, validated and written to filesystem with version tracking.
 
 **5.2 Data Movement Between Front-End, Back-End API, LLM Engine, and Database**
 
@@ -157,10 +159,10 @@ C. **LLM Engine Interaction:**
    - The LLM engine (e.g., Claude) processes the prompt and returns a response.
    - The back-end parses the LLM response (`ResponseParser`), extracting overall and segment-level evaluations, chat replies, or debug data.
 
-D. **Database Operations:**
+D. **Database and Filesystem Operations:**
    - The back-end saves LLM results, evaluations, and any relevant metadata to the database (`EvaluationRepository`, `LogRepository`).
    - Progress data is automatically calculated during evaluation processing using historical submissions and evaluations (`ProgressDataAdapter`).
-   - Admin updates to YAML files are validated and stored (source files in filesystem, database copies for version tracking).
+   - Admin updates to YAML files are validated, written to filesystem, and version changes logged to database (`ConfigVersionRepository`).
 
 5. **Response to Front-End:**
    - The back-end assembles the final response (evaluation results with integrated progress data, chat reply, PDF link with progress information, debug info, etc.).
@@ -218,11 +220,11 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Admin Functions Flow (Req 2.4):**
 1. Admin accesses `AdminPage` → `/api/admin/configurations/{config_type}`
-2. Frontend displays current YAML configuration
+2. Frontend reads and displays current YAML configuration from filesystem
 3. Admin edits configuration and submits → `/api/admin/configurations/{config_type}`
 4. Backend validates YAML syntax and structure
-5. Backend stores validated configuration (`ConfigRepository`)
-6. Configuration immediately available for new evaluations
+5. Backend writes validated configuration to filesystem and logs version change to database
+6. Configuration immediately available for new evaluations (read from filesystem)
 
 **Debug Mode Flow (Req 2.5):**
 1. Debug mode enabled via admin interface
@@ -274,10 +276,10 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Progress metrics calculated and stored in `progress_metrics` table
 
 **Configuration Storage:**
-- YAML configurations stored as text in `configurations` table
-- Version control maintained for configuration rollback
-- Active configuration marked with `is_active` flag
-- Configuration validation results stored for audit trail
+- YAML configurations stored in filesystem as source of truth
+- Version control maintained in `configuration_versions` table for admin changes
+- Configuration files read directly from filesystem each time
+- Startup validation ensures all YAML files are present and valid
 
 **Session Context Management:**
 - User sessions identified by `session_id` across all tables
@@ -332,7 +334,24 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Error recovery mechanisms for critical system failures
 - Monitoring and alerting for system health
 
-**5.7 Extensibility and Future Enhancements**
+**5.7 Application Startup and Validation**
+
+**Startup Validation Process:**
+- All YAML configuration files validated for syntax and structure on application startup
+- Required configuration files: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`, `auth.yaml`
+- Validation includes schema checking, required fields verification, and format consistency
+- Application fails to start if any configuration file is missing or invalid
+- Clear error messages provided for configuration issues
+- Startup validation logs recorded for debugging
+
+**Configuration File Requirements:**
+- Files must be present in designated config directory
+- Valid YAML syntax and structure
+- Required fields present for each configuration type
+- Schema validation against predefined rules
+- UTF-8 encoding for all files
+
+**5.8 Extensibility and Future Enhancements**
 
 **Modular Architecture Support:**
 - Pluggable LLM providers via `LLMConnector` interface

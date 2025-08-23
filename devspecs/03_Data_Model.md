@@ -91,8 +91,8 @@ submissions (
 );
 ```
 
-### 3.3 Evaluations
-**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3). Support debug mode with raw prompts/responses (Req 2.5). Progress data integrated with evaluations (Req 2.6).
+### 3.3 Evaluations [MVP]
+**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b) [MVP]. Support debug mode with raw prompts/responses (Req 2.5) [MVP]. Progress data integrated with evaluations (Req 2.6).
 
 **Schema**:
 ```sql
@@ -114,29 +114,27 @@ evaluations (
 );
 ```
 
-### 3.4 Configuration Files
-**Based on Architecture**: Source YAML files stored in filesystem as source of truth, database cache for performance optimization. FileSystemWatcher monitors changes and synchronizes cache. Support admin YAML editing (Req 2.4.1).
+### 3.4 Configuration Files [MVP]
+**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. Database only tracks version history when admin makes changes through UI (Req 2.4.1).
 
 **Schema**:
 ```sql
-configurations (
+-- Track version history of YAML file changes made through admin UI
+configuration_versions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     config_type TEXT NOT NULL CHECK (config_type IN ('rubric', 'frameworks', 'context', 'prompt', 'auth')),
-    config_content TEXT NOT NULL,  -- Cached content from filesystem
-    file_path TEXT NOT NULL,  -- Path to source YAML file
-    file_hash TEXT NOT NULL,  -- Hash of filesystem file for change detection
-    version INTEGER DEFAULT 1,
-    is_active BOOLEAN DEFAULT TRUE,
-    is_valid BOOLEAN DEFAULT TRUE,  -- Validation status
-    validation_errors TEXT,  -- JSON array of validation errors
-    last_sync DATETIME DEFAULT CURRENT_TIMESTAMP,  -- When cache was last synchronized
-    created_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT DEFAULT 'system'  -- Track who made changes
+    file_path TEXT NOT NULL,  -- Path to YAML file
+    old_content TEXT,  -- Previous file content (NULL for first version)
+    new_content TEXT NOT NULL,  -- New file content after change
+    change_reason TEXT,  -- Optional reason for change
+    changed_by TEXT NOT NULL,  -- Admin user who made the change
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    validation_status TEXT NOT NULL CHECK (validation_status IN ('valid', 'invalid')),
+    validation_errors TEXT  -- JSON array of validation errors if invalid
 );
 ```
 
-### 3.5 Chat History
+### 3.5 Chat History [Post-MVP]
 **Based on Requirements**: Chat available after feedback using submission context (Req 2.3). LLM uses submitted text, rubric, frameworks, and context template (Req 2.3.2).
 
 **Schema**:
@@ -162,7 +160,7 @@ chat_messages (
 );
 ```
 
-### 3.6 Progress Tracking (Integrated with Evaluations)
+### 3.6 Progress Tracking (Integrated with Evaluations) [Post-MVP]
 **Based on Architecture**: Progress data automatically calculated during evaluation processing and displayed in separate tab (Arch 5.1.B). Progress tracking populated by evaluation data output (Arch 4.1).
 
 **Strategy**: Progress metrics are computed from historical evaluations and rubric scores. Caching table used for performance optimization with automatic invalidation.
@@ -201,7 +199,7 @@ progress_cache (
 submissions (1) ← (N) evaluations
 evaluations (1) ← (N) chat_sessions  
 chat_sessions (1) ← (N) chat_messages
-configurations (independent - referenced by application logic)
+configuration_versions (independent - tracks YAML file change history)
 progress_cache (computed from evaluations by user_session_id)
 ```
 
@@ -217,10 +215,11 @@ progress_cache (computed from evaluations by user_session_id)
 - User sessions identified by `session_id` across all tables
 - Configuration types restricted to: 'rubric', 'frameworks', 'context', 'prompt', 'auth'
 - Chat message types restricted to: 'user', 'assistant'
-- Only one active configuration per config_type at a time
+- YAML files are always read from filesystem (source of truth)
+- Configuration changes through admin UI are logged in configuration_versions table
 - Progress cache expires after 1 hour to ensure fresh data
-- FileSystemWatcher ensures database cache synchronization with filesystem
 - Global debug mode affects all new evaluations when enabled
+- Startup validation ensures all YAML files are present and valid
 
 ---
 
@@ -229,7 +228,8 @@ progress_cache (computed from evaluations by user_session_id)
 5.1 **Read Patterns**
 - **Evaluation History**: `SELECT * FROM evaluations WHERE submission_id IN (SELECT id FROM submissions WHERE session_id = ?) ORDER BY evaluation_timestamp DESC`
 - **Progress Data**: Check cache first, calculate from evaluations if cache expired
-- **Active Configurations**: `SELECT * FROM configurations WHERE is_active = TRUE AND is_valid = TRUE`
+- **YAML Configuration Files**: Read directly from filesystem each time (no database cache)
+- **Configuration Version History**: `SELECT * FROM configuration_versions WHERE config_type = ? ORDER BY changed_at DESC`
 - **Chat History**: `SELECT * FROM chat_messages WHERE chat_session_id = ? ORDER BY timestamp`
 - **Latest Evaluation**: `SELECT * FROM evaluations WHERE submission_id = ? ORDER BY evaluation_timestamp DESC LIMIT 1`
 - **Cached Progress**: `SELECT * FROM progress_cache WHERE session_id = ? AND expires_at > CURRENT_TIMESTAMP`
@@ -237,15 +237,15 @@ progress_cache (computed from evaluations by user_session_id)
 5.2 **Write Patterns**
 - **Text Submission**: Single transaction (submissions → evaluations → progress_cache invalidation)
 - **Chat Messages**: Single insert with session validation
-- **Configuration Updates**: Transaction (validate → update is_active → insert new version)
+- **Configuration Updates**: Transaction (validate YAML → write to filesystem → log version change to database)
 - **Debug Data**: Conditional writes based on debug_enabled flag
 
 5.3 **Performance Optimizations**
 - Index on `(session_id, created_at)` for session-based queries
 - Index on `(submission_id, evaluation_timestamp)` for evaluation history
+- Index on `(config_type, changed_at)` for configuration version history queries
 - Progress cache to avoid recalculating metrics on every request
-- Configuration cache to avoid filesystem reads on every request
-- FileSystemWatcher for efficient configuration synchronization
+- YAML files read directly from filesystem (simple and reliable)
 
 ---
 
@@ -276,7 +276,7 @@ CREATE INDEX idx_submissions_user_session ON submissions(user_id, session_id, cr
 CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, evaluation_timestamp);
 CREATE INDEX idx_chat_sessions_evaluation ON chat_sessions(evaluation_id);
 CREATE INDEX idx_chat_messages_session ON chat_messages(chat_session_id, timestamp);
-CREATE INDEX idx_configurations_active ON configurations(config_type, is_active, is_valid);
+CREATE INDEX idx_config_versions_type_date ON configuration_versions(config_type, changed_at);
 CREATE INDEX idx_sessions_active ON sessions(session_id, is_active, expires_at);
 CREATE INDEX idx_sessions_user_activity ON sessions(user_id, last_activity);
 CREATE INDEX idx_users_login ON users(username, is_active);
@@ -313,7 +313,8 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 - **Session validation**: Verify session ownership before data access
 - **Authentication system**: JWT + Session hybrid infrastructure implemented from project start
 - **User isolation**: Data access controlled by user_id and session_id
-- **Configuration security**: FileSystemWatcher validates YAML files before cache update
+- **Configuration security**: YAML files validated on startup and before each admin change
+- **Version tracking**: All admin configuration changes logged in database
 - **Password security**: bcrypt hashing for user passwords
 - **JWT security**: Configurable secret keys and token expiration
 

@@ -166,65 +166,76 @@ PUT /api/v1/users/{user_id}
 ```
 
 ### 3.2 Core Application Endpoints
+
+#### 3.2.1 MVP Endpoints
 ```yaml
 POST /api/v1/evaluations/submit
-  description: Submit text for evaluation
+  description: Submit text for evaluation [MVP]
   authentication: Session required (any mode)
   request:
     text_content: string
     session_id: string (Anonymous) | derived from JWT (Authenticated)
   response:
     data:
-      evaluation: {overall_score, strengths, opportunities, rubric_scores}
-      progress_data: {trends, metrics, charts}
+      evaluation: {overall_score, strengths, opportunities, rubric_scores, segment_feedback}
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 
 GET /api/v1/evaluations/{evaluation_id}
-  description: Retrieve evaluation details
+  description: Retrieve evaluation details [MVP]
   authentication: Session owner or admin
   response:
     data:
-      evaluation: full evaluation object
-      progress_data: integrated progress information
+      evaluation: {overall_score, strengths, opportunities, rubric_scores, segment_feedback}
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 
-POST /api/v1/chat/sessions
-  description: Start chat session after evaluation
-  authentication: Session required
-  request:
-    evaluation_id: integer
+GET /api/v1/admin/config/{config_type}
+  description: Get current configuration file content [MVP]
+  authentication: Admin required
   response:
     data:
-      chat_session_id: string
-      context_loaded: boolean
+      config_content: string (YAML)
+      file_path: string
+      last_modified: datetime
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 
 POST /api/v1/admin/config/{config_type}
-  description: Update configuration files
+  description: Update configuration files [MVP]
   authentication: Admin required
   request:
     config_content: string (YAML)
+    change_reason: string (optional)
   response:
     data:
       validation_result: {is_valid, errors}
       file_updated: boolean
-      cache_synchronized: boolean
+      version_logged: boolean
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
+
+GET /api/v1/admin/config/{config_type}/history
+  description: Get configuration change history [MVP]
+  authentication: Admin required
+  response:
+    data:
+      versions: [{id, old_content, new_content, changed_by, changed_at, change_reason}]
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
     
 GET /api/v1/admin/auth/config
-  description: Get authentication configuration
+  description: Get authentication configuration [MVP]
   authentication: Admin required
   response:
     data:
@@ -237,7 +248,7 @@ GET /api/v1/admin/auth/config
     errors: []
 
 PUT /api/v1/admin/auth/config
-  description: Update authentication configuration
+  description: Update authentication configuration [MVP]
   authentication: Admin required
   request:
     auth_enabled: boolean
@@ -252,10 +263,53 @@ PUT /api/v1/admin/auth/config
       request_id: uuid
     errors: []
 
-# Additional Core Endpoints
+GET /api/v1/debug/info
+  description: Get debug information (when debug mode enabled) [MVP]
+  authentication: Admin required
+  response:
+    data:
+      debug_enabled: boolean
+      performance_metrics: object
+      raw_prompts: array (if debug mode enabled)
+      raw_responses: array (if debug mode enabled)
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
+
+POST /api/v1/admin/debug/toggle
+  description: Enable/disable global debug mode [MVP]
+  authentication: Admin required
+  request:
+    debug_enabled: boolean
+  response:
+    data:
+      debug_mode: boolean
+      affected_evaluations: "all_new"
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
+```
+
+#### 3.2.2 Post-MVP Endpoints
+```yaml
+POST /api/v1/chat/sessions
+  description: Start chat session after evaluation [Post-MVP]
+  authentication: Session required
+  request:
+    evaluation_id: integer
+  response:
+    data:
+      chat_session_id: string
+      context_loaded: boolean
+    meta:
+      timestamp: ISO8601
+      request_id: uuid
+    errors: []
 
 POST /api/v1/chat/sessions/{session_id}/messages
-  description: Send message in chat session
+  description: Send message in chat session [Post-MVP]
   authentication: Session required
   request:
     message_content: string
@@ -284,40 +338,12 @@ GET /api/v1/progress/{session_id}
     errors: []
 
 GET /api/v1/export/pdf/{evaluation_id}
-  description: Download PDF export of evaluation
+  description: Download PDF export of evaluation [Post-MVP]
   authentication: Session owner or admin
   response:
     Content-Type: application/pdf
     Content-Disposition: attachment
     File: evaluation_report.pdf
-
-GET /api/v1/debug/info
-  description: Get debug information (when debug mode enabled)
-  authentication: Admin required
-  response:
-    data:
-      debug_enabled: boolean
-      performance_metrics: object
-      raw_prompts: array (if debug mode enabled)
-      raw_responses: array (if debug mode enabled)
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-
-POST /api/v1/admin/debug/toggle
-  description: Enable/disable global debug mode
-  authentication: Admin required
-  request:
-    debug_enabled: boolean
-  response:
-    data:
-      debug_mode: boolean
-      affected_evaluations: "all_new"
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
 ```
 
 ### 3.3 Data Validation Rules
@@ -325,7 +351,8 @@ POST /api/v1/admin/debug/toggle
 #### 3.3.1 Input Validation Patterns
 - **Text Content**: Max 10,000 characters, XSS sanitization, UTF-8 encoding
 - **Session ID**: Format validation (UUID v4), expiration checks
-- **YAML Configuration**: Schema validation, syntax checking, required field validation
+- **YAML Configuration**: Schema validation, syntax checking, required field validation, UTF-8 encoding
+- **Configuration Types**: Must be one of: 'rubric', 'frameworks', 'context', 'prompt', 'auth'
 - **Authentication**: Username/password length limits, character restrictions
 
 #### 3.3.2 Output Sanitization Requirements

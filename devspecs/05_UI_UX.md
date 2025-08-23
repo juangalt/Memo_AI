@@ -134,7 +134,7 @@ OverallFeedbackPage:
     - Progress data (calculated during evaluation)
 ```
 
-#### 4.2.3 DetailedFeedbackPage (Req 2.2.3b)
+#### 4.2.3 DetailedFeedbackPage [MVP] (Req 2.2.3b)
 ```yaml
 DetailedFeedbackPage:
   components:
@@ -142,7 +142,6 @@ DetailedFeedbackPage:
     - SegmentComments (Req 2.2.3b)
     - InsightQuestions (Req 2.2.3b)
     - RubricBreakdown (detailed scoring)
-    - ProgressCharts (segment-level trends)
     - InfoBubbles (explain detailed feedback)
   
   layout:
@@ -166,7 +165,7 @@ ProgressTrackingPage:
     - Progress cache for performance
 ```
 
-#### 4.2.5 DebugPage (Req 2.5)
+#### 4.2.5 DebugPage [MVP] (Req 2.5)
 ```yaml
 DebugPage:
   components:
