@@ -359,6 +359,137 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 - **Cons**: Additional schema maintenance overhead
 - **Decision Basis**: Ensures data integrity and prevents configuration errors that could break the evaluation system
 
+### 9.7 Configuration Validation Rules
+
+**9.7.1 Rubric Configuration (rubric.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required `rubric` key at root level
+- Required fields: `name`, `description`, `total_weight`, `scoring_scale`, `criteria`
+- `name`: String, non-empty, descriptive rubric name
+- `description`: String, non-empty, comprehensive description
+- `total_weight`: Integer, must equal sum of all criteria weights
+- `scoring_scale`: String, must be "1-5"
+- `criteria`: List, non-empty, contains 1-10 criteria
+
+**Criteria Validation**:
+- Each criterion must have: `name`, `description`, `scoring_guidance`, `weight`
+- `name`: String, non-empty, unique across all criteria
+- `description`: String, non-empty, explains evaluation focus
+- `scoring_guidance`: Object with exactly 5 keys: 1, 2, 3, 4, 5
+- Each scoring guidance value: String, non-empty, describes performance level
+- `weight`: Integer, 1-100, sum of all weights must equal total_weight
+
+**Scoring Categories Validation**:
+- Required `scoring_categories` field (list)
+- Each category must have: `name`, `max_score`, `weight`
+- `name`: String, must match criteria name (converted to snake_case)
+- `max_score`: Integer, must be 5 for all categories
+- `weight`: Integer, must match corresponding criteria weight
+- Sum of all category weights must equal total_weight
+
+**Evaluation Framework Validation**:
+- Required `evaluation_framework` field
+- Required sub-fields: `strengths_identification`, `improvement_opportunities`, `segment_evaluation`
+- `strengths_identification`: List, non-empty, contains strength descriptions
+- `improvement_opportunities`: List, non-empty, contains improvement areas
+- `segment_evaluation`: Object with `comment_categories` and `question_types`
+- `comment_categories`: List, non-empty, contains evaluation categories
+- `question_types`: List, non-empty, contains question types for feedback
+
+**Frameworks Validation**:
+- Required `frameworks` field (object)
+- At least one framework must be defined
+- Each framework must have description (string, non-empty)
+- Supported frameworks: `pyramid_principle`, `scqa`, `healthcare_investment`
+
+**Healthcare-Specific Validation**:
+- `description` must mention healthcare context
+- Criteria descriptions must include healthcare examples
+- Scoring guidance must reference healthcare industry standards
+- Evaluation framework must include healthcare-specific strengths/opportunities
+
+**9.7.2 Prompt Configuration (prompt.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `templates`, `instructions`, `response_schemas`, `prompt_variables`, `error_handling`
+- `templates`: Object containing prompt templates
+- `instructions`: Object containing evaluation guidelines
+- `response_schemas`: Object defining expected response formats
+- `prompt_variables`: Object defining template variables
+- `error_handling`: Object defining error scenarios
+
+**Templates Validation**:
+- Required `evaluation_prompt` template
+- Each template must have: `system_message`, `user_template`
+- `system_message`: String, non-empty, defines AI role
+- `user_template`: String, non-empty, contains template variables
+- Template variables must be defined in `prompt_variables`
+
+**Instructions Validation**:
+- Required sub-fields: `evaluation_guidelines`, `scoring_guidelines`, `segment_feedback_guidelines`
+- Each guideline list must be non-empty
+- Guidelines must be actionable and specific
+
+**Response Schemas Validation**:
+- Required `evaluation_response` schema
+- Must define structure for: `overall_score`, `strengths`, `opportunities`, `rubric_scores`, `segment_feedback`
+- Data types must be specified for each field
+
+**9.7.3 LLM Configuration (llm.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `provider`, `api_configuration`, `request_settings`, `response_handling`
+- `provider`: Object defining LLM provider settings
+- `api_configuration`: Object defining API connection settings
+- `request_settings`: Object defining request parameters
+- `response_handling`: Object defining response processing
+
+**Provider Validation**:
+- Required fields: `name`, `api_base_url`, `model`
+- `name`: String, must be one of: "claude", "openai", "gemini"
+- `api_base_url`: String, valid URL format
+- `model`: String, non-empty, specific model identifier
+
+**API Configuration Validation**:
+- Required fields: `api_key`, `timeout`, `max_retries`, `max_tokens`
+- `timeout`: Integer, 10-300 seconds
+- `max_retries`: Integer, 0-10
+- `max_tokens`: Integer, 100-8000
+
+**Request Settings Validation**:
+- Required fields: `max_text_length`, `min_text_length`
+- `max_text_length`: Integer, 1000-50000
+- `min_text_length`: Integer, 10-1000
+- `max_text_length` must be greater than `min_text_length`
+
+**9.7.4 Authentication Configuration (auth.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `session_management`, `authentication_methods`, `security_settings`
+- `session_management`: Object defining session parameters
+- `authentication_methods`: Object defining auth methods
+- `security_settings`: Object defining security parameters
+
+**Session Management Validation**:
+- Required fields: `session_timeout`, `session_cleanup_interval`, `max_sessions_per_user`
+- `session_timeout`: Integer, 300-86400 seconds (5 minutes to 24 hours)
+- `session_cleanup_interval`: Integer, 60-3600 seconds
+- `max_sessions_per_user`: Integer, 1-20
+
+**Authentication Methods Validation**:
+- Required sub-fields: `session_based`, `admin_authentication`
+- `session_based.enabled`: Boolean, must be true
+- `admin_authentication.enabled`: Boolean, must be true
+- `admin_authentication.max_login_attempts`: Integer, 3-10
+
+**Security Settings Validation**:
+- Required sub-fields: `csrf_protection`, `rate_limiting`, `input_validation`
+- `csrf_protection.enabled`: Boolean
+- `rate_limiting.enabled`: Boolean
+- `input_validation.max_username_length`: Integer, 3-50
+- `input_validation.min_password_length`: Integer, 8-128
+
 ---
 
 ## 10.0 Traceability Matrix
@@ -377,7 +508,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 | 2.3.5 | Segment-level evaluation | Evaluations table (3.4) - segment_feedback TEXT field | ✅ Implemented |
 | 2.3.6 | Immediate feedback processing | Evaluations table (3.4) - created_at timestamp | ✅ Implemented |
 | 2.4.1 | Admin edits YAML | Configuration management (3.5) - YAML file storage | ✅ Implemented |
-| 2.4.2 | Configuration changes validated | Configuration management (3.5) - Schema validation | ✅ Implemented |
+| 2.4.2 | Configuration changes validated | Configuration management (3.5) - Schema validation with detailed rules (9.7) | ✅ Implemented |
 | 2.4.3 | Simple configuration management | Configuration management (3.5) - Direct file access | ✅ Implemented |
 | 2.5.1 | Debug output accessible | Evaluations table (3.4) - debug_enabled, raw_prompt, raw_response | ✅ Implemented |
 | 2.5.2 | Raw prompts/responses shown | Evaluations table (3.4) - raw_prompt, raw_response fields | ✅ Implemented |

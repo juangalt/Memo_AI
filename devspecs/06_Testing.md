@@ -651,6 +651,48 @@ ConfigurationManagementTests:
     - Required fields presence and format
     - Rubric application in evaluation process
     - Configuration change impact validation
+    
+    # Detailed Rubric Validation Rules
+    - Rubric structure validation:
+      - Required top-level 'rubric' key
+      - Required 'name' field (string, non-empty)
+      - Required 'description' field (string, non-empty)
+      - Required 'total_weight' field (integer, sum of all criteria weights)
+      - Required 'scoring_scale' field (string, format "1-5")
+      - Required 'criteria' field (list, non-empty)
+    
+    - Criteria validation for each criterion:
+      - Required 'name' field (string, non-empty, unique across criteria)
+      - Required 'description' field (string, non-empty)
+      - Required 'scoring_guidance' field (object with keys 1-5)
+      - Required 'weight' field (integer, 1-100, sum equals total_weight)
+      - Each scoring_guidance entry must be string, non-empty
+    
+    - Scoring categories validation:
+      - Required 'scoring_categories' field (list)
+      - Each category must have 'name', 'max_score', 'weight' fields
+      - Category names must match criteria names (snake_case conversion)
+      - Weights must sum to total_weight
+      - max_score must be 5 for all categories
+    
+    - Evaluation framework validation:
+      - Required 'evaluation_framework' field
+      - Required 'strengths_identification' field (list, non-empty)
+      - Required 'improvement_opportunities' field (list, non-empty)
+      - Required 'segment_evaluation' field
+      - Required 'comment_categories' field (list, non-empty)
+      - Required 'question_types' field (list, non-empty)
+    
+    - Frameworks validation:
+      - Required 'frameworks' field (object)
+      - At least one framework must be defined
+      - Each framework must have description (string, non-empty)
+    
+    - Healthcare-specific validation:
+      - Description must mention healthcare context
+      - Criteria descriptions must include healthcare examples
+      - Scoring guidance must reference healthcare industry standards
+      - Evaluation framework must include healthcare-specific strengths/opportunities
 
   test_prompt_yaml:
     - LLM prompt template structure
@@ -1210,7 +1252,7 @@ EvolutionPlanning:
 | STATE-002 | - | Cross-tab state persistence | UI Testing - Tab Navigation | ✅ Implemented |
 | ERROR-001 | - | Standardized error responses | Reliability Testing - Error Responses | ✅ Implemented |
 | ERROR-002 | - | Error code consistency | Reliability Testing - Error Codes | ✅ Implemented |
-| CONFIG-001 | - | Individual YAML file validation | Configuration Testing - File Validation | ✅ Implemented |
+| CONFIG-001 | - | Individual YAML file validation with detailed rubric rules | Configuration Testing - File Validation (4.9) | ✅ Implemented |
 | CONFIG-002 | - | Configuration security | Configuration Testing - Security | ✅ Implemented |
 
 ---
