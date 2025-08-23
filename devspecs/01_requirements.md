@@ -119,7 +119,62 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 
 ---
 
-## 4.0 Acceptance Criteria
+## 4.0 Development Team Requirements
+
+### 4.1 Novice Programmer Support
+**4.1.1 Learning-Friendly Implementation**
+- All code must be written with novice programmers in mind
+- Complex concepts must be explained through comments and documentation
+- Use of advanced programming patterns should be avoided unless absolutely necessary
+- Code should be self-documenting and easy to understand
+
+**4.1.2 Educational Documentation**
+- Every major component must have clear explanations of its purpose and functionality
+- Design decisions must be documented with rationale
+- Alternative approaches should be explained when relevant
+- Code examples and usage patterns should be provided
+
+**4.1.3 Progressive Complexity**
+- Start with simple implementations and add complexity only when required
+- Avoid premature optimization and over-engineering
+- Focus on working solutions over elegant but complex approaches
+- Provide clear paths for understanding and extending the codebase
+
+### 4.2 AI Coding Agent Collaboration
+**4.2.1 Code Generation Standards**
+- Generated code must prioritize readability and simplicity
+- Extensive commenting and documentation required
+- Clear separation of concerns and modular design
+- Consistent coding patterns and style throughout the project
+
+**4.2.2 Implementation Guidelines**
+- Use well-established, beginner-friendly libraries and frameworks
+- Minimize external dependencies to reduce complexity
+- Provide clear explanations for all design decisions
+- Structure code to facilitate learning and understanding
+
+**4.2.3 Quality Assurance**
+- All generated code must be thoroughly commented
+- Error handling must be clear and educational
+- Debugging information should be comprehensive
+- Code should demonstrate best practices in simple, understandable ways
+
+### 4.3 Collaboration Requirements
+**4.3.1 Communication Standards**
+- Clear documentation of all technical decisions
+- Explanations of trade-offs and alternatives considered
+- Regular code reviews with educational focus
+- Knowledge transfer between AI agent and human developer
+
+**4.3.2 Development Process**
+- Iterative development with clear feedback loops
+- Regular validation of code understandability
+- Continuous improvement of documentation and comments
+- Focus on maintainable and extensible solutions
+
+---
+
+## 5.0 Acceptance Criteria
 
 4.1 **GUI**
 - Main page load < 1s.

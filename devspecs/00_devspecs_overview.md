@@ -168,15 +168,70 @@ Documents must be read sequentially to ensure proper understanding:
 
 ---
 
-## 6.0 Next Steps
+## 6.0 Development Team and Approach
 
-### 6.1 For Developers
+### 6.1 Development Team Composition
+**Team Structure**: Novice programmer working with AI coding agent
+- **Human Developer**: Novice programmer learning and implementing
+- **AI Assistant**: AI coding agent providing guidance and code generation
+- **Collaboration Model**: Human-AI pair programming with clear roles
+
+### 6.2 Development Approach Requirements
+**Primary Focus**: Simplicity, clarity, and learning-friendly implementation
+
+**Code Quality Standards for Novice-AI Collaboration**:
+- **Simplicity**: Maximum simplicity in all implementations
+  - Avoid complex patterns and abstractions
+  - Prefer straightforward, readable code over clever solutions
+  - Use well-established, beginner-friendly libraries and frameworks
+  - Minimize external dependencies
+
+- **Comprehensive Documentation**: Extensive commenting and documentation
+  - Every function and class must have clear docstrings
+  - Inline comments explaining complex logic
+  - README files for each major component
+  - Clear explanations of design decisions
+
+- **Modular Design**: Clear separation of concerns
+  - Single responsibility principle for all components
+  - Well-defined interfaces between modules
+  - Minimal coupling between different parts of the system
+  - Easy to understand component boundaries
+
+- **Extensibility**: Design for future enhancements
+  - Clear extension points for new features
+  - Configuration-driven behavior where possible
+  - Plugin-like architecture for new capabilities
+  - Backward compatibility considerations
+
+### 6.3 Implementation Guidelines for AI Coding Agents
+**When generating code for this project**:
+- **Prioritize Readability**: Code should be self-documenting and easy to understand
+- **Add Extensive Comments**: Explain the "why" not just the "what"
+- **Use Simple Patterns**: Avoid advanced programming concepts unless absolutely necessary
+- **Provide Context**: Include explanations of design decisions and trade-offs
+- **Focus on Learning**: Structure code to help the novice programmer understand concepts
+- **Maintain Consistency**: Follow established patterns throughout the codebase
+
+### 6.4 Learning-Focused Development
+**Educational Considerations**:
+- **Progressive Complexity**: Start simple and add complexity only when needed
+- **Clear Explanations**: Document why certain approaches were chosen
+- **Alternative Solutions**: When possible, explain why one approach was chosen over others
+- **Best Practices**: Demonstrate industry-standard practices in simple, understandable ways
+- **Debugging Support**: Include helpful error messages and debugging information
+
+---
+
+## 7.0 Next Steps
+
+### 7.1 For Developers
 1. Read this document completely
 2. Proceed to `01_Requirements.md` for detailed requirements
 3. Follow the sequential reading order through all documents
 4. Implement according to the specifications and rules defined
 
-### 6.2 For AI Coding Agents
+### 7.2 For AI Coding Agents
 1. Follow the mandatory rules in Section 5.1
 2. Ensure all implementations trace back to specific requirements
 3. Maintain consistency with the design principles
