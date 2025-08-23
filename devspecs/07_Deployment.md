@@ -1,921 +1,1657 @@
-# 07_Deployment.md
+# Deployment Specification
+## Memo AI Coach
 
-## 1.0 How to Use This File
-
-1.1 **Audience**
-- AI coding agents and human developers.
-
-1.2 **Purpose**
-- Defines the deployment strategy, infrastructure requirements, and operational procedures for the Memo AI Coach project.
-- Builds on the architecture and ensures the system can be deployed and scaled effectively.
-
-1.3 **Next Steps**
-- Review this file before proceeding to `08_Maintenance.md`.
+**Document ID**: 07_Deployment.md  
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment  
+**Status**: Approved
 
 ---
 
-## 2.0 Container Strategy and Docker Architecture
+## 1.0 Document Information
 
-### 2.1 Container Architecture Decision ✅ **DECIDED**
-**Decision**: **Multi-container Docker Compose** architecture
-**Rationale**: 
-- Separation of concerns (frontend/backend)
-- Independent scaling of components
-- Shared volumes for data persistence
-- Development and production parity
+### 1.1 Purpose
+Defines the deployment architecture, infrastructure requirements, containerization strategy, and operational procedures for the Memo AI Coach application, ensuring reliable and scalable production deployment.
 
-### 2.2 Docker Configuration Strategy ✅ **DECIDED**
-**Decision**: **Environment-specific Docker Compose files**
-**Implementation**:
-- `docker-compose.yml` for development/MVP
-- `docker-compose.prod.yml` for production
-- Shared base configuration with environment overrides
-- Volume management for data persistence
+### 1.2 Scope
+- Deployment architecture and infrastructure design
+- Containerization strategy and Docker implementation
+- Environment configuration and management
+- Deployment procedures and automation
+- Monitoring, logging, and operational support
+- Security and compliance considerations
+- Scalability and performance optimization
+
+### 1.3 Dependencies
+- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md, 06_Testing.md
+- **Related Documents**: 08_Maintenance.md, 09_Dev_Roadmap.md
+- **Requirements**: Implements deployment requirements from 01_Requirements.md (Req 3.1-3.5)
+
+### 1.4 Document Structure
+1. Document Information
+2. Deployment Architecture Overview
+3. Project Directory Structure
+4. Infrastructure Requirements
+5. Containerization Strategy
+6. Environment Configuration
+7. Deployment Procedures
+8. Monitoring and Logging
+9. Security and Compliance
+10. Scalability and Performance
+11. Operational Procedures
+12. Design Decisions
+13. Traceability Matrix
+14. Implementation Summary
+
+### 1.5 Traceability Summary
+| Requirement ID | Requirement Description | Deployment Implementation |
+|---------------|------------------------|---------------------------|
+| 3.1.1-3.1.2 | Performance Requirements | Performance Optimization (10.1) |
+| 3.2.1-3.2.2 | Scalability Requirements | Scalability Strategy (10.2) |
+| 3.3.1-3.3.2 | Reliability Requirements | Reliability Measures (10.3) |
+| 3.4.1-3.4.5 | Security Requirements | Security Implementation (9.1) |
+| 3.5.1-3.5.4 | Maintainability Requirements | Maintainability Strategy (10.3) |
+
+### 1.6 Document Navigation
+- **Previous Document**: 06_Testing.md
+- **Next Document**: 08_Maintenance.md
+- **Related Documents**: 09_Dev_Roadmap.md
 
 ---
 
-## 3.0 Key High-Level Decisions Needed
+## 2.0 Deployment Architecture Overview
 
-### 3.1 Environment Configuration Management
-**Question**: How should we manage different environments (dev/staging/production)?
-- **Options**: Environment variables vs configuration files vs both
-- **Consideration**: Sensitive data handling (LLM API keys, database paths)
-- **Impact**: Security, maintainability, and deployment flexibility
+### 2.1 System Architecture
+The Memo AI Coach deployment follows a containerized microservices architecture aligned with the three-layer system design:
 
-### 3.2 Database Deployment and Persistence
-**Question**: How should we handle SQLite database persistence in production?
-- **Options**: Docker volumes vs external storage vs migration to PostgreSQL
-- **Consideration**: Backup strategies, scaling path from SQLite to PostgreSQL
-- **Impact**: Data durability, performance, and operational complexity
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRODUCTION ENVIRONMENT                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Load Balancer (Optional) │  Reverse Proxy (Traefik)          │
+│  - SSL/TLS Termination    │  - Automatic Service Discovery    │
+│  - Health Checks          │  - Request Routing & Load Balancing│
+│  - Let's Encrypt Integration│  - Middleware Support           │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    CONTAINER ORCHESTRATION                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Frontend Container (Streamlit) │  Backend Container (FastAPI) │
+│  - Port 8501                   │  - Port 8000                  │
+│  - Session State Management    │  - API Services               │
+│  - Static Assets              │  - LLM Integration            │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      DATA LAYER                                │
+├─────────────────────────────────────────────────────────────────┤
+│  SQLite Database (WAL Mode) │  Configuration Files (YAML)     │
+│  - Persistent Volume        │  - ConfigMap/Secrets            │
+│  - Backup Strategy          │  - Environment Variables        │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### 3.3 LLM Provider Integration and API Management
-**Question**: How should we manage LLM provider credentials and configurations?
-- **Options**: Environment variables vs secrets management vs external config
-- **Consideration**: API key rotation, rate limiting, cost management
-- **Impact**: Security, reliability, and operational overhead
+### 2.2 Deployment Principles
+- **Containerization**: Docker containers for consistent deployment
+- **Stateless Design**: Session state managed in database, not containers
+- **Scalability**: Horizontal scaling support for 100+ concurrent users
+- **Security**: Secure configuration management and access controls
+- **Monitoring**: Comprehensive logging and health monitoring
+- **Maintainability**: Simple deployment procedures and rollback capabilities
+- **Service Discovery**: Automatic container detection and routing with Traefik
 
-### 3.4 Scaling and Load Balancing
-**Question**: How should we prepare for scaling from 1 to 100+ users?
-- **Options**: Horizontal scaling vs vertical scaling vs hybrid approach
-- **Consideration**: Session persistence, load balancing, database scaling
-- **Impact**: Performance, cost, and operational complexity
+---
 
-### 3.5 Monitoring and Observability
-**Question**: What monitoring should we implement for production operations?
-- **Options**: Application monitoring vs infrastructure monitoring vs both
-- **Consideration**: Health checks, performance metrics, error tracking
-- **Impact**: Operational visibility and incident response
+## 3.0 Project Directory Structure
 
-### 3.6 Security and Network Configuration
-**Question**: How should we secure the production deployment?
-- **Options**: HTTPS/TLS configuration, network security, authentication
-- **Consideration**: Certificate management, firewall rules, input sanitization
-- **Impact**: Security posture and compliance requirements
+### 3.1 Root Directory Layout
+The Memo AI Coach project follows a structured directory layout optimized for containerized deployment:
 
-### 3.7 Deployment Automation and CI/CD
-**Question**: How should we automate the deployment process?
-- **Options**: Continuous deployment vs manual releases vs hybrid
-- **Consideration**: Blue-green deployments, rollback strategies, testing
-- **Impact**: Deployment frequency, reliability, and operational overhead
+```
+memoai/
+├── devspecs/                    # Development specifications
+│   ├── 00_devspecs_overview.md
+│   ├── 01_requirements.md
+│   ├── 02_architecture.md
+│   ├── 03_Data_Model.md
+│   ├── 04_API_Definitions.md
+│   ├── 05_UI_UX.md
+│   ├── 06_Testing.md
+│   ├── 07_Deployment.md
+│   ├── 08_Maintenance.md
+│   └── 09_Dev_Roadmap.md
+├── frontend/                    # Streamlit frontend application
+│   ├── app.py                   # Main Streamlit application
+│   ├── requirements.txt         # Python dependencies
+│   ├── Dockerfile              # Frontend container definition
+│   └── components/             # Reusable UI components
+├── backend/                     # FastAPI backend application
+│   ├── main.py                 # FastAPI application entry point
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile             # Backend container definition
+│   ├── services/              # Business logic services
+│   ├── models/                # Data models and schemas
+│   └── utils/                 # Utility functions
+├── config/                     # Configuration files
+│   ├── rubric.yaml            # Grading criteria and scoring
+│   ├── prompt.yaml            # LLM prompt templates
+│   ├── llm.yaml              # LLM provider configuration
+│   └── auth.yaml             # Authentication settings
+├── data/                       # Persistent data storage
+│   ├── memoai.db             # SQLite database
+│   └── backups/              # Database backup directory
+├── logs/                       # Application logs
+│   ├── app.log               # Application logs
+│   └── error.log             # Error logs
+├── letsencrypt/               # SSL certificate storage
+│   └── acme.json             # Let's Encrypt ACME storage
+├── docker compose.yml         # Container orchestration
+├── .env                       # Environment variables
+├── .gitignore                 # Git ignore rules
+└── README.md                  # Project documentation
+```
+
+### 3.2 Directory Purposes
+
+**Development Specifications (`devspecs/`)**:
+- Complete project specification documents
+- Architecture and design decisions
+- Implementation guidelines and requirements
+
+**Frontend Application (`frontend/`)**:
+- Streamlit-based user interface
+- Session state management
+- UI components and styling
+
+**Backend Application (`backend/`)**:
+- FastAPI REST API services
+- LLM integration and evaluation logic
+- Database operations and business logic
+
+**Configuration (`config/`)**:
+- YAML configuration files for system settings
+- Admin-editable configuration management
+- Environment-specific configurations
+
+**Data Storage (`data/`)**:
+- SQLite database with WAL mode
+- Persistent data across container restarts
+- Backup and recovery data
+
+**Logging (`logs/`)**:
+- Application logs with rotation
+- Error tracking and debugging
+- Performance monitoring data
+
+**SSL Certificates (`letsencrypt/`)**:
+- Let's Encrypt certificate storage
+- ACME challenge files
+- Certificate renewal data
+
+### 3.3 Deployment Considerations
+
+**Volume Mounts**:
+- `./config:/app/config:ro` - Read-only configuration access
+- `./data:/app/data` - Persistent database storage
+- `./logs:/app/logs` - Application log storage
+- `./letsencrypt:/letsencrypt` - SSL certificate persistence
+
+**Security**:
+- Configuration files mounted as read-only
+- Sensitive data isolated in dedicated volumes
+- SSL certificates with proper permissions
+
+**Scalability**:
+- Stateless application containers
+- Persistent data in dedicated volumes
+- Shared configuration across instances
 
 ---
 
 ## 4.0 Infrastructure Requirements
 
-### 4.1 Server Resource Requirements (Based on Req 3.2)
+### 4.1 Hardware Requirements
+**Minimum Production Requirements**:
+- **CPU**: 2 cores (4 cores recommended for 100+ users)
+- **Memory**: 4GB RAM (8GB recommended for concurrent processing)
+- **Storage**: 20GB SSD (50GB recommended for logs and backups)
+- **Network**: 100Mbps bandwidth (1Gbps recommended)
+
+**Development Requirements**:
+- **CPU**: 1 core
+- **Memory**: 2GB RAM
+- **Storage**: 10GB SSD
+- **Network**: Standard internet connection
+
+### 4.2 Software Requirements
+**Operating System**:
+- **Production**: Ubuntu 20.04 LTS or later, CentOS 8+, or containerized deployment
+- **Development**: Any OS supporting Docker (Windows, macOS, Linux)
+
+**Container Runtime**:
+- **Docker**: Version 20.10+ with Docker Compose 2.0+
+- **Alternative**: Podman 3.0+ for containerized deployment
+
+**Reverse Proxy**:
+- **Traefik**: Version 2.10+ with Docker provider and Let's Encrypt integration
+- **Features**: Automatic SSL/TLS certificate management, service discovery
+
+**Database**:
+- **SQLite**: Version 3.35+ with WAL mode support
+- **File System**: Ext4 or XFS for optimal SQLite performance
+
+### 4.3 Network Requirements
+**Port Configuration**:
+- **Frontend**: Port 8501 (Streamlit)
+- **Backend API**: Port 8000 (FastAPI)
+- **Traefik Proxy**: Port 80/443 (HTTP/HTTPS)
+- **Traefik Dashboard**: Port 8080 (Admin interface)
+- **Health Checks**: Port 8000/health (FastAPI health endpoint)
+
+**Port Standardization**:
+All port configurations are standardized across environments:
+- Development: Same ports as production for consistency
+- Production: Standard ports with firewall restrictions
+- Container: Internal port mapping for service discovery
+
+**Network Security**:
+- **Firewall**: Restrict access to required ports only
+- **SSL/TLS**: HTTPS termination at Traefik with automatic certificate management
+- **Rate Limiting**: Network-level rate limiting for API protection
+
+---
+
+## 5.0 Containerization Strategy
+
+### 5.1 Docker Architecture
+**Multi-Container Deployment**:
 ```yaml
-ResourceRequirements:
-  mvp_deployment:
-    cpu: "1-2 cores"
-    memory: "2-4 GB RAM"
-    storage: "20 GB SSD"
-    network: "100 Mbps"
-  
-  production_deployment:
-    cpu: "4-8 cores"
-    memory: "8-16 GB RAM"
-    storage: "100 GB SSD"
-    network: "1 Gbps"
-  
-  scaling_requirements:
-    concurrent_users: "100+ users"
-    database_connections: "50+ concurrent"
-    llm_api_calls: "100+ requests/minute"
-    file_storage: "10 GB for PDFs and logs"
+# docker compose.yml
+version: '3.8'
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    environment:
+      - DATABASE_URL=sqlite:///data/memoai.db
+      - LLM_API_KEY=${LLM_API_KEY}
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  data:
+  logs:
 ```
 
-### 4.2 Network Requirements
+### 5.2 Container Specifications
+
+#### 5.2.1 Traefik Container
+**Base Image**: traefik:v2.10  
+**Features**:
+- Automatic SSL/TLS certificate management with Let's Encrypt
+- Docker service discovery and load balancing
+- Built-in dashboard for monitoring and configuration
+- Middleware support for security and routing
+- Health check integration
+
+**Configuration**:
+- Docker provider for automatic service discovery
+- Let's Encrypt integration for SSL certificates
+- HTTP challenge for domain validation
+- Persistent certificate storage
+
+#### 5.2.2 Frontend Container (Streamlit)
+**Base Image**: python:3.9-slim  
+**Dependencies**: streamlit, requests, yaml  
+**Configuration**:
+- Session state management via SQLite
+- Static asset serving
+- Environment-based configuration
+- Health check endpoint
+- Traefik labels for service discovery
+
+**Dockerfile**:
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY frontend/ .
+EXPOSE 8501
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
+
+#### 5.2.3 Backend Container (FastAPI)
+**Base Image**: python:3.9-slim  
+**Dependencies**: fastapi, uvicorn, sqlite3, anthropic, pyyaml
+
+**Database Initialization Script**:
+The backend container includes an `init_db.py` script that creates the complete database schema:
+
+```python
+# init_db.py - Database initialization script
+import sqlite3
+import os
+
+def init_database():
+    """Initialize the database with schema from 03_Data_Model.md"""
+    db_path = os.getenv('DATABASE_URL', 'sqlite:///data/memoai.db').replace('sqlite:///', '')
+    
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Create sessions table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE NOT NULL,
+            is_admin BOOLEAN DEFAULT FALSE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME NOT NULL,
+            is_active BOOLEAN DEFAULT TRUE
+        )
+    ''')
+    
+    # Create submissions table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            text_content TEXT NOT NULL,
+            session_id TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
+        )
+    ''')
+    
+    # Create evaluations table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS evaluations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            submission_id INTEGER NOT NULL,
+            overall_score DECIMAL(5,2),
+            strengths TEXT NOT NULL,
+            opportunities TEXT NOT NULL,
+            rubric_scores TEXT NOT NULL,  -- JSON string: {"category1": score, "category2": score}
+            segment_feedback TEXT NOT NULL,  -- JSON string: [{"segment": "text", "comment": "feedback", "questions": ["q1", "q2"]}]
+            llm_provider TEXT NOT NULL DEFAULT 'claude',
+            llm_model TEXT NOT NULL,
+            raw_prompt TEXT,
+            raw_response TEXT,
+            debug_enabled BOOLEAN DEFAULT FALSE,
+            processing_time DECIMAL(6,3),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+        )
+    ''')
+    
+    # Create indexes for performance
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_submissions_session_date ON submissions(session_id, created_at)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_evaluations_submission ON evaluations(submission_id, created_at)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(session_id, is_active, expires_at)')
+    
+    # Configure WAL mode for concurrent access
+    cursor.execute('PRAGMA journal_mode = WAL')
+    cursor.execute('PRAGMA synchronous = NORMAL')
+    cursor.execute('PRAGMA cache_size = 10000')
+    cursor.execute('PRAGMA temp_store = memory')
+    
+    conn.commit()
+    conn.close()
+    
+    print("Database initialized successfully")
+
+if __name__ == "__main__":
+    init_database()
+```
+
+**Configuration Validation Script**:
+The backend container also includes a `validate_config.py` script that validates all 4 essential YAML files:
+
+```python
+# validate_config.py - Configuration validation script
+import yaml
+import os
+import sys
+from pathlib import Path
+
+def validate_yaml_file(file_path, required_fields=None):
+    """Validate a YAML configuration file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        
+        if config is None:
+            raise ValueError(f"Empty or invalid YAML file: {file_path}")
+        
+        if required_fields:
+            for field in required_fields:
+                if field not in config:
+                    raise ValueError(f"Missing required field '{field}' in {file_path}")
+        
+        print(f"✓ {file_path} - Valid")
+        return True
+        
+    except Exception as e:
+        print(f"✗ {file_path} - Error: {e}")
+        return False
+
+def validate_all_configs():
+    """Validate all 4 essential configuration files"""
+    config_dir = os.getenv('CONFIG_DIR', '/app/config')
+    required_configs = {
+        'rubric.yaml': ['grading_criteria', 'scoring_categories'],
+        'prompt.yaml': ['templates', 'instructions'],
+        'llm.yaml': ['provider', 'api_key', 'model'],
+        'auth.yaml': ['session_timeout', 'admin_credentials']
+    }
+    
+    all_valid = True
+    
+    for filename, required_fields in required_configs.items():
+        file_path = Path(config_dir) / filename
+        if not file_path.exists():
+            print(f"✗ {file_path} - File not found")
+            all_valid = False
+        else:
+            if not validate_yaml_file(file_path, required_fields):
+                all_valid = False
+    
+    if all_valid:
+        print("All configuration files are valid")
+        return True
+    else:
+        print("Configuration validation failed")
+        return False
+
+if __name__ == "__main__":
+    success = validate_all_configs()
+    sys.exit(0 if success else 1)
+```  
+**Configuration**:
+- API service with health checks
+- Database connection management
+- LLM integration
+- Rate limiting middleware with session-based limits
+- Logging and monitoring
+- Traefik labels for service discovery
+
+**Dockerfile**:
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY backend/ .
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### 5.3 Volume Management
+**Persistent Data**:
+- **Database**: SQLite database with WAL mode
+- **Logs**: Application logs and debug information
+- **Configuration**: YAML configuration files
+- **Backups**: Database backups and configuration snapshots
+- **SSL Certificates**: Let's Encrypt certificates and ACME storage
+
+**Volume Strategy**:
+- **Data Volume**: Persistent SQLite database storage
+- **Config Volume**: Read-only configuration files
+- **Log Volume**: Application logs with rotation
+- **Backup Volume**: Automated backup storage
+- **SSL Volume**: Persistent SSL certificate storage for Traefik
+
+---
+
+## 6.0 Environment Configuration
+
+### 6.1 Configuration Management
+**Environment Variables**:
+
+**Complete Environment Variable Reference**:
+```bash
+# Required Variables (must be set)
+DOMAIN=your-domain.com                    # Domain name for SSL certificates
+ADMIN_EMAIL=admin@your-domain.com         # Email for Let's Encrypt
+LLM_API_KEY=your-llm-api-key             # LLM provider API key
+SECRET_KEY=your-secret-key                # Session encryption key
+ADMIN_USERNAME=admin                      # Admin username
+ADMIN_PASSWORD=secure-password            # Admin password
+
+# Optional Variables (have defaults)
+APP_ENV=production                        # Environment: development/production
+DEBUG_MODE=false                          # Debug mode: true/false
+LOG_LEVEL=INFO                            # Log level: DEBUG/INFO/WARNING/ERROR
+DATABASE_URL=sqlite:///data/memoai.db     # Database connection string
+LLM_PROVIDER=claude                       # LLM provider: claude/openai/gemini
+LLM_MODEL=claude-3-sonnet-20240229       # LLM model name
+LLM_TIMEOUT=30                            # LLM timeout in seconds
+SESSION_TIMEOUT=3600                      # Session timeout in seconds
+MAX_CONCURRENT_USERS=100                  # Maximum concurrent users
+
+# Rate Limiting Configuration
+RATE_LIMIT_TEXT_SUBMISSIONS=20            # Text submissions per hour per session
+RATE_LIMIT_ADMIN_OPERATIONS=100           # Admin operations per hour per admin
+RATE_LIMIT_CONFIG_CHANGES=20              # Config changes per hour per admin
+RATE_LIMIT_GLOBAL_API=1000                # Global API requests per hour per IP
+
+# Traefik Configuration
+TRAEFIK_ACME_EMAIL=${ADMIN_EMAIL}         # Let's Encrypt email
+TRAEFIK_DOMAIN=${DOMAIN}                  # Domain for Traefik routing
+```
+
+**Environment Variables**:
+```bash
+# Application Configuration
+APP_ENV=production
+DEBUG_MODE=false
+LOG_LEVEL=INFO
+
+# Database Configuration
+DATABASE_URL=sqlite:///data/memoai.db
+DATABASE_WAL_MODE=true
+
+# LLM Configuration
+LLM_PROVIDER=claude
+LLM_API_KEY=${LLM_API_KEY}
+LLM_MODEL=claude-3-sonnet-20240229
+LLM_TIMEOUT=30
+
+# Traefik Configuration
+TRAEFIK_ACME_EMAIL=${ADMIN_EMAIL}
+TRAEFIK_DOMAIN=${DOMAIN}
+
+# Security Configuration
+SECRET_KEY=${SECRET_KEY}
+SESSION_TIMEOUT=3600
+ADMIN_USERNAME=${ADMIN_USERNAME}
+ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
+# Domain Configuration
+DOMAIN=${DOMAIN}
+ADMIN_EMAIL=${ADMIN_EMAIL}
+
+# Performance Configuration
+MAX_CONCURRENT_USERS=100
+RATE_LIMIT_PER_SESSION=20
+RATE_LIMIT_PER_HOUR=1000
+
+# Rate Limiting Configuration
+RATE_LIMIT_TEXT_SUBMISSIONS=20  # per hour per session
+RATE_LIMIT_ADMIN_OPERATIONS=100  # per hour per admin
+RATE_LIMIT_CONFIG_CHANGES=20  # per hour per admin
+RATE_LIMIT_GLOBAL_API=1000  # per hour per IP
+```
+
+### 5.2 Configuration Files
+**Essential YAML Files** (as defined in Architecture 4.2):
+- `rubric.yaml`: Grading criteria and scoring rubrics
+- `prompt.yaml`: LLM prompt templates and instruction formats
+- `llm.yaml`: LLM provider configuration and API settings
+- `auth.yaml`: Authentication settings and session management
+
+**Configuration Validation**:
+- Startup validation of all 4 essential YAML files (rubric.yaml, prompt.yaml, llm.yaml, auth.yaml)
+- Schema validation for configuration integrity
+- Required fields verification for each configuration type
+- UTF-8 encoding validation
+- Environment-specific configuration overrides
+- Secure configuration management
+
+### 5.3 Environment-Specific Configurations
+
+#### 5.3.1 Development Environment
 ```yaml
-NetworkRequirements:
-  external_connections:
-    - LLM provider APIs (Anthropic Claude)
-    - HTTPS for user access
-    - DNS resolution
-  
-  internal_networking:
-    - Container-to-container communication
-    - Database access
-    - File system access
-  
-  security_requirements:
-    - HTTPS/TLS encryption
-    - Firewall rules
-    - Rate limiting
-    - DDoS protection
+DevelopmentConfig:
+  debug_mode: true
+  log_level: DEBUG
+  llm_provider: mock
+  database_url: sqlite:///data/dev.db
+  session_timeout: 7200
+  rate_limiting: false
+```
+
+#### 5.3.2 Production Environment
+```yaml
+ProductionConfig:
+  debug_mode: false
+  log_level: INFO
+  llm_provider: claude
+  database_url: sqlite:///data/prod.db
+  session_timeout: 3600
+  rate_limiting: true
+  ssl_enabled: true
+  backup_enabled: true
 ```
 
 ---
 
-## 5.0 Docker Configuration
+## 7.0 Deployment Procedures
 
-### 5.1 Development Environment (MVP Mode)
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  memoai-backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - AUTH_ENABLED=true
-      - SESSION_TIMEOUT=3600
-      - DATABASE_URL=sqlite:///data/memoai.db
-      - LLM_PROVIDER=claude
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
-      - DEBUG_MODE=true
-    volumes:
-      - ./data:/app/data
-      - ./config:/app/config
-    depends_on:
-      - memoai-frontend
+### 7.1 Initial Deployment
+**Prerequisites**:
+- Docker and Docker Compose installed
+- Domain name configured with DNS pointing to server IP
+- SSL certificates (for production)
+- LLM API credentials
+- Admin credentials
 
-  memoai-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - BACKEND_URL=http://memoai-backend:8000
-      - AUTH_ENABLED=true
-    volumes:
-      - ./frontend/src:/app/src
-    depends_on:
-      - memoai-backend
+**Required Environment Variables**:
+- `DOMAIN`: Your domain name (e.g., memo.example.com)
+- `ADMIN_EMAIL`: Email address for Let's Encrypt certificates
+- `LLM_API_KEY`: API key for LLM provider
+- `SECRET_KEY`: Secret key for session management
+- `ADMIN_USERNAME`: Admin username
+- `ADMIN_PASSWORD`: Admin password
 
-volumes:
-  data:
-  config:
+**Optional Environment Variables**:
+- `APP_ENV`: Environment (development/production) - Default: production
+- `DEBUG_MODE`: Enable debug mode - Default: false
+- `LOG_LEVEL`: Logging level - Default: INFO
+- `DATABASE_URL`: Database connection string - Default: sqlite:///data/memoai.db
+- `LLM_PROVIDER`: LLM provider - Default: claude
+- `LLM_MODEL`: LLM model - Default: claude-3-sonnet-20240229
+- `LLM_TIMEOUT`: LLM timeout in seconds - Default: 30
+- `SESSION_TIMEOUT`: Session timeout in seconds - Default: 3600
+- `MAX_CONCURRENT_USERS`: Maximum concurrent users - Default: 100
+
+**Deployment Steps**:
+1. **Environment Setup**:
+   ```bash
+   # Clone repository
+   git clone <repository-url>
+   cd memoai
+   
+   # Create environment file
+   cp .env.example .env
+   # Edit .env with production values
+   ```
+
+2. **Configuration Setup**:
+   ```bash
+   # Create configuration directory
+   mkdir -p config data logs ssl
+   
+   # Copy configuration files
+   cp config/*.yaml config/
+   # Edit configuration files as needed
+   ```
+
+3. **DNS Configuration Setup** (Production):
+   ```bash
+   # Configure DNS for your domain (replace with your actual domain)
+   # Add A record pointing to your server IP
+   # Configure DNS records:
+   # - Type: A, Name: @, Content: YOUR_SERVER_IP
+   # - Type: A, Name: *, Content: YOUR_SERVER_IP
+   
+   # Example for Cloudflare:
+   # - Type: A, Name: @, Content: YOUR_SERVER_IP, Proxy: Enabled
+   # - Type: A, Name: *, Content: YOUR_SERVER_IP, Proxy: Enabled
+   ```
+
+4. **Traefik Configuration Setup** (Production):
+   ```bash
+   # Create Traefik configuration directory
+   mkdir -p letsencrypt
+   
+   # Set proper permissions for Let's Encrypt storage
+   chmod 600 letsencrypt
+   ```
+
+4. **Configuration Validation**:
+   ```bash
+   # Validate all configuration files
+   docker compose run backend python validate_config.py
+   ```
+   
+   **Configuration Validation Requirements**:
+   The `validate_config.py` script validates all 4 essential YAML files:
+   - `rubric.yaml`: Grading criteria and scoring categories
+   - `prompt.yaml`: LLM prompt templates and instructions
+   - `llm.yaml`: LLM provider configuration and API settings
+   - `auth.yaml`: Authentication settings and session management
+
+5. **Database Initialization**:
+   ```bash
+   # Initialize database schema
+   docker compose run backend python init_db.py
+   ```
+   
+   **Database Initialization Script Requirements**:
+   The `init_db.py` script must create the database schema as defined in 03_Data_Model.md:
+   - `sessions` table with session management
+   - `submissions` table for user text submissions
+   - `evaluations` table for LLM evaluation results
+   - All required indexes and constraints
+   - WAL mode configuration for concurrent access
+
+6. **Application Deployment**:
+   ```bash
+   # Build and start containers
+   docker compose up -d --build
+   
+   # Verify deployment
+   docker compose ps
+   curl http://localhost:8000/health
+   ```
+
+### 7.2 Update Procedures
+**Zero-Downtime Updates**:
+```bash
+# Pull latest changes
+git pull origin main
+
+# Build new images
+docker compose build
+
+# Update containers with zero downtime
+docker compose up -d --no-deps backend
+docker compose up -d --no-deps frontend
+
+# Verify update
+docker compose ps
+curl http://localhost:8000/health
 ```
 
-### 5.2 Production Environment
+**Rollback Procedures**:
+```bash
+# Rollback to previous version
+docker compose down
+docker compose up -d --build
+
+# Database rollback (if needed)
+docker compose run backend python rollback_db.py
+```
+
+### 7.3 Health Checks and Monitoring
+**Health Check Endpoints**:
+- **Backend**: `GET /health` - API service health with database and LLM connectivity
+- **Frontend**: `GET /_stcore/health` - Streamlit health
+- **Database**: SQLite connection validation and WAL mode status
+- **LLM**: API connectivity test and response time validation
+- **Configuration**: YAML file accessibility and validation status
+
+**Monitoring Integration**:
+- **Container Health**: Docker health checks
+- **Application Health**: Custom health endpoints
+- **Database Health**: Connection pool monitoring
+- **LLM Health**: API response times monitoring
+
+---
+
+## 8.0 Monitoring and Logging
+
+### 8.1 Logging Strategy
+**Log Levels**:
+- **DEBUG**: Detailed debugging information
+- **INFO**: General application information
+- **WARNING**: Warning messages
+- **ERROR**: Error conditions
+- **CRITICAL**: Critical system failures
+
+**Log Configuration**:
+```python
+# Logging configuration
+LOGGING_CONFIG = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+        'detailed': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s'
+        },
+    },
+    'handlers': {
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/app/logs/memoai.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/app/logs/error.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'detailed',
+            'level': 'ERROR',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+        'debug_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/app/logs/debug.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 3,
+            'formatter': 'detailed',
+            'level': 'DEBUG',
+        },
+    },
+    'loggers': {
+        'memoai': {
+            'handlers': ['file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'memoai.debug': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'memoai.llm': {
+            'handlers': ['file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'memoai.auth': {
+            'handlers': ['file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['file', 'console'],
+        'level': 'INFO',
+    },
+}
+```
+
+### 8.2 Application Monitoring
+**Performance Metrics**:
+- **Response Times**: API endpoint response times
+- **Throughput**: Requests per second
+- **Error Rates**: Error percentage by endpoint
+- **Resource Usage**: CPU, memory, disk usage
+- **Database Performance**: Query execution times
+
+**Monitoring Tools**:
+- **Application Metrics**: Custom metrics collection
+- **System Metrics**: Docker stats and system monitoring
+- **Database Metrics**: SQLite performance monitoring
+- **LLM Metrics**: API response times and error rates
+
+### 8.3 Alerting and Notifications
+**Alert Conditions**:
+- **High Error Rate**: >5% error rate for 5 minutes
+- **High Response Time**: >15 seconds average response time
+- **Service Down**: Health check failures
+- **Resource Exhaustion**: >80% CPU or memory usage
+- **Database Issues**: Connection failures or slow queries
+
+**Notification Channels**:
+- **Email**: Critical system alerts
+- **Slack**: Operational notifications
+- **SMS**: Emergency alerts (optional)
+- **Dashboard**: Real-time monitoring dashboard
+
+---
+
+## 9.0 Security and Compliance
+
+### 9.1 Security Implementation
+**Authentication Security**:
+- **Session Management**: Secure session tokens with expiration
+- **Admin Authentication**: Strong password requirements
+- **API Security**: Rate limiting and input validation
+- **Data Protection**: Session-based data isolation
+
+**Network Security**:
+- **SSL/TLS**: HTTPS encryption for all communications
+- **Firewall**: Port restrictions and access controls
+- **Rate Limiting**: Protection against abuse
+- **CSRF Protection**: Cross-site request forgery prevention
+
+### 9.2 Data Protection
+**Privacy Measures**:
+- **No PII Collection**: Only text submissions stored
+- **Session Isolation**: Data scoped by session_id
+- **Data Retention**: Configurable retention policies
+- **Secure Storage**: Encrypted configuration and sensitive data
+
+**Compliance Considerations**:
+- **Data Minimization**: Collect only necessary data
+- **Access Controls**: Admin-only access to sensitive functions
+- **Audit Logging**: Configuration change tracking
+- **Data Deletion**: Secure data removal procedures
+
+### 9.3 Security Monitoring
+**Security Metrics**:
+- **Failed Authentication**: Login attempt monitoring
+- **Rate Limit Violations**: Abuse detection
+- **Configuration Changes**: Admin action tracking
+- **System Access**: Unauthorized access attempts
+
+**Security Tools**:
+- **Log Analysis**: Security event monitoring
+- **Vulnerability Scanning**: Regular security assessments
+- **Access Monitoring**: User activity tracking
+- **Incident Response**: Security incident procedures
+
+---
+
+## 10.0 Scalability and Performance
+
+### 10.1 Performance Optimization
+**Response Time Targets** (Req 3.1):
+- **Page Load**: < 1 second
+- **Text Submission**: < 15 seconds (LLM processing)
+- **Tab Switching**: < 1 second
+- **Admin Operations**: < 3 seconds
+
+**Optimization Strategies**:
+- **Database Optimization**: SQLite WAL mode and indexing
+- **Caching**: Session state and configuration caching
+- **Connection Pooling**: Database connection management
+- **Async Processing**: Non-blocking operations where possible
+
+### 10.2 Scalability Strategy
+**Concurrent User Support** (Req 3.2):
+- **Target**: 100+ concurrent users
+- **Current**: 10-20 concurrent users
+- **Scaling**: Horizontal scaling with load balancing
+
+**Scaling Approaches**:
+- **Horizontal Scaling**: Multiple container instances
+- **Load Balancing**: Nginx reverse proxy with health checks
+- **Database Scaling**: SQLite with WAL mode optimizations
+- **Resource Scaling**: CPU and memory allocation
+
+### 10.3 Resource Management
+**Resource Allocation**:
+- **CPU**: 2-4 cores per container instance
+- **Memory**: 4-8GB RAM per instance
+- **Storage**: 20-50GB SSD storage
+- **Network**: 100Mbps-1Gbps bandwidth
+
+**Resource Monitoring**:
+- **CPU Usage**: Container and system CPU monitoring
+- **Memory Usage**: Memory consumption tracking
+- **Disk Usage**: Storage utilization monitoring
+- **Network Usage**: Bandwidth consumption tracking
+
+---
+
+## 11.0 Operational Procedures
+
+### 11.1 Backup and Recovery
+**Backup Strategy**:
+- **Database Backups**: Weekly automated SQLite backups with verification
+- **Configuration Backups**: Version-controlled configuration files
+- **Log Backups**: Rotated log file archives
+- **Application Backups**: Container image backups
+- **Backup Verification**: Automated integrity checks and restore testing
+
+**Recovery Procedures**:
+- **Database Recovery**: Restore from backup with integrity checks
+- **Configuration Recovery**: Restore from version control
+- **Application Recovery**: Redeploy from container images
+- **Full System Recovery**: Complete environment restoration
+
+### 11.2 Maintenance Procedures
+**Regular Maintenance**:
+- **Log Rotation**: Automated log file management
+- **Database Maintenance**: SQLite optimization and cleanup
+- **Security Updates**: Regular security patch application
+- **Performance Monitoring**: Ongoing performance assessment
+
+**Scheduled Maintenance**:
+- **Weekly**: Log cleanup and performance review
+- **Monthly**: Security updates and configuration review
+- **Quarterly**: Full system health assessment
+- **Annually**: Comprehensive security audit
+
+### 11.3 Incident Response
+**Incident Categories**:
+- **Service Outage**: Application unavailability
+- **Performance Degradation**: Slow response times
+- **Security Incident**: Unauthorized access or data breach
+- **Data Loss**: Database corruption or backup failure
+
+**Response Procedures**:
+- **Detection**: Automated monitoring and alerting
+- **Assessment**: Impact analysis and severity determination
+- **Response**: Immediate mitigation and recovery actions
+- **Resolution**: Root cause analysis and prevention measures
+
+---
+
+## 12.0 Design Decisions
+
+### 12.1 SSL Certificate Management
+**Decision**: **Let's Encrypt with Traefik Auto-renewal**
+
+**Implementation**:
+- **Certificate Provider**: Let's Encrypt for free, automatic SSL certificates
+- **Renewal Strategy**: Automated renewal through Traefik's built-in Let's Encrypt integration
+- **DNS Requirements**: Public DNS configuration for domain validation
+- **Certificate Validity**: 90-day certificates with automatic renewal
+- **Deployment**: SSL termination at Traefik reverse proxy
+
+**Configuration**:
 ```yaml
-# docker-compose.prod.yml
+# Traefik Let's Encrypt configuration
+certificatesresolvers:
+  letsencrypt:
+    acme:
+      email: ${ADMIN_EMAIL}
+      storage: /letsencrypt/acme.json
+      httpchallenge:
+        entrypoint: web
+```
+
+**Rationale**: 
+- **Pros**: Free, automatic renewal, widely trusted, integrated with Traefik
+- **Cons**: Requires public DNS, 90-day renewal cycle
+- **Implementation Basis**: Provides cost-effective SSL security with minimal maintenance overhead through Traefik integration
+
+### 12.2 Database Backup Strategy
+**Decision**: **Weekly Backups with 4-week Retention**
+
+**Implementation**:
+- **Backup Frequency**: Weekly automated database backups
+- **Retention Policy**: 4-week retention period (4 backup files)
+- **Backup Method**: SQLite backup API with WAL checkpoint
+- **Storage**: Local backup directory with rotation
+- **Verification**: Automated backup integrity checks
+
+**Configuration**:
+```bash
+# Weekly backup cron job
+0 2 * * 0 /usr/local/bin/backup_memoai.sh
+
+# Backup retention cleanup
+0 3 * * 0 /usr/local/bin/cleanup_backups.sh
+```
+
+**Backup Script**:
+```bash
+#!/bin/bash
+# backup_memoai.sh
+DATE=$(date +%Y%m%d)
+BACKUP_DIR="/app/backups"
+DB_PATH="/app/data/memoai.db"
+
+# Create backup directory
+mkdir -p $BACKUP_DIR
+
+# Perform SQLite backup with WAL checkpoint
+sqlite3 $DB_PATH "PRAGMA wal_checkpoint(FULL);"
+cp $DB_PATH "$BACKUP_DIR/memoai_$DATE.db"
+
+# Verify backup integrity
+BACKUP_FILE="$BACKUP_DIR/memoai_$DATE.db"
+if sqlite3 "$BACKUP_FILE" "PRAGMA integrity_check;" | grep -q "ok"; then
+    echo "Backup verification successful: $BACKUP_FILE"
+    
+    # Test backup restore capability
+    TEST_RESTORE_DIR="/tmp/test_restore_$DATE"
+    mkdir -p $TEST_RESTORE_DIR
+    cp "$BACKUP_FILE" "$TEST_RESTORE_DIR/test.db"
+    
+    if sqlite3 "$TEST_RESTORE_DIR/test.db" "SELECT COUNT(*) FROM sessions;" > /dev/null 2>&1; then
+        echo "Backup restore test successful"
+        rm -rf $TEST_RESTORE_DIR
+    else
+        echo "WARNING: Backup restore test failed"
+        rm -rf $TEST_RESTORE_DIR
+    fi
+else
+    echo "ERROR: Backup verification failed: $BACKUP_FILE"
+    exit 1
+fi
+
+# Cleanup old backups (keep 4 weeks)
+find $BACKUP_DIR -name "memoai_*.db" -mtime +28 -delete
+
+# Log backup completion
+echo "Backup completed successfully: $BACKUP_FILE"
+```
+
+**Rationale**: 
+- **Pros**: Simple management, reasonable storage usage, adequate recovery point
+- **Cons**: Potential week-long data loss window
+- **Implementation Basis**: Balances storage efficiency with recovery requirements for typical usage patterns
+
+### 12.3 Monitoring and Alerting
+**Decision**: **Built-in Health Checks with Email Alerts**
+
+**Implementation**:
+- **Health Check Endpoints**: Built-in health checks for all services
+- **Monitoring**: Simple application metrics and system health
+- **Alerting**: Email notifications for critical issues
+- **Dashboard**: Basic web-based status dashboard
+- **Logging**: Comprehensive application logging with rotation
+
+**Health Check Configuration**:
+```yaml
+# Docker health checks
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+```
+
+**Monitoring Endpoints**:
+```python
+# FastAPI health check endpoint
+@app.get("/health")
+async def health_check():
+    """Comprehensive health check endpoint"""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow(),
+        "version": "1.0.0",
+        "database": check_database_connection(),
+        "llm": check_llm_connection(),
+        "configuration": check_configuration_files(),
+        "services": {
+            "database": "healthy",
+            "llm": "healthy", 
+            "config": "healthy"
+        }
+    }
+    
+    # Check if any service is unhealthy
+    if any(status != "healthy" for status in health_status["services"].values()):
+        health_status["status"] = "unhealthy"
+    
+    return health_status
+
+def check_database_connection():
+    """Check database connectivity and WAL mode"""
+    try:
+        conn = sqlite3.connect(DATABASE_URL.replace('sqlite:///', ''))
+        cursor = conn.cursor()
+        
+        # Check WAL mode
+        cursor.execute("PRAGMA journal_mode")
+        journal_mode = cursor.fetchone()[0]
+        
+        # Test basic query
+        cursor.execute("SELECT COUNT(*) FROM sessions")
+        session_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return {
+            "status": "healthy",
+            "journal_mode": journal_mode,
+            "session_count": session_count
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+def check_llm_connection():
+    """Check LLM API connectivity"""
+    try:
+        # Test LLM API connection (without making actual request)
+        # This would test the API key and basic connectivity
+        return {
+            "status": "healthy",
+            "provider": "claude",
+            "model": "claude-3-sonnet-20240229"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy", 
+            "error": str(e)
+        }
+
+def check_configuration_files():
+    """Check configuration file accessibility"""
+    config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
+    config_status = {}
+    
+    for filename in config_files:
+        file_path = f"/app/config/{filename}"
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                yaml.safe_load(f)
+            config_status[filename] = "accessible"
+        except Exception as e:
+            config_status[filename] = f"error: {str(e)}"
+    
+    return config_status
+
+# Rate Limiting Middleware Implementation
+```python
+# rate_limiting.py - Rate limiting middleware
+import time
+from collections import defaultdict
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+
+class RateLimiter:
+    def __init__(self):
+        self.requests = defaultdict(list)
+        self.limits = {
+            'text_submissions': 20,  # per hour per session
+            'admin_operations': 100,  # per hour per admin
+            'config_changes': 20,  # per hour per admin
+            'global_api': 1000  # per hour per IP
+        }
+    
+    def is_rate_limited(self, key: str, limit_type: str, window: int = 3600):
+        """Check if request is rate limited"""
+        current_time = time.time()
+        key_requests = self.requests[f"{key}:{limit_type}"]
+        
+        # Remove old requests outside window
+        key_requests[:] = [req_time for req_time in key_requests 
+                          if current_time - req_time < window]
+        
+        # Check if limit exceeded
+        if len(key_requests) >= self.limits[limit_type]:
+            return True
+        
+        # Add current request
+        key_requests.append(current_time)
+        return False
+
+rate_limiter = RateLimiter()
+
+async def rate_limit_middleware(request: Request, call_next):
+    """Rate limiting middleware for FastAPI"""
+    # Get client IP
+    client_ip = request.client.host
+    
+    # Get session ID from headers or cookies
+    session_id = request.headers.get('X-Session-ID') or request.cookies.get('session_id')
+    
+    # Determine rate limit type based on endpoint
+    path = request.url.path
+    if path.startswith('/api/v1/evaluations/submit'):
+        limit_type = 'text_submissions'
+        key = session_id or client_ip
+    elif path.startswith('/api/v1/admin'):
+        limit_type = 'admin_operations'
+        key = session_id or client_ip
+    else:
+        limit_type = 'global_api'
+        key = client_ip
+    
+    # Check rate limit
+    if rate_limiter.is_rate_limited(key, limit_type):
+        return JSONResponse(
+            status_code=429,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": time.time(),
+                    "request_id": request.headers.get('X-Request-ID', 'unknown')
+                },
+                "errors": [{
+                    "code": "RATE_LIMITED",
+                    "message": "Rate limit exceeded",
+                    "field": None,
+                    "details": f"Too many requests for {limit_type}"
+                }]
+            }
+        )
+    
+    # Add rate limit headers
+    response = await call_next(request)
+    response.headers['X-RateLimit-Limit'] = str(rate_limiter.limits[limit_type])
+    response.headers['X-RateLimit-Remaining'] = str(
+        rate_limiter.limits[limit_type] - len(rate_limiter.requests[f"{key}:{limit_type}"])
+    )
+    
+    return response
+
+# Logging Middleware Implementation
+```python
+# logging_middleware.py - Comprehensive logging middleware
+import logging
+import time
+import uuid
+from fastapi import Request
+from fastapi.responses import Response
+
+logger = logging.getLogger('memoai')
+auth_logger = logging.getLogger('memoai.auth')
+llm_logger = logging.getLogger('memoai.llm')
+debug_logger = logging.getLogger('memoai.debug')
+
+async def logging_middleware(request: Request, call_next):
+    """Comprehensive logging middleware for FastAPI"""
+    # Generate request ID
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    
+    # Log request start
+    start_time = time.time()
+    
+    # Log request details
+    logger.info(f"Request started - ID: {request_id}, Method: {request.method}, Path: {request.url.path}")
+    
+    # Log authentication details if available
+    session_id = request.headers.get('X-Session-ID') or request.cookies.get('session_id')
+    if session_id:
+        auth_logger.info(f"Request authenticated - ID: {request_id}, Session: {session_id[:8]}...")
+    
+    # Log LLM requests specifically
+    if request.url.path.startswith('/api/v1/evaluations/submit'):
+        llm_logger.info(f"LLM evaluation request - ID: {request_id}, Session: {session_id[:8] if session_id else 'anonymous'}")
+    
+    try:
+        # Process request
+        response = await call_next(request)
+        
+        # Calculate processing time
+        process_time = time.time() - start_time
+        
+        # Log response
+        logger.info(f"Request completed - ID: {request_id}, Status: {response.status_code}, Time: {process_time:.3f}s")
+        
+        # Add request ID to response headers
+        response.headers['X-Request-ID'] = request_id
+        response.headers['X-Process-Time'] = str(process_time)
+        
+        return response
+        
+    except Exception as e:
+        # Log errors
+        process_time = time.time() - start_time
+        logger.error(f"Request failed - ID: {request_id}, Error: {str(e)}, Time: {process_time:.3f}s")
+        
+        # Re-raise the exception
+        raise
+```
+
+**Email Alert Configuration**:
+```bash
+#!/bin/bash
+# alert.sh
+if [ $1 = "critical" ]; then
+    echo "Critical alert: $2" | mail -s "MemoAI Alert" ${ADMIN_EMAIL}
+fi
+```
+
+**Rationale**: 
+- **Pros**: Simple implementation, no external dependencies, immediate availability
+- **Cons**: Limited monitoring capabilities, basic alerting
+- **Implementation Basis**: Provides adequate monitoring for initial deployment with clear upgrade path
+
+### 12.4 Scaling Strategy
+**Decision**: **Container Orchestration with Traefik Load Balancing**
+
+**Implementation**:
+- **Orchestration**: Docker Compose with multiple container instances
+- **Load Balancing**: Traefik reverse proxy with automatic service discovery
+- **Scaling**: Horizontal scaling with container replication
+- **Resource Management**: Resource limits and monitoring
+- **Health Monitoring**: Container health checks and auto-restart
+
+**Docker Compose Scaling**:
+```yaml
+# docker compose.yml with scaling
 version: '3.8'
 services:
-  memoai-backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile.prod
-    ports:
-      - "8000:8000"
-    environment:
-      - AUTH_ENABLED=true
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - SESSION_TIMEOUT=3600
-      - DATABASE_URL=sqlite:///data/memoai.db
-      - LLM_PROVIDER=claude
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
-      - HTTPS_ONLY=true
-      - SECURE_COOKIES=true
-      - CSRF_PROTECTION=true
-      - RATE_LIMIT_PER_MINUTE=60
-    volumes:
-      - memoai_data:/app/data
-      - memoai_config:/app/config
-    secrets:
-      - jwt_secret
-      - claude_api_key
-    restart: unless-stopped
-
-  memoai-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-    ports:
-      - "3000:3000"
-    environment:
-      - BACKEND_URL=https://memoai-backend:8000
-      - AUTH_ENABLED=true
-    volumes:
-      - memoai_static:/app/static
-    depends_on:
-      - memoai-backend
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     ports:
       - "80:80"
       - "443:443"
+      - "8080:8080"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-      - memoai_static:/var/www/static
-    depends_on:
-      - memoai-frontend
-      - memoai-backend
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
     restart: unless-stopped
 
-volumes:
-  memoai_data:
-  memoai_config:
-  memoai_static:
-
-secrets:
-  jwt_secret:
-    external: true
-  claude_api_key:
-    external: true
+  backend:
+    build: ./backend
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 ```
 
-### 5.3 Dockerfile Specifications
-```dockerfile
-# Backend Dockerfile
-FROM python:3.11-slim
+**Traefik Load Balancer Features**:
+- **Automatic Service Discovery**: Traefik automatically detects new containers
+- **Built-in Load Balancing**: Round-robin load balancing across backend instances
+- **Health Check Integration**: Automatic removal of unhealthy instances
+- **SSL/TLS Management**: Automatic certificate provisioning and renewal
 
+**Scaling Commands**:
+```bash
+# Scale backend services
+docker compose up -d --scale backend=3
+
+# Monitor scaling
+docker compose ps
+docker stats
+
+# Access Traefik dashboard
+# http://localhost:8080
+```
+
+**Rationale**: 
+- **Pros**: Clear scaling path, automatic service discovery, integrated SSL/TLS
+- **Cons**: Additional complexity, requires Traefik configuration
+- **Implementation Basis**: Provides clear scaling path for 100+ concurrent users with modern container orchestration
+
+### 12.5 Security Hardening
+**Decision**: **Basic Security with Essential Hardening**
+
+**Implementation**:
+- **Authentication**: Session-based authentication with secure tokens
+- **Input Validation**: Comprehensive input sanitization and validation
+- **SSL/TLS**: HTTPS encryption with Traefik and Let's Encrypt certificates
+- **Rate Limiting**: API rate limiting and abuse prevention
+- **Access Control**: Admin-only access to sensitive functions
+- **Configuration Security**: Secure configuration management
+- **Traefik Security**: Built-in security features and middleware support
+
+**Security Configuration**:
+```python
+# Security middleware configuration
+SECURITY_CONFIG = {
+    'session_timeout': 3600,
+    'max_login_attempts': 5,
+    'rate_limit_per_session': 20,
+    'rate_limit_per_hour': 1000,
+    'csrf_protection': True,
+    'xss_protection': True,
+    'content_security_policy': True
+}
+```
+
+**Docker Security**:
+```dockerfile
+# Security-hardened Dockerfile
+FROM python:3.9-slim
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
+# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create data and config directories
-RUN mkdir -p /app/data /app/config
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
 
-# Run as non-root user
-RUN useradd -m -u 1000 memoai && chown -R memoai:memoai /app
-USER memoai
+# Switch to non-root user
+USER appuser
 
+# Expose port
 EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
----
-
-## 6.0 Authentication and Security Configuration
-
-### 6.1 Environment Variables
-```yaml
-# Authentication Configuration
-AUTH_ENABLED=true  # Authentication enabled from MVP start
-JWT_SECRET_KEY=${JWT_SECRET_KEY}  # Required in production
-JWT_EXPIRATION_HOURS=24
-SESSION_TIMEOUT=3600  # seconds
-BCRYPT_ROUNDS=12
-
-# Database Configuration
-DATABASE_URL=sqlite:///data/memoai.db
-DATABASE_BACKUP_ENABLED=true
-
-# Security Settings
-HTTPS_ONLY=true  # Production only
-SECURE_COOKIES=true  # Production only
-CSRF_PROTECTION=true
-RATE_LIMIT_PER_MINUTE=60
-
-# LLM Provider
-LLM_PROVIDER=claude
-CLAUDE_API_KEY=${CLAUDE_API_KEY}
-
-# Application Settings
-DEBUG_MODE=false  # Production only
-LOG_LEVEL=INFO
+**Network Security**:
+```bash
+# Firewall configuration
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 8080/tcp  # Traefik dashboard
+ufw allow 22/tcp
+ufw enable
 ```
 
-### 6.2 Configuration Files
-
-#### 6.2.1 Authentication Configuration
-```yaml
-# config/auth.yaml
-authentication:
-  enabled: ${AUTH_ENABLED:-true}
-  mode: "jwt_session"  # jwt_session | session_only
-  jwt:
-    secret_key: ${JWT_SECRET_KEY}
-    algorithm: "HS256"
-    expiration_hours: ${JWT_EXPIRATION_HOURS:-24}
-  session:
-    timeout: ${SESSION_TIMEOUT:-3600}
-    secure_cookies: ${SECURE_COOKIES:-false}
-    csrf_protection: ${CSRF_PROTECTION:-true}
-  security:
-    bcrypt_rounds: ${BCRYPT_ROUNDS:-12}
-    max_login_attempts: 5
-    lockout_duration: 900
-
-# Auto-generated OpenAPI documentation settings
-api_documentation:
-  openapi:
-    title: ${API_TITLE:-Memo AI Coach API}
-    version: ${API_VERSION:-1.0.0}
-    description: ${API_DESCRIPTION:-REST API for text evaluation and coaching}
-    interactive_docs: ${ENABLE_DOCS:-true}
-    include_schemas: ${INCLUDE_SCHEMAS:-true}
-    rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
-```
-
-#### 6.2.2 Security Configuration
-```yaml
-# config/security.yaml
-security:
-  input_validation:
-    max_text_length: ${MAX_TEXT_LENGTH:-10000}
-    xss_protection: ${XSS_PROTECTION:-true}
-    sql_injection_protection: ${SQL_INJECTION_PROTECTION:-true}
-    file_upload_validation: ${FILE_UPLOAD_VALIDATION:-true}
-  
-  rate_limiting:
-    requests_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
-    submissions_per_hour: ${SUBMISSIONS_PER_HOUR:-10}
-    login_attempts_per_hour: ${LOGIN_ATTEMPTS_PER_HOUR:-5}
-    admin_operations_per_hour: ${ADMIN_OPS_PER_HOUR:-100}
-  
-  csrf_protection:
-    enabled: ${CSRF_PROTECTION:-true}
-    token_expiry: ${CSRF_TOKEN_EXPIRY:-3600}
-    cookie_name: ${CSRF_COOKIE_NAME:-memoai_csrf_token}
-  
-  headers:
-    hsts_enabled: ${HSTS_ENABLED:-true}
-    hsts_max_age: ${HSTS_MAX_AGE:-31536000}
-    content_security_policy: ${CSP_ENABLED:-true}
-    x_frame_options: ${X_FRAME_OPTIONS:-DENY}
-    x_content_type_options: ${X_CONTENT_TYPE_OPTIONS:-nosniff}
-```
-
-#### 6.2.3 Frontend Configuration
-```yaml
-# config/frontend.yaml
-frontend:
-  ui_settings:
-    theme: ${UI_THEME:-default}
-    language: ${UI_LANGUAGE:-en}
-    loading_timeout: ${LOADING_TIMEOUT:-30}
-    page_title: ${PAGE_TITLE:-Memo AI Coach}
-  
-  components:
-    text_input_max_chars: ${TEXT_INPUT_MAX_CHARS:-10000}
-    auto_save_interval: ${AUTO_SAVE_INTERVAL:-30}
-    session_timeout_warning: ${SESSION_TIMEOUT_WARNING:-300}
-    tab_switch_animation: ${TAB_ANIMATION:-true}
-  
-  features:
-    debug_mode_enabled: ${DEBUG_MODE_ENABLED:-true}
-    progress_charts_enabled: ${PROGRESS_CHARTS_ENABLED:-true}
-    help_tooltips_enabled: ${HELP_TOOLTIPS_ENABLED:-true}
-    keyboard_shortcuts: ${KEYBOARD_SHORTCUTS:-true}
-  
-  performance:
-    lazy_loading: ${LAZY_LOADING:-true}
-    cache_duration: ${CACHE_DURATION:-300}
-    api_timeout: ${API_TIMEOUT:-60}
-    chart_animation: ${CHART_ANIMATION:-true}
-```
-
-#### 6.2.4 Backend Configuration
-```yaml
-# config/backend.yaml
-backend:
-  api_settings:
-    cors_origins: ${CORS_ORIGINS:-["http://localhost:3000"]}
-    rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
-    request_timeout: ${REQUEST_TIMEOUT:-30}
-    max_request_size: ${MAX_REQUEST_SIZE:-10MB}
-  
-  middleware:
-    gzip_compression: ${GZIP_COMPRESSION:-true}
-    request_logging: ${REQUEST_LOGGING:-true}
-    performance_monitoring: ${PERFORMANCE_MONITORING:-true}
-    error_tracking: ${ERROR_TRACKING:-true}
-  
-  workers:
-    process_count: ${WORKER_PROCESSES:-1}
-    thread_count: ${WORKER_THREADS:-4}
-    worker_timeout: ${WORKER_TIMEOUT:-30}
-    max_requests_per_worker: ${MAX_REQUESTS_PER_WORKER:-1000}
-  
-  features:
-    auto_reload: ${AUTO_RELOAD:-false}
-    debug_toolbar: ${DEBUG_TOOLBAR:-false}
-    
-  # Asynchronous evaluation processing
-  evaluation:
-    async_processing: ${ASYNC_PROCESSING:-true}
-    max_concurrent: ${MAX_CONCURRENT_EVALUATIONS:-5}
-    timeout_seconds: ${EVALUATION_TIMEOUT:-60}
-    polling_interval: ${POLLING_INTERVAL:-2}  # seconds
-    
-  # Direct file serving configuration
-  file_serving:
-    temporary_storage: ${TEMP_STORAGE_PATH:-./temp}
-    retention_hours: ${FILE_RETENTION_HOURS:-24}
-    max_file_size: ${MAX_FILE_SIZE:-52428800}  # 50MB
-    cleanup_interval: ${CLEANUP_INTERVAL:-3600}  # 1 hour
-    
-  # In-memory rate limiting
-  rate_limiting:
-    implementation: "memory"  # memory | database | redis
-    cleanup_interval: ${RATE_LIMIT_CLEANUP:-300}  # 5 minutes
-    sliding_window: ${SLIDING_WINDOW:-3600}  # 1 hour
-    
-  # Configuration hot-reload settings
-  config_management:
-    hot_reload_enabled: ${HOT_RELOAD:-true}
-    hot_reload_business_logic: ${HOT_RELOAD_BUSINESS:-true}  # rubric, frameworks, context, prompt
-    hot_reload_system_configs: ${HOT_RELOAD_SYSTEM:-false}  # auth, security, database, etc.
-    reload_check_interval: ${RELOAD_CHECK_INTERVAL:-5}  # seconds
-    profiling_enabled: ${PROFILING_ENABLED:-false}
-```
-
-#### 6.2.5 Database Configuration
-```yaml
-# config/database.yaml
-database:
-  connection:
-    url: ${DATABASE_URL:-sqlite:///data/memoai.db}
-    pool_size: ${DB_POOL_SIZE:-20}
-    max_overflow: ${DB_MAX_OVERFLOW:-10}
-    pool_timeout: ${DB_POOL_TIMEOUT:-30}
-    pool_recycle: ${DB_POOL_RECYCLE:-3600}
-  
-  sqlite_settings:
-    wal_mode: ${WAL_MODE:-true}
-    synchronous: ${DB_SYNCHRONOUS:-NORMAL}
-    cache_size: ${DB_CACHE_SIZE:-10000}
-    temp_store: ${DB_TEMP_STORE:-memory}
-    journal_size_limit: ${JOURNAL_SIZE_LIMIT:-67108864}
-  
-  performance:
-    query_timeout: ${DB_QUERY_TIMEOUT:-30}
-    checkpoint_interval: ${WAL_CHECKPOINT_INTERVAL:-3600}
-    vacuum_interval: ${VACUUM_INTERVAL:-86400}
-    analyze_interval: ${ANALYZE_INTERVAL:-86400}
-  
-  backup:
-    enabled: ${BACKUP_ENABLED:-true}
-    interval: ${BACKUP_INTERVAL:-86400}
-    retention_days: ${BACKUP_RETENTION_DAYS:-7}
-    compression: ${BACKUP_COMPRESSION:-true}
-```
-
-#### 6.2.6 LLM Provider Configuration
-```yaml
-# config/llm.yaml
-llm:
-  provider:
-    name: ${LLM_PROVIDER:-claude}
-    api_key: ${CLAUDE_API_KEY}
-    base_url: ${LLM_BASE_URL:-https://api.anthropic.com}
-    model: ${LLM_MODEL:-claude-3-sonnet-20240229}
-  
-  request_settings:
-    timeout: ${LLM_TIMEOUT:-60}
-    retry_attempts: ${LLM_RETRY_ATTEMPTS:-3}
-    retry_delay: ${LLM_RETRY_DELAY:-1}
-    max_tokens: ${LLM_MAX_TOKENS:-4000}
-    temperature: ${LLM_TEMPERATURE:-0.7}
-  
-  performance:
-    connection_pool_size: ${LLM_POOL_SIZE:-10}
-    rate_limit_per_minute: ${LLM_RATE_LIMIT:-100}
-    batch_processing: ${LLM_BATCH_PROCESSING:-false}
-    response_streaming: ${LLM_STREAMING:-false}
-  
-  fallback:
-    enabled: ${LLM_FALLBACK_ENABLED:-false}
-    secondary_provider: ${LLM_FALLBACK_PROVIDER}
-    secondary_api_key: ${LLM_FALLBACK_API_KEY}
-    fallback_timeout: ${LLM_FALLBACK_TIMEOUT:-30}
-```
-
-#### 6.2.7 Logging Configuration
-```yaml
-# config/logging.yaml
-logging:
-  level: ${LOG_LEVEL:-INFO}
-  format: ${LOG_FORMAT:-json}  # json | text
-  
-  outputs:
-    console:
-      enabled: ${CONSOLE_LOGGING:-true}
-      level: ${CONSOLE_LOG_LEVEL:-INFO}
-      format: ${CONSOLE_LOG_FORMAT:-text}
-    file:
-      enabled: ${FILE_LOGGING:-true}
-      path: ${LOG_FILE_PATH:-/app/logs/app.log}
-      level: ${FILE_LOG_LEVEL:-INFO}
-      max_size: ${LOG_FILE_MAX_SIZE:-100MB}
-      max_files: ${LOG_FILE_MAX_FILES:-10}
-      rotation: ${LOG_ROTATION:-daily}
-  
-  structured:
-    include_timestamp: ${LOG_TIMESTAMP:-true}
-    include_request_id: ${LOG_REQUEST_ID:-true}
-    include_user_session: ${LOG_USER_SESSION:-true}
-    include_source_location: ${LOG_SOURCE_LOCATION:-false}
-  
-  retention:
-    days: ${LOG_RETENTION_DAYS:-30}
-    compression: ${LOG_COMPRESSION:-true}
-    cleanup_interval: ${LOG_CLEANUP_INTERVAL:-86400}
-```
-
-#### 6.2.8 Monitoring Configuration
-```yaml
-# config/monitoring.yaml
-monitoring:
-  health_checks:
-    enabled: ${HEALTH_CHECKS_ENABLED:-true}
-    interval: ${HEALTH_CHECK_INTERVAL:-30}
-    timeout: ${HEALTH_CHECK_TIMEOUT:-5}
-    endpoint: ${HEALTH_CHECK_ENDPOINT:-/health}
-  
-  metrics:
-    enabled: ${METRICS_ENABLED:-true}
-    endpoint: ${METRICS_ENDPOINT:-/metrics}
-    collection_interval: ${METRICS_INTERVAL:-60}
-    retention_days: ${METRICS_RETENTION_DAYS:-7}
-  
-  performance:
-    response_time_threshold: ${RESPONSE_TIME_THRESHOLD:-5000}
-    error_rate_threshold: ${ERROR_RATE_THRESHOLD:-0.05}
-    cpu_threshold: ${CPU_THRESHOLD:-80}
-    memory_threshold: ${MEMORY_THRESHOLD:-80}
-    disk_threshold: ${DISK_THRESHOLD:-85}
-  
-  alerting:
-    enabled: ${ALERTING_ENABLED:-false}
-    webhook_url: ${ALERT_WEBHOOK_URL}
-    email_notifications: ${ALERT_EMAIL_ENABLED:-false}
-    critical_threshold: ${CRITICAL_THRESHOLD:-0.1}
-    notification_cooldown: ${NOTIFICATION_COOLDOWN:-300}
-```
-
-#### 6.2.9 Performance Configuration
-```yaml
-# config/performance.yaml
-performance:
-  caching:
-    enabled: ${CACHE_ENABLED:-true}
-    backend: ${CACHE_BACKEND:-memory}  # memory | redis
-    ttl: ${CACHE_TTL:-3600}
-    max_size: ${CACHE_MAX_SIZE:-1000}
-    progress_cache_ttl: ${PROGRESS_CACHE_TTL:-3600}
-  
-  connection_pooling:
-    database_pool_size: ${DB_POOL_SIZE:-20}
-    llm_pool_size: ${LLM_POOL_SIZE:-10}
-    http_pool_size: ${HTTP_POOL_SIZE:-100}
-    connection_timeout: ${CONNECTION_TIMEOUT:-30}
-  
-  optimization:
-    lazy_loading: ${LAZY_LOADING:-true}
-    compression: ${COMPRESSION_ENABLED:-true}
-    static_file_caching: ${STATIC_CACHE_ENABLED:-true}
-    asset_minification: ${ASSET_MINIFICATION:-true}
-  
-  limits:
-    max_concurrent_requests: ${MAX_CONCURRENT_REQUESTS:-100}
-    max_request_size: ${MAX_REQUEST_SIZE:-10MB}
-    timeout_seconds: ${REQUEST_TIMEOUT:-30}
-    max_file_uploads: ${MAX_FILE_UPLOADS:-10}
-```
-
-### 6.3 Security Implementation
-```yaml
-SecurityMeasures:
-  https_enforcement:
-    - TLS 1.3 configuration
-    - Secure cipher suites
-    - HSTS headers
-    - Certificate auto-renewal
-  
-  authentication_security:
-    - JWT token rotation
-    - Secure session management
-    - Password policy enforcement
-    - Brute force protection
-  
-  input_validation:
-    - XSS prevention
-    - SQL injection protection
-    - CSRF token validation
-    - Rate limiting per session/user
-```
+**Rationale**: 
+- **Pros**: Simple implementation, adequate for most use cases, maintainable
+- **Cons**: May not meet enterprise security requirements
+- **Implementation Basis**: Provides essential security while maintaining simplicity and usability
 
 ---
 
-## 7.0 Environment Management
+## 13.0 Traceability Matrix
 
-### 7.1 Environment-Specific Configurations
-```yaml
-EnvironmentConfigs:
-  development:
-    auth_enabled: true
-    debug_mode: true
-    log_level: DEBUG
-    database_url: "sqlite:///data/memoai_dev.db"
-  
-  staging:
-    auth_enabled: true
-    debug_mode: false
-    log_level: INFO
-    database_url: "sqlite:///data/memoai_staging.db"
-  
-  production:
-    auth_enabled: true
-    debug_mode: false
-    log_level: WARNING
-    database_url: "sqlite:///data/memoai_prod.db"
-    https_only: true
-    secure_cookies: true
-```
-
-### 7.2 Secrets Management
-```yaml
-SecretsManagement:
-  jwt_secret:
-    - Environment variable: JWT_SECRET_KEY
-    - Rotation: Quarterly
-    - Generation: Secure random 32 bytes
-  
-  llm_api_key:
-    - Environment variable: CLAUDE_API_KEY
-    - Rotation: As needed
-    - Storage: Docker secrets or environment variables
-  
-  database_credentials:
-    - Future: PostgreSQL credentials
-    - Current: SQLite file permissions
-    - Backup: Encrypted backup files
-```
+| Requirement ID | Requirement Description | Deployment Implementation |
+|---------------|------------------------|---------------------------|
+| 3.1.1 | Responsive system | Performance Optimization (10.1) - Response time targets |
+| 3.1.2 | Text submission response: < 15 seconds (LLM processing) | Performance Optimization (10.1) - LLM processing targets |
+| 3.2.1 | System supports 10-20 concurrent users | Scalability Strategy (10.2) - Concurrent user support |
+| 3.2.2 | System scales to 100+ concurrent users | Scalability Strategy (10.2) - Horizontal scaling approach |
+| 3.3.1 | High uptime is expected | Reliability Measures (10.3) - Health checks and monitoring |
+| 3.3.2 | Robust error handling and logging required | Reliability Measures (10.3) - Comprehensive logging strategy |
+| 3.4.1 | Session-based authentication system | Security Implementation (9.1) - Authentication security |
+| 3.4.2 | Secure session management with expiration | Security Implementation (9.1) - Session security |
+| 3.4.3 | CSRF protection and rate limiting | Security Implementation (9.1) - Network security |
+| 3.4.4 | Admin authentication for system management functions | Security Implementation (9.1) - Admin security |
+| 3.4.5 | Optional JWT authentication | Security Implementation (9.1) - Future enhancement ready |
+| 3.5.1 | Maintainability is top priority | Maintainability Strategy (10.3) - Simple deployment procedures |
+| 3.5.2 | Maximum simplicity, no duplicate functions | Maintainability Strategy (10.3) - Containerized architecture |
+| 3.5.3 | Comprehensive comments required | Maintainability Strategy (10.3) - Documentation and procedures |
+| 3.5.4 | Modular architecture | Maintainability Strategy (10.3) - Modular container design |
 
 ---
 
-## 8.0 Database Deployment and Persistence
+## 14.0 Implementation Summary
 
-### 8.1 SQLite Deployment Strategy (Based on Req 3.2)
-```yaml
-SQLiteDeployment:
-  storage_strategy:
-    - Docker volumes for data persistence
-    - Regular backups to external storage
-    - WAL mode for concurrent access
-    - Connection pooling for performance
-  
-  backup_strategy:
-    - Daily automated backups
-    - Weekly full backups
-    - Backup verification and testing
-    - Encrypted backup storage
-  
-  scaling_considerations:
-    - SQLite performance up to 100+ concurrent users
-    - WAL mode optimizations
-    - Connection pooling
-    - Future migration path to PostgreSQL
-```
+### 14.1 Deployment Readiness
+The deployment specification is complete and ready for implementation:
 
-### 8.2 Database Migration Strategy
-```yaml
-MigrationStrategy:
-  current_state:
-    - SQLite with WAL mode
-    - Version-based migrations
-    - Automated migration scripts
-  
-  future_scaling:
-    - PostgreSQL migration when needed
-    - Data migration procedures
-    - Connection string updates
-    - Performance optimization
-```
+- **Architecture**: Containerized microservices with three-layer design
+- **Infrastructure**: Docker-based deployment with Traefik load balancing
+- **Security**: Let's Encrypt SSL with Traefik, session authentication, rate limiting
+- **Monitoring**: Built-in health checks with email alerts
+- **Backup**: Weekly automated backups with 4-week retention
+- **Scaling**: Horizontal scaling support for 100+ concurrent users
+
+### 14.2 Key Design Decisions
+All critical design decisions have been resolved:
+
+1. **SSL Certificate Management**: Let's Encrypt with Traefik auto-renewal
+2. **Database Backup Strategy**: Weekly backups with 4-week retention
+3. **Monitoring and Alerting**: Built-in health checks with email alerts
+4. **Scaling Strategy**: Container orchestration with Traefik load balancing
+5. **Security Hardening**: Basic security with essential hardening
+
+### 14.3 Next Steps
+- **Implementation**: Follow deployment procedures in Section 7.0
+- **Validation**: Execute testing procedures from 06_Testing.md
+- **Monitoring**: Establish monitoring and alerting systems
+- **Documentation**: Update operational procedures as needed
 
 ---
 
-## 9.0 Deployment Procedures
-
-### 9.1 Initial Deployment
-```yaml
-InitialDeployment:
-  1. environment_setup:
-     - Install Docker and Docker Compose
-     - Configure environment variables
-     - Set up SSL certificates (production)
-  
-  2. database_setup:
-     - Initialize SQLite database
-     - Run migration scripts
-     - Create initial admin user (if auth enabled)
-  
-  3. application_deployment:
-     - Build Docker images
-     - Start containers with docker-compose
-     - Verify health checks
-     - Test core functionality
-  
-  4. configuration_setup:
-     - Upload YAML configuration files
-     - Configure authentication settings
-     - Set up monitoring and logging
-```
-
-### 9.2 Update Procedures
-```yaml
-UpdateProcedures:
-  application_updates:
-    - Pull latest code changes
-    - Build new Docker images
-    - Run database migrations
-    - Deploy with zero-downtime strategy
-  
-  configuration_updates:
-    - Update YAML configuration files
-    - Validate configuration syntax
-    - Restart affected services
-    - Verify configuration changes
-  
-  security_updates:
-    - Update base images
-    - Rotate secrets and keys
-    - Apply security patches
-    - Verify security posture
-```
-
-### 9.3 Rollback Procedures
-```yaml
-RollbackProcedures:
-  application_rollback:
-    - Revert to previous Docker image
-    - Rollback database migrations
-    - Restore configuration files
-    - Verify system functionality
-  
-  configuration_rollback:
-    - Restore previous YAML files
-    - Revert environment variables
-    - Restart services
-    - Validate system state
-```
-
----
-
-## 10.0 Scaling Strategies
-
-### 10.1 Horizontal Scaling (Based on Req 3.2)
-```yaml
-HorizontalScaling:
-  load_balancing:
-    - Nginx reverse proxy
-    - Round-robin load distribution
-    - Health check monitoring
-    - Session affinity (if needed)
-  
-  container_scaling:
-    - Docker Swarm or Kubernetes
-    - Auto-scaling based on metrics
-    - Resource limits and requests
-    - Service discovery
-  
-  database_scaling:
-    - Connection pooling
-    - Read replicas (future PostgreSQL)
-    - Query optimization
-    - Caching strategies
-```
-
-### 10.2 Performance Optimization
-```yaml
-PerformanceOptimization:
-  application_optimization:
-    - Async processing for LLM calls
-    - Caching for frequently accessed data
-    - Database query optimization
-    - Static asset optimization
-  
-  infrastructure_optimization:
-    - CDN for static assets
-    - Database indexing
-    - Memory and CPU optimization
-    - Network optimization
-```
-
----
-
-## 11.0 Monitoring and Observability
-
-### 11.1 Health Checks and Monitoring
-```yaml
-HealthChecks:
-  application_health:
-    - HTTP health check endpoint
-    - Database connectivity check
-    - LLM API connectivity check
-    - Response time monitoring
-  
-  infrastructure_health:
-    - Container health status
-    - Resource utilization monitoring
-    - Network connectivity
-    - Disk space monitoring
-  
-  business_metrics:
-    - User activity monitoring
-    - LLM API usage tracking
-    - Error rate monitoring
-    - Performance metrics
-```
-
-### 11.2 Logging and Alerting
-```yaml
-LoggingStrategy:
-  log_collection:
-    - Structured logging (JSON format)
-    - Log aggregation and centralization
-    - Log retention policies
-    - Log level configuration
-  
-  alerting:
-    - Error rate thresholds
-    - Performance degradation alerts
-    - Resource utilization alerts
-    - Security incident alerts
-```
-
----
-
-## 12.0 Backup and Disaster Recovery
-
-### 12.1 Backup Strategy
-```yaml
-BackupStrategy:
-  database_backups:
-    - Daily automated backups
-    - Point-in-time recovery capability
-    - Backup verification and testing
-    - Off-site backup storage
-  
-  configuration_backups:
-    - YAML configuration files
-    - Environment variables
-    - SSL certificates
-    - Docker Compose files
-  
-  application_backups:
-    - Docker images
-    - Static assets
-    - User uploads (PDFs)
-    - Log files
-```
-
-### 12.2 Disaster Recovery
-```yaml
-DisasterRecovery:
-  recovery_procedures:
-    - System restoration from backups
-    - Database recovery procedures
-    - Configuration restoration
-    - Service restart procedures
-  
-  business_continuity:
-    - Minimum viable system requirements
-    - Alternative deployment options
-    - Communication procedures
-    - Recovery time objectives
-```
-
----
-
-## 13.0 Traceability Links
-
-- **Source of Truth**: `02_Architecture.md`, `03_Data_Model.md`
-- **Mapped Requirements**: 
-  - Scalability (3.2)
-  - Reliability (3.3)
-  - Performance (3.1)
-  - Security (3.4)
-  - Docker deployment (Overview 3.2)
-  - MVP to production scaling path
+**Document ID**: 07_Deployment.md  
+**Document Version**: 1.2  
+**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Next Review**: After initial deployment

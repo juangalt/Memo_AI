@@ -590,6 +590,136 @@ AIDevelopmentTests:
     - Quality gates for AI model updates
 ```
 
+### 4.8 Three-Layer Architecture Testing
+**Test Coverage**: Complete validation of frontend, backend, and data layer integration
+
+```yaml
+ThreeLayerArchitectureTests:
+  test_frontend_layer:
+    - Streamlit component rendering and interaction
+    - Session state management across tabs (Req 2.1.2)
+    - Tab navigation performance (< 1 second switching)
+    - Information tooltips display (Req 2.1.3)
+    - Responsive design validation
+    - Error handling and user feedback
+
+  test_backend_layer:
+    - FastAPI service endpoints and routing
+    - Authentication and authorization middleware
+    - Rate limiting and security enforcement
+    - Error handling and response formatting
+    - API versioning and backward compatibility
+    - Health check endpoints and monitoring
+
+  test_data_layer:
+    - SQLite database operations and WAL mode
+    - YAML configuration file management
+    - Session data persistence and isolation
+    - Database schema validation and constraints
+    - Backup and recovery procedures
+    - Performance optimization and indexing
+
+  test_layer_integration:
+    - HTTP/JSON communication between frontend and backend
+    - Database integration with backend services
+    - Configuration file access and validation
+    - Cross-layer error propagation and handling
+    - Session state synchronization across layers
+    - Performance monitoring across all layers
+
+  test_authentication_layer:
+    - Session-based authentication across all layers (Req 3.4.1)
+    - Admin authentication for system management (Req 3.4.4)
+    - Session isolation and data security
+    - Authentication error handling and recovery
+    - Session expiration and cleanup procedures
+    - Cross-layer authentication validation
+```
+
+### 4.9 Configuration Management Testing
+**Test Coverage**: Complete validation of all 4 essential YAML configuration files
+
+```yaml
+ConfigurationManagementTests:
+  test_rubric_yaml:
+    - Grading criteria structure validation
+    - Scoring category definitions and weights
+    - Rubric hierarchy and consistency
+    - Required fields presence and format
+    - Rubric application in evaluation process
+    - Configuration change impact validation
+
+  test_prompt_yaml:
+    - LLM prompt template structure
+    - Template variable validation and substitution
+    - Instruction format consistency
+    - Response schema definitions
+    - Prompt construction and validation
+    - Template versioning and updates
+
+  test_llm_yaml:
+    - LLM provider configuration (Claude)
+    - API endpoint and authentication settings
+    - Model selection and parameters
+    - Timeout and retry configuration
+    - Error handling and fallback settings
+    - Provider-specific configuration validation
+
+  test_auth_yaml:
+    - Session management configuration
+    - Authentication method settings
+    - Security parameters and policies
+    - Admin access configuration
+    - Session timeout and cleanup settings
+    - Authentication system validation
+
+  test_configuration_security:
+    - Admin-only access to configuration editing
+    - YAML validation prevents system corruption
+    - Secure handling of sensitive configuration data
+    - Configuration change audit logging
+    - Configuration file access controls
+    - YAML injection prevention and validation
+```
+
+### 4.10 Performance Validation Testing
+**Test Coverage**: Real LLM performance validation for <15 seconds requirement
+
+```yaml
+PerformanceValidationTests:
+  test_real_llm_performance:
+    - Real LLM testing required for <15 seconds validation (Req 3.1.3)
+    - Performance baseline establishment with Claude API
+    - Response time measurement and validation
+    - Cost-controlled real LLM testing for validation
+    - Performance regression detection with real LLM
+    - Mock testing insufficient for performance validation
+
+  test_llm_integration_performance:
+    - Prompt construction performance optimization
+    - Response parsing and validation efficiency
+    - Error handling and retry mechanism performance
+    - Debug mode performance impact measurement
+    - Concurrent request handling performance
+    - Memory usage optimization during LLM processing
+
+  test_database_performance:
+    - SQLite WAL mode performance validation
+    - Concurrent read/write operation handling
+    - Query performance with large datasets
+    - Index effectiveness and optimization
+    - Connection pooling and resource management
+    - Database cleanup and maintenance performance
+
+  test_frontend_performance:
+    - Page load performance (< 1 second target)
+    - Tab switching performance validation
+    - Session state management efficiency
+    - UI rendering and interaction responsiveness
+    - Memory usage optimization in Streamlit
+    - Static asset loading and caching performance
+```
+
 ### 4.8 Database Schema Testing
 **Test Coverage**: Database integrity, schema validation, and data model compliance
 
@@ -1117,6 +1247,113 @@ The testing specification is complete and ready for implementation:
 - **AI-Friendly Design**: Optimized for AI development patterns and debugging needs
 - **Architecture Compliance**: Consistent with system architecture and technology stack
 - **Performance Validation**: Clear guidance on real LLM testing requirements
+
+## 11.0 Pending Design Decisions
+
+### 11.1 Real LLM Testing Strategy
+**Decision Required**: Balance between development velocity and performance validation accuracy
+
+**Alternatives**:
+1. **Mock-First with Limited Real LLM Validation**: Use mocks for development, real LLM only for critical validation
+   - **Pros**: Fast development cycles, cost-effective, predictable testing
+   - **Cons**: May miss real LLM performance issues, limited accuracy validation
+   - **Suggestion**: Implement mock-first approach with scheduled real LLM validation runs
+
+2. **Hybrid Approach with Cost Controls**: Mix of mock and real LLM testing with budget limits
+   - **Pros**: Balanced accuracy and cost, gradual validation, controlled expenses
+   - **Cons**: Complex test configuration, potential inconsistency
+   - **Suggestion**: Use hybrid approach with clear cost controls and validation schedules
+
+3. **Real LLM-First for Critical Paths**: Use real LLM for all critical evaluation flows
+   - **Pros**: Maximum accuracy, real-world validation, comprehensive testing
+   - **Cons**: High cost, slower development cycles, potential rate limiting
+   - **Suggestion**: Reserve for production validation and critical path testing only
+
+**Recommendation**: Implement mock-first approach with scheduled real LLM validation, focusing on cost control while ensuring performance requirements are met.
+
+### 11.2 Test Data Management Strategy
+**Decision Required**: Balance between realistic test data and maintainability
+
+**Alternatives**:
+1. **Static Fixtures with Version Control**: Maintained test data with clear versioning
+   - **Pros**: Predictable tests, easy debugging, consistent results
+   - **Cons**: May not reflect real LLM behavior, requires manual updates
+   - **Suggestion**: Use static fixtures for unit and integration tests
+
+2. **Dynamic Generation with Real LLM**: Generate test data from real LLM responses
+   - **Pros**: Realistic data, reflects actual behavior, self-updating
+   - **Cons**: Cost, potential flakiness, complex management
+   - **Suggestion**: Use for critical validation tests only
+
+3. **Hybrid Approach with Evolution**: Start with static data, evolve based on real LLM behavior
+   - **Pros**: Balanced approach, gradual improvement, cost-effective
+   - **Cons**: Requires careful management, potential inconsistency
+   - **Suggestion**: Implement hybrid approach with clear evolution procedures
+
+**Recommendation**: Use static fixtures for development with periodic updates based on real LLM behavior, ensuring consistency while maintaining realism.
+
+### 11.3 Performance Testing Frequency
+**Decision Required**: Balance between comprehensive performance validation and development velocity
+
+**Alternatives**:
+1. **Scheduled Performance Validation**: Regular performance testing with real LLM
+   - **Pros**: Consistent validation, early detection of issues, controlled cost
+   - **Cons**: May miss performance regressions, delayed feedback
+   - **Suggestion**: Implement weekly performance validation with real LLM
+
+2. **Continuous Performance Monitoring**: Real-time performance tracking with alerts
+   - **Pros**: Immediate feedback, comprehensive monitoring, early issue detection
+   - **Cons**: High cost, complex setup, potential noise
+   - **Suggestion**: Reserve for production environments with performance requirements
+
+3. **On-Demand Performance Testing**: Manual performance testing when needed
+   - **Pros**: Cost-effective, focused testing, developer control
+   - **Cons**: May miss issues, inconsistent validation, manual overhead
+   - **Suggestion**: Use for development with clear triggers for performance testing
+
+**Recommendation**: Implement scheduled performance validation with clear triggers for additional testing, balancing cost and validation needs.
+
+### 11.4 Test Environment Strategy
+**Decision Required**: Balance between test isolation and realistic environment simulation
+
+**Alternatives**:
+1. **Isolated Test Environments**: Separate environments for each test type
+   - **Pros**: Clean isolation, predictable results, no interference
+   - **Cons**: Resource overhead, complex setup, potential inconsistency
+   - **Suggestion**: Use isolated environments for critical tests
+
+2. **Shared Test Environment**: Single environment for all tests
+   - **Pros**: Resource efficient, simple setup, realistic conditions
+   - **Cons**: Potential interference, shared state issues, harder debugging
+   - **Suggestion**: Use shared environment for integration and E2E tests
+
+3. **Hybrid Environment Strategy**: Mix of isolated and shared environments
+   - **Pros**: Balanced approach, appropriate isolation, resource efficiency
+   - **Cons**: Complex management, potential confusion
+   - **Suggestion**: Implement hybrid strategy with clear environment purposes
+
+**Recommendation**: Use isolated environments for unit tests and shared environments for integration tests, with clear cleanup procedures.
+
+### 11.5 Test Automation Strategy
+**Decision Required**: Balance between comprehensive automation and development velocity
+
+**Alternatives**:
+1. **Selective Automation**: Automate critical tests only
+   - **Pros**: Fast implementation, focused coverage, maintainable
+   - **Cons**: Limited coverage, manual testing overhead
+   - **Suggestion**: Start with selective automation for critical paths
+
+2. **Comprehensive Automation**: Automate all test types
+   - **Pros**: Maximum coverage, consistent execution, reduced manual effort
+   - **Cons**: Complex setup, maintenance overhead, potential flakiness
+   - **Suggestion**: Implement comprehensive automation for production environments
+
+3. **Progressive Automation**: Start simple, gradually increase automation
+   - **Pros**: Manageable implementation, gradual improvement, learn from experience
+   - **Cons**: Inconsistent coverage during transition, ongoing changes
+   - **Suggestion**: Implement progressive automation with clear milestones
+
+**Recommendation**: Start with selective automation for critical paths, gradually expanding coverage based on team experience and requirements.
 
 ---
 

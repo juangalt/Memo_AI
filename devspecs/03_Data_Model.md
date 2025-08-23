@@ -115,8 +115,8 @@ evaluations (
     overall_score DECIMAL(5,2),
     strengths TEXT NOT NULL,
     opportunities TEXT NOT NULL,
-    rubric_scores JSON NOT NULL,  -- Structure: {"category1": score, "category2": score}
-    segment_feedback JSON NOT NULL,  -- Structure: [{"segment": "text", "comment": "feedback", "questions": ["q1", "q2"]}]
+    rubric_scores TEXT NOT NULL,  -- JSON string: {"category1": score, "category2": score}
+    segment_feedback TEXT NOT NULL,  -- JSON string: [{"segment": "text", "comment": "feedback", "questions": ["q1", "q2"]}]
     llm_provider TEXT NOT NULL DEFAULT 'claude',
     llm_model TEXT NOT NULL,
     raw_prompt TEXT,  -- Stored when debug mode enabled
@@ -197,7 +197,7 @@ submissions (1) ← (N) evaluations
 6.2 **Data Backup and Recovery**
 - **SQLite backup**: Use SQLite backup API or file copy during quiet periods
 - **WAL checkpoint**: Ensure WAL files are merged before backup
-- **Automated backups**: Daily backup script with rotation (keep 7 days)
+- **Automated backups**: Weekly backup script with rotation (keep 4 weeks)
 - **Recovery procedure**: Replace database.db with backup file, restart application
 - **Configuration backup**: Backup YAML files alongside database
 
@@ -351,11 +351,11 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 | 2.2.3a | Overall evaluation returned | Evaluations table (3.3) - overall_score, strengths, opportunities | ✅ Implemented |
 | 2.2.3b | Segment evaluation returned | Evaluations table (3.3) - segment_feedback JSON field | ✅ Implemented |
 | 2.2.4 | Evaluation processing straightforward | Evaluations table (3.3) - processing_time tracking | ✅ Implemented |
-| 2.3.1 | System uses grading rubric | Evaluations table (3.3) - rubric_scores JSON field | ✅ Implemented |
+| 2.3.1 | System uses grading rubric | Evaluations table (3.3) - rubric_scores TEXT field | ✅ Implemented |
 | 2.3.2 | System uses prompt templates | Configuration management (3.4) - prompt.yaml | ✅ Implemented |
 | 2.3.3 | Overall strengths/opportunities | Evaluations table (3.3) - strengths, opportunities fields | ✅ Implemented |
-| 2.3.4 | Detailed rubric grading | Evaluations table (3.3) - rubric_scores JSON field | ✅ Implemented |
-| 2.3.5 | Segment-level evaluation | Evaluations table (3.3) - segment_feedback JSON field | ✅ Implemented |
+| 2.3.4 | Detailed rubric grading | Evaluations table (3.3) - rubric_scores TEXT field | ✅ Implemented |
+| 2.3.5 | Segment-level evaluation | Evaluations table (3.3) - segment_feedback TEXT field | ✅ Implemented |
 | 2.3.6 | Immediate feedback processing | Evaluations table (3.3) - created_at timestamp | ✅ Implemented |
 | 2.4.1 | Admin edits YAML | Configuration management (3.4) - YAML file storage | ✅ Implemented |
 | 2.4.2 | Configuration changes validated | Configuration management (3.4) - Schema validation | ✅ Implemented |
