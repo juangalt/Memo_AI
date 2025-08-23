@@ -78,20 +78,25 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **API Style**: REST (simple, maintainable, industry-standard).
 - **Framework**: **FastAPI** (lightweight, async-friendly, automatic OpenAPI documentation).
 - **Endpoint Organization**: Grouped by functional domain to align with requirements:
-  - `/evaluation` - Text submission and LLM evaluation processing with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
-  - `/admin` - YAML configuration file management (Req 2.4) [MVP]
+  - `/evaluations/submit` - Asynchronous text submission for LLM evaluation [MVP]
+  - `/evaluations/{id}/status` - Check evaluation processing status with polling [MVP]
+  - `/evaluations/{id}` - Retrieve completed evaluation results with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
+  - `/admin/config/*` - YAML configuration file management with hot-reload [MVP]
   - `/debug` - Debug output, performance metrics, raw prompts/responses (Req 2.5) [MVP]
   - `/chat` - LLM chat interactions with context (Req 2.3) [Post-MVP]
   - `/progress` - User submission history and progress tracking (Req 2.6) [Post-MVP]
-  - `/export` - PDF generation and download (Req 2.7) [Post-MVP]
+  - `/export` - PDF generation and download with direct file serving (Req 2.7) [Post-MVP]
 
 **Suggested Components:**
-- `EvaluationService` (includes progress calculation) [MVP]
-- `AdminService` [MVP]
+- `EvaluationService` (asynchronous processing with status tracking) [MVP]
+- `AdminService` (configuration management with hot-reload) [MVP]
 - `AuthenticationService` (JWT + Session hybrid management) [MVP]
 - `SessionService` (session lifecycle and validation) [MVP]
 - `AuthorizationMiddleware` (configurable authentication toggle) [MVP]
 - `DebugService` [MVP]
+- `RateLimitingService` (in-memory rate limiting for MVP) [MVP]
+- `FileServingService` (direct file serving with temporary storage) [MVP]
+- `ConfigurationService` (hot-reload for business logic configs) [MVP]
 - `ChatService` [Post-MVP]
 - `ExportService` [Post-MVP]
 
@@ -119,8 +124,9 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 **Suggested Components:**
 - `SubmissionRepository`
 - `EvaluationRepository`
-- `ConfigFileService` (direct filesystem YAML operations)
+- `ConfigFileService` (direct filesystem YAML operations with hot-reload)
 - `ConfigVersionRepository` (track admin changes)
+- `FileCleanupService` (automatic cleanup of temporary files after 24 hours)
 - `LogRepository`
 - `ProgressDataAdapter` (integrated with evaluation processing)
 - `UserRepository` (authentication credentials and profiles)

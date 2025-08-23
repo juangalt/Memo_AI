@@ -99,6 +99,8 @@ submissions (
 evaluations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'processing', 'completed', 'failed')),
+    progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
     overall_score DECIMAL(5,2),
     strengths TEXT NOT NULL,
     opportunities TEXT NOT NULL,
@@ -110,6 +112,9 @@ evaluations (
     raw_prompt TEXT,  -- Stored when debug mode enabled
     raw_response TEXT,  -- Stored when debug mode enabled
     debug_enabled BOOLEAN DEFAULT FALSE,
+    processing_time DECIMAL(6,3),  -- Processing time in seconds
+    processing_started_at DATETIME,
+    estimated_completion_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```

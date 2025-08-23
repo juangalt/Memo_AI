@@ -325,6 +325,15 @@ authentication:
     bcrypt_rounds: ${BCRYPT_ROUNDS:-12}
     max_login_attempts: 5
     lockout_duration: 900
+
+# Auto-generated OpenAPI documentation settings
+api_documentation:
+  openapi:
+    title: ${API_TITLE:-Memo AI Coach API}
+    version: ${API_VERSION:-1.0.0}
+    description: ${API_DESCRIPTION:-REST API for text evaluation and coaching}
+    interactive_docs: ${ENABLE_DOCS:-true}
+    include_schemas: ${INCLUDE_SCHEMAS:-true}
     rate_limit_per_minute: ${RATE_LIMIT_PER_MINUTE:-60}
 ```
 
@@ -411,6 +420,33 @@ backend:
   features:
     auto_reload: ${AUTO_RELOAD:-false}
     debug_toolbar: ${DEBUG_TOOLBAR:-false}
+    
+  # Asynchronous evaluation processing
+  evaluation:
+    async_processing: ${ASYNC_PROCESSING:-true}
+    max_concurrent: ${MAX_CONCURRENT_EVALUATIONS:-5}
+    timeout_seconds: ${EVALUATION_TIMEOUT:-60}
+    polling_interval: ${POLLING_INTERVAL:-2}  # seconds
+    
+  # Direct file serving configuration
+  file_serving:
+    temporary_storage: ${TEMP_STORAGE_PATH:-./temp}
+    retention_hours: ${FILE_RETENTION_HOURS:-24}
+    max_file_size: ${MAX_FILE_SIZE:-52428800}  # 50MB
+    cleanup_interval: ${CLEANUP_INTERVAL:-3600}  # 1 hour
+    
+  # In-memory rate limiting
+  rate_limiting:
+    implementation: "memory"  # memory | database | redis
+    cleanup_interval: ${RATE_LIMIT_CLEANUP:-300}  # 5 minutes
+    sliding_window: ${SLIDING_WINDOW:-3600}  # 1 hour
+    
+  # Configuration hot-reload settings
+  config_management:
+    hot_reload_enabled: ${HOT_RELOAD:-true}
+    hot_reload_business_logic: ${HOT_RELOAD_BUSINESS:-true}  # rubric, frameworks, context, prompt
+    hot_reload_system_configs: ${HOT_RELOAD_SYSTEM:-false}  # auth, security, database, etc.
+    reload_check_interval: ${RELOAD_CHECK_INTERVAL:-5}  # seconds
     profiling_enabled: ${PROFILING_ENABLED:-false}
 ```
 
