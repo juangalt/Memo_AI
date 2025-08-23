@@ -45,8 +45,9 @@
 - 2.4.7 Total of 13 YAML configuration files across 4 categories.
 
 2.5 **Debug Mode [MVP]**
-- 2.5.1 In debug mode, all users can review debug output.
+- 2.5.1 In debug mode, admins can review debug output for system diagnostics.
 - 2.5.2 Debug includes performance data, raw prompts, and raw responses.
+- 2.5.3 Debug mode is admin-only to prevent security risks.
 
 2.6 **Progress Tracking [Post-MVP]**
 - 2.6.1 User submissions are stored with grading history.
@@ -73,12 +74,11 @@
 - 3.3.2 Robust error handling and logging required.
 
 3.4 **Security**
-- 3.4.1 JWT + Session hybrid authentication system implemented and enabled from MVP start.
-- 3.4.2 Session-based user isolation for MVP phase using secure session tokens.
-- 3.4.3 JWT tokens with httpOnly cookies for production phase scaling to 100+ concurrent users.
-- 3.4.4 Configurable authentication toggle without code changes.
-- 3.4.5 Secure session management with expiration and cleanup.
-- 3.4.6 CSRF protection and rate limiting per session/user.
+- 3.4.1 Session-based authentication system using secure session tokens for user isolation.
+- 3.4.2 Secure session management with expiration and cleanup.
+- 3.4.3 CSRF protection and rate limiting per session/user.
+- 3.4.4 Admin authentication for system management functions.
+- 3.4.5 Optional JWT authentication can be added in future if complex user management is needed.
 
 3.5 **Maintainability**
 - 3.5.1 Maintainability is top priority.

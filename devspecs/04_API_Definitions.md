@@ -61,11 +61,11 @@ All API responses follow a consistent structure:
 ## 3.0 Authentication and Authorization
 
 ### 3.1 Authentication Strategy
-**Hybrid JWT + Session System**:
-- **MVP Mode**: Session-based authentication using secure session tokens
-- **Production Mode**: JWT tokens with httpOnly cookies + session validation
-- **Configuration Toggle**: Enable/disable without code changes
-- **Seamless Transition**: Maintains session_id compatibility across modes
+**Session-Based Authentication System**:
+- **Session Management**: Secure session tokens for user isolation
+- **Admin Access**: Admin authentication for system management functions
+- **Future Enhancement**: JWT authentication can be added if complex user management is needed
+- **Simple Design**: Focuses on security without unnecessary complexity
 
 ### 3.2 Authentication Endpoints
 
@@ -378,7 +378,7 @@ POST /api/v1/admin/config/bulk-import
 #### 4.3.1 Debug Information
 ```yaml
 GET /api/v1/debug/info
-  description: Get debug information when debug mode enabled
+  description: Get debug information when debug mode enabled (admin-only for security)
   authentication: Admin required
   response:
     data:
@@ -598,393 +598,45 @@ GET /api/v1/export/pdf/{evaluation_id}
 
 ---
 
-## 9.0 Open Technical Decisions
+## 9.0 Implementation Decisions
 
-### 9.1 LLM Response Handling Strategy
-**Decision Required**: How to handle potentially long-running LLM evaluation requests?
-
-**Context**: Given moderate traffic expectations (20 submissions/hour per session), small team size, and focus on simplicity.
-
-**Options Analysis**:
-
-1. **Synchronous with extended timeout** (60 seconds)
-   - **Pros**:
-     - Minimal implementation complexity
-     - No additional infrastructure required
-     - Straightforward error handling
-     - Direct request-response pattern familiar to developers
-     - No state management needed
-   - **Cons**:
-     - Poor user experience during long evaluations
-     - Browser timeout risks
-     - Server resources tied up during processing
-     - No progress feedback to user
-     - Difficulty handling connection drops
-   - **Complexity**: Low
-   - **Modularity**: High (self-contained)
-   - **Extensibility**: Low (hard to add features like progress tracking)
-
-2. **Asynchronous with polling**
-   - **Pros**:
-     - Better user experience with progress updates
-     - Server resources freed during processing
-     - Resilient to connection issues
-     - Can add progress tracking later
-     - Scalable to higher loads
-   - **Cons**:
-     - Requires additional endpoints (`/evaluations/{id}/status`)
-     - Client-side polling logic needed
-     - State management for in-progress evaluations
-     - Complexity in error handling across requests
-   - **Complexity**: Medium
-   - **Modularity**: High (separate concerns)
-   - **Extensibility**: High (easy to add features)
-
-3. **WebSocket real-time updates**
-   - **Pros**:
-     - Excellent real-time user experience
-     - Instant progress updates
-     - Bidirectional communication
-     - Future-proof for chat functionality
-   - **Cons**:
-     - High implementation complexity
-     - Additional infrastructure (WebSocket support)
-     - Connection management overhead
-     - Not RESTful
-     - Debugging complexity
-     - Firewall/proxy complications
-   - **Complexity**: High
-   - **Modularity**: Medium (tightly coupled real-time communication)
-   - **Extensibility**: High (supports future real-time features)
-
-4. **Server-sent events for progress**
-   - **Pros**:
-     - Real-time progress updates
-     - Simpler than WebSocket
-     - One-way communication sufficient
-     - HTTP-based (firewall friendly)
-   - **Cons**:
-     - Browser compatibility considerations
-     - Still requires connection management
-     - Not RESTful
-     - Additional complexity over polling
-   - **Complexity**: Medium-High
-   - **Modularity**: Medium
-   - **Extensibility**: Medium
-
-**🎯 RECOMMENDATION: Asynchronous with polling**
-- **Rationale**: Best balance of simplicity, user experience, and extensibility for a moderate-scale service
-- **Implementation**: Start with basic polling, optimize interval based on usage patterns
-- **Future Path**: Can enhance with SSE later if needed
-- **Team Impact**: Manageable complexity for small development team
-
----
-
-### 9.2 File Upload and Download Strategy
-**Decision Required**: How to handle PDF exports and configuration file bulk operations?
-
-**Context**: Small to moderate file sizes (PDFs <5MB, config files <1MB), limited concurrent users, focus on operational simplicity.
-
-**Options Analysis**:
-
-1. **Direct file serving from application**
-   - **Pros**:
-     - Zero external dependencies
-     - Simple implementation and debugging
-     - Full control over access permissions
-     - No additional infrastructure costs
-     - Immediate availability after generation
-     - Works well with existing authentication
-   - **Cons**:
-     - Uses application server memory/bandwidth
-     - Files stored on local filesystem
-     - Cleanup management required
-     - Not optimal for high-traffic scenarios
-   - **Complexity**: Low
-   - **Modularity**: High (self-contained)
-   - **Extensibility**: Medium (can migrate to external storage later)
-
-2. **Signed URLs with external storage (S3/MinIO)**
-   - **Pros**:
-     - Offloads bandwidth from application
-     - Scalable storage solution
-     - Built-in redundancy and backup
-     - Professional production approach
-   - **Cons**:
-     - Additional infrastructure dependency
-     - External service costs
-     - More complex deployment
-     - Additional failure points
-     - Overkill for small file volumes
-     - Configuration complexity
-   - **Complexity**: High
-   - **Modularity**: Medium (external dependency)
-   - **Extensibility**: High (industry standard approach)
-
-3. **Streaming responses**
-   - **Pros**:
-     - Memory efficient for large files
-     - No temporary file storage needed
-     - Good for real-time generation
-   - **Cons**:
-     - Complex error handling during stream
-     - Difficult to implement proper caching
-     - Connection drop handling complexity
-     - Limited browser progress indication
-   - **Complexity**: Medium-High
-   - **Modularity**: Medium
-   - **Extensibility**: Medium
-
-**🎯 RECOMMENDATION: Direct file serving from application**
-- **Rationale**: Optimal for small-scale service with simple operational requirements
-- **Implementation**: Temporary file storage with automatic cleanup (24-hour retention)
-- **Future Path**: Can migrate to external storage when scale demands it
-- **Team Impact**: Minimal operational overhead, easier debugging and deployment
-
----
-
-### 9.3 API Documentation and Maintenance Strategy
-**Decision Required**: How to generate and maintain comprehensive API documentation?
-
-**Context**: Small development team, moderate API complexity, need for developer onboarding and client integration.
-
-**Options Analysis**:
-
-1. **Auto-generated OpenAPI/Swagger from code**
-   - **Pros**:
-     - Always synchronized with implementation
-     - Interactive testing interface
-     - Industry-standard format
-     - Automatic client SDK generation possible
-     - Reduced maintenance overhead
-   - **Cons**:
-     - Code annotation overhead
-     - Limited customization for complex examples
-     - Generic descriptions without business context
-     - Tool-dependent formatting
-     - Learning curve for annotation syntax
-   - **Complexity**: Medium
-   - **Modularity**: High (separate documentation concerns)
-   - **Extensibility**: High (standard tooling ecosystem)
-
-2. **Manual documentation with examples**
-   - **Pros**:
-     - Complete control over content and format
-     - Rich business context and examples
-     - Custom formatting and organization
-     - No tool dependencies
-     - Easy to include implementation notes
-   - **Cons**:
-     - High maintenance burden
-     - Risk of becoming outdated
-     - No interactive testing
-     - Manual effort for each change
-     - Inconsistent formatting risk
-   - **Complexity**: Low (to create), High (to maintain)
-   - **Modularity**: Low (documentation separate from code)
-   - **Extensibility**: Low (manual scaling)
-
-3. **Hybrid approach with manual OpenAPI specs**
-   - **Pros**:
-     - Best of both worlds
-     - Version-controlled specifications
-     - Rich examples and descriptions
-     - Interactive testing interface
-     - Can validate implementation against spec
-   - **Cons**:
-     - Double maintenance (spec + code)
-     - Risk of spec-implementation drift
-     - Additional complexity in workflow
-     - Requires OpenAPI expertise
-   - **Complexity**: Medium-High
-   - **Modularity**: Medium
-   - **Extensibility**: High
-
-**🎯 RECOMMENDATION: Auto-generated OpenAPI/Swagger from code**
-- **Rationale**: Best long-term maintenance approach for small team with evolving API
-- **Implementation**: FastAPI native OpenAPI support with rich docstring annotations
-- **Future Path**: Can supplement with additional manual documentation for complex workflows
-- **Team Impact**: Lower maintenance overhead, automatic updates, interactive testing for development
-
----
-
-### 9.4 Rate Limiting Implementation Strategy
-**Decision Required**: How to implement and store rate limiting data for abuse prevention?
-
-**Context**: Moderate traffic (20 submissions/hour per session), single or few-instance deployment, simple operational requirements.
-
-**Options Analysis**:
-
-1. **In-memory rate limiting (per instance)**
-   - **Pros**:
-     - Extremely fast (no I/O overhead)
-     - Simple implementation
-     - No external dependencies
-     - Zero additional infrastructure
-     - Perfect for single-instance deployment
-   - **Cons**:
-     - Inaccurate in multi-instance deployments
-     - Lost on application restart
-     - No persistence across deployments
-     - Memory usage grows with active sessions
-   - **Complexity**: Low
-   - **Modularity**: High (self-contained)
-   - **Extensibility**: Low (doesn't scale to multiple instances)
-
-2. **Database-backed rate limiting**
-   - **Pros**:
-     - Accurate across multiple instances
-     - Persistent across restarts
-     - Uses existing database infrastructure
-     - Easy to query and monitor
-     - Consistent with existing data storage
-   - **Cons**:
-     - Database I/O overhead on every request
-     - Potential performance bottleneck
-     - Requires cleanup of old rate limit records
-     - Additional database schema complexity
-   - **Complexity**: Medium
-   - **Modularity**: Medium (couples rate limiting to database)
-   - **Extensibility**: Medium (scales with database)
-
-3. **Redis-based rate limiting**
-   - **Pros**:
-     - Very fast (in-memory)
-     - Accurate across instances
-     - Built-in expiration (TTL)
-     - Industry standard for rate limiting
-     - Excellent performance characteristics
-   - **Cons**:
-     - Additional infrastructure dependency
-     - Another service to deploy and monitor
-     - Overkill for simple use cases
-     - Additional complexity in deployment
-     - Cost of running Redis instance
-   - **Complexity**: Medium-High
-   - **Modularity**: High (dedicated service)
-   - **Extensibility**: High (industry standard, very scalable)
-
-4. **External service (reverse proxy/API gateway)**
-   - **Pros**:
-     - Offloaded from application logic
-     - Proven, battle-tested solutions
-     - Often includes additional features
-     - No application code needed
-   - **Cons**:
-     - External dependency
-     - Less control over logic
-     - Additional deployment complexity
-     - May require learning new tools
-     - Overkill for simple requirements
-   - **Complexity**: Medium (deployment), Low (application)
-   - **Modularity**: High (completely external)
-   - **Extensibility**: High (enterprise-grade solutions)
-
-**🎯 RECOMMENDATION: In-memory rate limiting for MVP**
-- **Rationale**: Optimal for single-instance MVP deployment with minimal complexity
-- **Implementation**: Sliding window algorithm with in-memory storage, cleanup via background task
-- **Future Path**: Database-backed rate limiting for multi-instance deployments
-- **Team Impact**: Simple implementation, no external dependencies, perfect for MVP scale
-
----
-
-### 9.5 Configuration Hot-Reload Strategy
-**Decision Required**: Should configuration changes require application restart or support hot-reload?
-
-**Context**: 13 configuration files, admin-driven changes, need for system stability vs. operational convenience.
-
-**Options Analysis**:
-
-1. **Restart required for all configuration changes**
-   - **Pros**:
-     - Simple implementation
-     - Guaranteed consistency
-     - No memory leaks from reloading
-     - Clear change boundaries
-     - Easier testing and debugging
-   - **Cons**:
-     - Service downtime for configuration changes
-     - Poor admin user experience
-     - Delays in configuration testing
-   - **Complexity**: Low
-   - **Modularity**: High
-   - **Extensibility**: Medium
-
-2. **Hot-reload for business logic configs only**
-   - **Pros**:
-     - No downtime for common changes (rubrics, prompts)
-     - Better admin experience for content changes
-     - System configs still require restart (safer)
-     - Balanced approach
-   - **Cons**:
-     - Partial complexity increase
-     - Need to categorize config types
-     - Potential inconsistency risks
-   - **Complexity**: Medium
-   - **Modularity**: Medium
-   - **Extensibility**: High
-
-3. **Full hot-reload with validation**
-   - **Pros**:
-     - Best admin user experience
-     - No downtime for any changes
-     - Can validate before applying
-   - **Cons**:
-     - High implementation complexity
-     - Risk of system instability
-     - Difficult error recovery
-     - Memory management complexity
-   - **Complexity**: High
-   - **Modularity**: Low
-   - **Extensibility**: Medium
-
-**🎯 RECOMMENDATION: Hot-reload for business logic configs only**
-- **Rationale**: Balances operational convenience with system stability
-- **Implementation**: Hot-reload for rubric, frameworks, context, prompt; restart for system configs
-- **Future Path**: Can expand hot-reload scope based on operational experience
-- **Team Impact**: Manageable complexity while improving most common admin operations
-
----
+- **File handling**: Direct file serving with temporary storage and automatic cleanup
+- **Configuration**: Hot-reload for business logic configs, restart for system configs
+- **Rate limiting**: In-memory implementation for MVP deployment
+- **Documentation**: Auto-generated OpenAPI/Swagger from FastAPI code
 
 ## 10.0 Implementation Priority
 
-### 10.1 Phase 1: MVP Core (Weeks 1-6)
+### 10.1 Phase 1: MVP Core
 1. Authentication endpoints (session management)
-2. Text evaluation endpoints
+2. Text evaluation endpoints (submit, status, results)
 3. Basic configuration management
-4. Debug endpoints
+4. Debug endpoints (admin-only)
 5. Error handling and validation
 
-### 10.2 Phase 2: Enhanced Features (Weeks 7-12)
+### 10.2 Phase 2: Enhanced Features
 1. Complete configuration management system
 2. User management endpoints
-3. Chat functionality endpoints [Post-MVP]
-4. Progress tracking endpoints [Post-MVP]
-5. PDF export endpoints [Post-MVP]
-
-### 10.3 Phase 3: Production Ready (Weeks 13-18)
-1. JWT authentication implementation
-2. Comprehensive rate limiting
-3. Performance optimization
-4. Security hardening
-5. API documentation completion
+3. Chat functionality endpoints
+4. Progress tracking endpoints
+5. PDF export endpoints
 
 ---
 
 ## 11.0 Traceability Matrix
 
-| **Requirement** | **API Endpoints** | **Status** |
-|-----------------|-------------------|------------|
-| Text Evaluation (2.2) | `/evaluations/submit`, `/evaluations/{id}` | MVP |
-| Chat with LLM (2.3) | `/chat/sessions`, `/chat/sessions/{id}/messages` | Post-MVP |
-| Admin Functions (2.4) | `/admin/config/*`, `/admin/auth/config` | MVP |
-| Debug Mode (2.5) | `/debug/info`, `/admin/debug/toggle` | MVP |
-| Progress Tracking (2.6) | `/progress/{session_id}` | Post-MVP |
-| PDF Export (2.7) | `/export/pdf/{evaluation_id}` | Post-MVP |
-| Authentication (3.4) | `/auth/*`, `/sessions/*`, `/users/*` | MVP/Production |
+|| **Requirement** | **API Endpoints** | **Status** |
+||-----------------|-------------------|------------|
+|| Text Evaluation (2.2) | `/evaluations/submit`, `/evaluations/{id}` | MVP |
+|| Chat with LLM (2.3) | `/chat/sessions`, `/chat/sessions/{id}/messages` | Post-MVP |
+|| Admin Functions (2.4) | `/admin/config/*`, `/admin/auth/config` | MVP |
+|| Debug Mode (2.5) | `/debug/info`, `/admin/debug/toggle` | MVP |
+|| Progress Tracking (2.6) | `/progress/{session_id}` | Post-MVP |
+|| PDF Export (2.7) | `/export/pdf/{evaluation_id}` | Post-MVP |
+|| Authentication (3.4) | `/auth/*`, `/sessions/*`, `/users/*` | MVP |
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: Implementation Phase  
-**Next Review**: After key technical decisions are resolved
+**Document Version**: 2.0
+**Last Updated**: Implementation Phase
+**Next Review**: After MVP deployment

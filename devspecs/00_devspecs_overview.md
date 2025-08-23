@@ -37,7 +37,7 @@
 - Front-end: user interfaces and client-side logic.
 - Back-end: server operations, data persistence with SQLite, and APIs.
 - Both components run in Docker containers for deployment and scalability.
-- SQLite database provides simplicity and good performance for MVP (10-20 concurrent users) and production (100+ concurrent users with WAL mode optimizations).
+- SQLite database provides simplicity and good performance for the entire project lifecycle, supporting 10-20 concurrent users for MVP and scaling to 100+ concurrent users with WAL mode optimizations.
 - The AI coding agent will build the system following these specifications to ensure **modularity**, **simplicity**, and **extensibility**.
 
 3.3 **Core Functionality**

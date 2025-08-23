@@ -16,7 +16,7 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **Frontend (GUI)**
 
   - Provides the main user interface as tabbed navigation (Req 2.1).
-  - Framework: Reflex
+  - Framework: Streamlit
   - Pages: Text Input, Overall Feedback, Detailed Feedback, Progress Tracking, Debug, Help, Admin.
   - Progress Tracking tab is populated by evaluation data output.
   - Supports fast load times (<1s main load, <15s submission response) and usability features (hover info bubbles, rubric/framework resources) (Req 3.1, 2.1).
@@ -57,11 +57,11 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 ### 4.1 Frontend (GUI)
 
-- Framework/library: **Reflex**
+- Framework/library: **Streamlit**
 - Tabbed navigation
-- **State persistence**: Use a **Global State Manager** to maintain a centralized source of truth for all frontend components.
+- **State persistence**: Use **Streamlit Session State** to maintain a centralized source of truth for all frontend components.
   - Ensures data (submitted text, evaluation results with progress data, chat history) is instantly available across tabs without re-fetching.
-  - Leverages Reflex’s built-in global state capabilities.
+  - Leverages Streamlit's built-in session state capabilities.
   - Provides consistent user experience and scalability.
 
 **Components:**
@@ -91,9 +91,9 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 **Suggested Components:**
 - `EvaluationService` (asynchronous-first processing with status tracking - designed async from inception) [MVP]
 - `AdminService` (configuration management with hot-reload) [MVP]
-- `AuthenticationService` (JWT + Session hybrid management) [MVP]
+- `AuthenticationService` (session-based authentication with admin support) [MVP]
 - `SessionService` (session lifecycle and validation) [MVP]
-- `AuthorizationMiddleware` (configurable authentication toggle) [MVP]
+- `AuthorizationMiddleware` (session-based authorization) [MVP]
 - `DebugService` [MVP]
 - `RateLimitingService` (in-memory rate limiting for MVP) [MVP]
 - `FileService` (direct file serving with temporary storage) [MVP]
@@ -156,7 +156,7 @@ A. **User Input (Front-End to Back-End API):**
 
 B. **Back-End API Processing:**
    - The back-end receives the request and validates it through AuthorizationMiddleware (JWT + Session hybrid authentication implemented but disabled for MVP).
-   - Authentication flow: validates session_id in MVP mode, validates JWT + session in production mode.
+   - Authentication flow: validates session_id for user isolation and admin access.
    - For text evaluation or chat, the back-end:
      - Stores the user submission and context in the database (`SubmissionRepository`).
      - Builds a prompt using the context template, rubric, frameworks, and user text (`PromptBuilder`).
@@ -249,24 +249,21 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 5. User downloads PDF file
 
 **Authentication Flow (Req 3.4):**
-1. **Anonymous Mode (Authentication Optional):**
+1. **Session-Based Authentication:**
    - Frontend generates secure session_id on first visit
    - All requests include session_id in headers/cookies
    - Backend validates session existence and expiration
    - Session data isolated by session_id
+   - Admin sessions validated for management functions
 
-2. **Authenticated Mode (Authentication Required):**
-   - User provides credentials → `/api/auth/login`
-   - Backend validates credentials via `AuthenticationService`
-   - JWT token generated with user_id and session_id claims
-   - JWT stored in httpOnly cookie with CSRF token
-   - All requests validated through `AuthorizationMiddleware`
-   - Session metadata maintained in `SessionRepository`
+2. **Admin Authentication:**
+   - Admin credentials validated via `AuthenticationService`
+   - Admin session provides elevated access to management functions
+   - Admin sessions tracked in `SessionRepository`
 
-3. **Configuration Toggle:**
-   - Authentication mode controlled via `auth.yaml` configuration
-   - No code changes required to switch between modes
-   - Seamless transition maintains existing session data
+3. **Future Enhancement:**
+   - JWT authentication can be added if complex user management is needed
+   - Current session-based approach provides sufficient isolation for MVP
 
 **5.4 Intermediate Results Storage and Retrieval**
 
@@ -304,9 +301,9 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Regular database integrity checks and backups
 
 **Privacy Protection:**
-- JWT + Session hybrid authentication system (disabled for MVP, session-based isolation)
-- User data isolated by session_id in MVP mode, by user_id + session_id in production mode
-- No personal information collected beyond submitted text and optional authentication credentials
+- Session-based authentication system for user isolation
+- User data isolated by session_id with admin sessions for management
+- No personal information collected beyond submitted text and admin credentials
 - Debug data sanitized to remove sensitive information including authentication tokens
 - Data retention policies for old submissions and expired sessions
 - Secure session management with httpOnly cookies and CSRF protection
