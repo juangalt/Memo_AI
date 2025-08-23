@@ -1,509 +1,513 @@
-# 05_UI_UX.md
+# UI/UX Specification
+## Memo AI Coach Application
 
-## 1.0 How to Use This File
+**Document Version**: 1.0  
+**Last Updated**: Implementation Phase  
+**Next Review**: After MVP deployment
 
-1.1 **Audience**
-- AI coding agents and human developers.
+---
 
-1.2 **Purpose**
-- Defines the user interface design, user experience patterns, and frontend implementation details for the Memo AI Coach project.
-- Builds directly on the requirements in `01_Requirements.md` and architecture in `02_Architecture.md`.
+## 1.0 Introduction
 
-1.3 **Next Steps**
-- Review this file before proceeding to `06_Testing.md`.
+### 1.1 Purpose
+This document defines the user interface design, user experience patterns, and frontend implementation specifications for the Memo AI Coach application. It establishes the visual design system, component architecture, and user interaction patterns required to meet the functional and non-functional requirements.
+
+### 1.2 Scope
+- User interface design and layout specifications
+- Component architecture and interaction patterns
+- Visual design system and styling guidelines
+- User experience flows and navigation
+- Accessibility and usability requirements
+- Performance and responsive design specifications
+
+### 1.3 Dependencies
+- **Requirements**: `01_Requirements.md` - Functional and non-functional requirements
+- **Architecture**: `02_Architecture.md` - System architecture and component design
+- **Data Model**: `03_Data_Model.md` - Database schema and data relationships
+- **API Definitions**: `04_API_Definitions.md` - Backend API specifications
+
+### 1.4 Document Structure
+1. Framework and Technology Stack
+2. Page Architecture and Navigation
+3. Visual Design System
+4. User Experience Flows
+5. Component Specifications
+6. Accessibility and Usability
+7. Performance Requirements
+8. Implementation Guidelines
+9. Design Decisions and Rationale
 
 ---
 
 ## 2.0 Framework and Technology Stack
 
-### 2.1 Frontend Framework Decision ✅ **DECIDED**
-**Decision**: **Reflex** (Python-based reactive framework)
+### 2.1 Frontend Framework
+**Technology**: Streamlit (Python-based web framework)  
+**Version**: Latest stable release  
 **Rationale**: 
-- Aligns with backend Python stack for maintainability
-- Built-in state management capabilities
-- Fast development and deployment
-- Excellent for MVP with room for scaling
+- Aligns with backend Python stack for maintainability (Req 3.5.1)
+- Built-in session state management capabilities (Arch 4.1)
+- Rapid development and deployment for MVP
+- Excellent scalability from single user to 100+ concurrent users
 
-### 2.2 State Management Strategy ✅ **DECIDED**
-**Decision**: **Global State Manager** using Reflex's built-in capabilities
+### 2.2 State Management
+**Strategy**: Streamlit Session State for centralized state management  
 **Implementation**:
-- Centralized state for all frontend components
-- Session data persistence across tab switches
-- Evaluation results with integrated progress data
-- Chat history and context maintenance
+- Centralized state for all frontend components (Arch 4.1)
+- Session data persistence across tab switches (Req 2.1.2)
+- Evaluation results
+- Immutable state updates with computed state for derived data
+
+### 2.3 Development Environment
+**Requirements**:
+- Python 3.8+
+- Streamlit 1.28+
+- CSS support for custom styling
+- Browser compatibility: Chrome, Firefox, Safari, Edge (latest versions)
 
 ---
 
-## 3.0 Key High-Level Decisions Needed
+## 3.0 Page Architecture and Navigation
 
-### 3.1 Tab Navigation Implementation Strategy
-**Question**: How should we implement the tabbed interface with state preservation?
-- **Options**: Native Reflex routing vs custom tab switching
-- **Requirement**: Tab switching must be fast (<1s as per Req 3.1.1)
-- **Consideration**: State persistence vs data reloading strategy
-- **Impact**: User experience and performance
+### 3.1 Navigation Structure
+**Primary Navigation**: Tab-based interface with state preservation  
+**Performance Requirement**: Tab switching < 1 second (Req 3.1.1)  
+**State Management**: Session data preserved across tab switches
 
-### 3.2 Visual Design and Theming Approach
-**Question**: What should be the visual design approach for "clean and visually pleasing" (Req 2.1.5)?
-- **Options**: CSS framework (Tailwind, Bootstrap) vs custom styles
-- **Consideration**: Consistency across components and maintainability
-- **Impact**: Development speed vs design flexibility
+**Page Hierarchy**:
+```
+Main Application
+├── Text Input (default landing page - Req 2.1.1)
+├── Overall Feedback
+├── Detailed Feedback
+├── Debug (admin-only access)
+├── Help
+└── Admin (admin-only access)
+```
 
-### 3.3 Progress Visualization Design
-**Question**: How should we display progress tracking data in the dedicated tab (Req 2.6)?
-- **Options**: Charting library (Chart.js, D3) vs custom visualizations
-- **Consideration**: Data types (line charts, bar charts, progress meters)
-- **Impact**: User understanding and engagement
+### 3.2 Page Specifications
 
-### 3.4 Responsive Design Strategy
-**Question**: How should the application adapt to different screen sizes?
-- **Options**: Mobile-first vs desktop-first design approach
-- **Consideration**: Tab navigation on mobile devices
-- **Impact**: User accessibility and adoption
+#### 3.2.1 Text Input Page
+**Purpose**: Primary text submission interface  
+**Default State**: Landing page on application load (Req 2.1.1)
 
-### 3.5 Loading States and User Feedback ✅ **DECIDED**
-**Decision**: **Progress bars with status updates** for asynchronous evaluation processing
-- **Rationale**: System designed async from inception - requires real-time progress feedback
-- **Implementation**: Status polling with progress percentage and estimated completion time
-- **User Experience**: Clear feedback during evaluation processing (queued → processing → completed)
-- **Impact**: Superior user experience for variable LLM response times
+**Components**:
+- Large, resizable text input area
+- Submit button with loading state
+- Real-time character counter
+- Information tooltip (Req 2.1.3)
+- Session status indicator
 
-### 3.6 Error Handling and User Messages
-**Question**: How should we display errors and success messages to users?
-- **Options**: Toast notifications vs inline messages vs modal dialogs
-- **Consideration**: Network errors and user-friendly messaging
-- **Impact**: User experience and support burden
+**Behavior**:
+- Auto-focus on text input area
+- Real-time character count display
+- Input validation (non-empty, max 10,000 characters)
+- Synchronous processing with immediate feedback (Req 2.2.4)
+- Automatic navigation to Overall Feedback page upon completion
+
+#### 3.2.2 Overall Feedback Page
+**Purpose**: Display comprehensive evaluation results  
+**Data Source**: Global state (evaluation results)
+
+**Components**:
+- Overall score display (prominent positioning)
+- Strengths section (Req 2.2.3a)
+- Opportunities for improvement section (Req 2.2.3a)
+- Rubric scores summary view
+
+- Information tooltips for each section (Req 2.1.3)
+
+**Layout**:
+- Single-column layout for readability
+- Clear visual hierarchy with prominent score display
+- Collapsible sections for detailed information
+
+#### 3.2.3 Detailed Feedback Page
+**Purpose**: Segment-level evaluation with specific feedback  
+**Data Source**: Global state (evaluation results)
+
+**Components**:
+- Segment list with original text
+- Segment-specific comments (Req 2.2.3b)
+- Insight questions for each segment (Req 2.2.3b)
+- Detailed rubric breakdown
+- Information tooltips
+
+**Layout**:
+- Side-by-side layout: original text | feedback
+- Expandable segments for improved readability
+- Responsive design for mobile adaptation
+
+
+
+#### 3.2.4 Debug Page
+**Purpose**: System diagnostics and troubleshooting  
+**Access Control**: Admin-only when debug mode enabled
+
+**Components**:
+- Debug mode toggle
+- Performance metrics display
+- Raw prompts and responses (Req 2.4.2)
+- System logs with filtering
+- Test triggers for system components
+
+**Security**:
+- Sensitive data sanitization
+- Admin authentication required
+- Debug data isolation
+
+#### 3.2.5 Help Page
+**Purpose**: User guidance and resource access  
+**Content**: Static help content with dynamic context
+
+**Components**:
+- Detailed rubric explanation
+- Communication framework resources
+- Step-by-step usage instructions
+- Frequently asked questions
+- Support contact information
+
+**Features**:
+- Context-sensitive help based on current page
+- External resource links
+- Searchable content structure
+
+#### 3.2.6 Admin Page
+**Purpose**: System configuration and management  
+**Access Control**: Admin authentication required
+
+**Components**:
+- YAML configuration editor (Req 2.3.1)
+- Authentication configuration toggle
+- User management interface
+- Session management tools
+- Authentication logs
+- System health status
+
+**Security**:
+- YAML validation before saving
+- Admin-only access controls
+- Configuration change logging
 
 ---
 
-## 4.0 Component Architecture
+## 4.0 Visual Design System
 
-### 4.1 Page Structure (Based on Req 2.1.2)
-```yaml
-MainApplication:
-  components:
-    - TabNavigation (preserves session data)
-    - GlobalStateManager
-    - AuthenticationWrapper (conditional based on config)
+### 4.1 Color Palette
+**Primary Colors**:
+- Primary Blue: #2563eb (interactive elements, links)
+- Secondary Slate: #64748b (secondary text, borders)
+- Success Green: #16a34a (positive feedback, success states)
+- Warning Yellow: #ca8a04 (warnings, attention states)
+- Error Red: #dc2626 (errors, destructive actions)
 
-TabNavigation:
-  tabs:
-    - TextInputPage (default on load - Req 2.1.1)
-    - OverallFeedbackPage
-    - DetailedFeedbackPage
-    - ProgressTrackingPage (populated by evaluation data - Arch 4.1)
-    - DebugPage
-    - HelpPage
-    - AdminPage
-```
+**Neutral Colors**:
+- Background White: #ffffff (page backgrounds)
+- Surface Gray: #f8fafc (card backgrounds, sections)
+- Text Dark: #1e293b (primary text)
 
-### 4.2 Core Page Specifications
+### 4.2 Typography
+**Font Family**: Inter, system-ui, sans-serif  
+**Font Sizes**:
+- H1: 2rem (page titles)
+- H2: 1.5rem (section headers)
+- H3: 1.25rem (subsection headers)
+- H4: 1.125rem (component headers)
+- Body: 1rem (main content)
+- Small: 0.875rem (captions, metadata)
 
-#### 4.2.1 TextInputPage (Default Page - Req 2.1.1)
-```yaml
-TextInputPage:
-  components:
-    - TextInputArea (large, resizable text area)
-    - SubmitButton (with loading state)
-    - CharacterCount (optional)
-    - InfoBubble (explains text submission - Req 2.1.3)
-    - SessionStatus (subtle indicator)
-  
-  behavior:
-    - Auto-focus on text area
-    - Real-time character count
-    - Submit validation (non-empty, length limits)
-    - Async processing with progress feedback (designed async from inception)
-    - Status polling for evaluation progress
-    - Auto-navigate to OverallFeedbackPage on completion
-```
+**Line Height**: 1.6 for optimal readability
 
-#### 4.2.2 OverallFeedbackPage (Req 2.2.3a)
-```yaml
-OverallFeedbackPage:
-  components:
-    - OverallScore (prominent display)
-    - StrengthsSection (Req 2.2.3a)
-    - OpportunitiesSection (Req 2.2.3a)
-    - RubricScores (summary view)
-    - ProgressData (integrated from evaluation - Req 2.6)
-    - ChatButton (initiates chat - Req 2.3.1)
-    - PDFExportButton (Req 2.7.1)
-    - InfoBubbles (explain each section - Req 2.1.3)
-  
-  data_source:
-    - Global state (evaluation results)
-    - Progress data (calculated during evaluation)
-```
+### 4.3 Component Styling
+**Streamlit Native Components**:
+- Buttons: `st.button()` with primary/secondary styling
+- Text Input: `st.text_area()` with auto-resize and character count
+- Selectbox: `st.selectbox()` for dropdown selections
+- Tabs: `st.tabs()` for navigation
+- Columns: `st.columns()` for responsive layouts
+- Cards: `st.container()` with custom styling
 
-#### 4.2.3 DetailedFeedbackPage [MVP] (Req 2.2.3b)
-```yaml
-DetailedFeedbackPage:
-  components:
-    - SegmentList (user text with feedback)
-    - SegmentComments (Req 2.2.3b)
-    - InsightQuestions (Req 2.2.3b)
-    - RubricBreakdown (detailed scoring)
-    - InfoBubbles (explain detailed feedback)
-  
-  layout:
-    - Side-by-side: original text | feedback
-    - Expandable segments for readability
-```
+**Custom Styling**:
+- Minimal CSS for specific component overrides
+- Streamlit theme configuration for color consistency
+- CSS media queries for mobile adaptations
 
-#### 4.2.4 ProgressTrackingPage (Req 2.6)
-```yaml
-ProgressTrackingPage:
-  components:
-    - OverallScoreTrend (line chart)
-    - RubricCategoryProgress (bar charts)
-    - SubmissionFrequency (time series)
-    - StrengthEvolution (word cloud/trends)
-    - ProgressMetrics (numerical summaries)
-    - TimeRangeSelector (week/month/quarter)
-  
-  data_source:
-    - Historical evaluations (calculated on-demand)
-    - Progress cache for performance
-```
+### 4.4 Responsive Design
+**Design Approach**: Desktop-first with mobile adaptations
 
-#### 4.2.5 DebugPage [MVP] (Req 2.5)
-```yaml
-DebugPage:
-  components:
-    - DebugToggle (enable/disable debug mode)
-    - PerformanceMetrics (response times, memory usage)
-    - RawPrompts (Req 2.5.2)
-    - RawResponses (Req 2.5.2)
-    - SystemLogs (filtered by level)
-    - TestTriggers (frontend/backend/connectivity/logging)
-  
-  access_control:
-    - Available to all users when debug mode enabled
-    - Sensitive data sanitization
-```
+**Breakpoints**:
+- Desktop: min-width 1025px (primary design target)
+- Tablet: min-width 641px, max-width 1024px
+- Mobile: max-width 640px (adapted layout)
 
-#### 4.2.6 HelpPage (Req 2.1.4)
-```yaml
-HelpPage:
-  components:
-    - RubricExplanation (detailed rubric guide)
-    - FrameworkResources (communication frameworks)
-    - UsageInstructions (step-by-step guide)
-    - FAQSection (common questions)
-    - ContactInformation (support details)
-  
-  content:
-    - Static help content
-    - Dynamic help based on current context
-    - Links to external resources
-```
+**Desktop Optimizations**:
+- Full tab navigation with horizontal layout
+- Side-by-side content layouts
 
-#### 4.2.7 AdminPage (Req 2.4)
-```yaml
-AdminPage:
-  components:
-    - ConfigurationManager (comprehensive YAML editing - Req 2.4.1-2.4.4)
-    - AuthenticationConfig (enable/disable toggle - Req 2.4.2)
-    - UserManagement (when authentication enabled)
-    - SessionManagement (Req 2.4.5)
-    - AuthenticationLogs (Req 2.4.5)
-    - SystemStatus (health checks)
-  
-  access_control:
-    - Admin-only access
-    - YAML validation before saving
-```
+- Hover interactions and tooltips
 
-#### 4.2.8 ConfigurationManagerPage [MVP] (Req 2.4)
-```yaml
-ConfigurationManagerPage:
-  components:
-    - ConfigurationCategoryTabs:
-        business_logic: ["rubric", "frameworks", "context", "prompt"]
-        system_security: ["auth", "security"]
-        component_config: ["frontend", "backend"]
-        infrastructure: ["database", "llm"]
-        operations: ["logging", "monitoring", "performance"]
-    - ConfigurationEditor:
-        yaml_syntax_highlighting: true
-        real_time_validation: true
-        auto_completion: true
-        line_numbers: true
-    - ConfigurationValidation:
-        schema_validation: true
-        real_time_feedback: true
-        error_highlighting: true
-    - ConfigurationHistory:
-        version_tracking: true
-        change_comparison: true
-        rollback_capability: true
-    - ConfigurationActions:
-        bulk_validation: true
-        export_import: true
-        category_filtering: true
-  
-  layout:
-    - Three-panel design: Categories | Editor | Validation
-    - Responsive design for mobile administration
-    - Full-screen editor mode available
-  
-  features:
-    - Live YAML syntax validation
-    - Category-based organization
-    - Version history and rollback
-    - Bulk validation of all configs
-    - Export/import configuration sets
-    - Real-time preview of changes
-  
-  access_control:
-    - Admin-only access
-    - Role-based configuration editing permissions
-    - Audit trail for all changes
-```
+**Mobile Adaptations**:
+- Tab navigation becomes dropdown menu (st.selectbox)
+- Side-by-side layouts stack vertically (st.columns)
+- Touch-friendly button sizes (44px minimum)
 
-### 4.3 Authentication UI Components
-
-#### 4.3.1 MVP Mode (Authentication Disabled)
-```yaml
-SessionManagement:
-  components:
-    - AutoSessionCreation (transparent on app load)
-    - SessionStatusIndicator (subtle, optional)
-    - NoLoginRequired (seamless access)
-  
-  behavior:
-    - Automatic session creation
-    - Session persistence across browser sessions
-    - No authentication barriers
-```
-
-#### 4.3.2 Production Mode (Authentication Enabled)
-```yaml
-AuthenticationUI:
-  components:
-    - LoginModal (username, password, remember me)
-    - UserMenu (profile, logout, admin access)
-    - SessionExpiryWarning
-    - PasswordReset (if implemented)
-  
-  behavior:
-    - JWT token management
-    - Session validation
-    - Secure cookie handling
-```
+- Reduced hover interactions
 
 ---
 
-## 5.0 Visual Design System
+## 5.0 User Experience Flows
 
-### 5.1 Color Palette and Typography
-```yaml
-ColorScheme:
-  primary: "#2563eb" (blue)
-  secondary: "#64748b" (slate)
-  success: "#16a34a" (green)
-  warning: "#ca8a04" (yellow)
-  error: "#dc2626" (red)
-  background: "#ffffff" (white)
-  surface: "#f8fafc" (light gray)
-  text: "#1e293b" (dark slate)
+### 5.1 Primary User Journey
+**Text Submission and Evaluation Flow** (Req 2.2):
 
-Typography:
-  font_family: "Inter, system-ui, sans-serif"
-  heading_sizes: [2rem, 1.5rem, 1.25rem, 1.125rem, 1rem]
-  body_size: "1rem"
-  line_height: 1.6
-```
+1. **Landing**: User arrives at Text Input page (Req 2.1.1)
+2. **Input**: User enters text in large text area
+3. **Validation**: System validates input (non-empty, character limit)
+4. **Submission**: User clicks submit button
+5. **Processing**: Synchronous evaluation with immediate feedback (Req 2.2.4)
+6. **Results**: System displays results on Overall Feedback page
+7. **Navigation**: User can navigate to Detailed Feedback page
+7. **Navigation**: User can navigate to Detailed Feedback page
 
-### 5.2 Component Styling Guidelines
-```yaml
-ButtonStyles:
-  primary: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-  secondary: "bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
-  danger: "bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+### 5.2 Tab Navigation Flow
+**Performance Requirement**: < 1 second tab switching (Req 3.1.1)
 
-InputStyles:
-  text_area: "border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
-  text_input: "border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+**Behavior**:
+- Instant tab switching with cached data
+- State preservation across tab switches
+- No data reloading for cached content
+- Smooth transitions between tabs
+- Active tab indication
 
-CardStyles:
-  default: "bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
-  elevated: "bg-white border border-gray-200 rounded-lg p-6 shadow-md"
-```
+### 5.3 Error Handling Flow
+**Approach**: Hybrid - inline for forms, toast for system messages
 
-### 5.3 Responsive Breakpoints
-```yaml
-Breakpoints:
-  mobile: "max-width: 640px"
-  tablet: "min-width: 641px, max-width: 1024px"
-  desktop: "min-width: 1025px"
+**Form Validation**:
+- Inline error messages below form fields
+- Real-time validation feedback
+- Clear error descriptions with specific guidance
+- Visual indicators (red borders, error icons)
 
-MobileAdaptations:
-  - Tab navigation becomes dropdown menu
-  - Side-by-side layouts stack vertically
-  - Touch-friendly button sizes (44px minimum)
-  - Simplified progress charts
-```
+**System Messages**:
+- Toast notifications for system-level messages
+- Success confirmations for completed actions
+- Warning messages for potential issues
+- Error notifications for system failures
+
+**Error Types**:
+- Network errors: Toast notification with retry option
+- Validation errors: Inline field validation with specific guidance
+- LLM errors: Toast notification with fallback message
+- Session errors: Toast notification with automatic refresh
+- System errors: Toast notification with support contact
+
+### 5.4 Loading States Flow
+**Implementation**: Progressive feedback for user actions
+
+**States**:
+- Page load: Skeleton screens for content areas
+- Text submission: Progress indicator with status updates
+- Evaluation processing: Loading spinner with estimated time
+- Tab switching: Instant with cached data
 
 ---
 
-## 6.0 User Experience Flows
+## 6.0 Component Specifications
 
-### 6.1 Primary User Journey (Req 2.2)
-```yaml
-TextSubmissionFlow:
-  1. User lands on TextInputPage (Req 2.1.1)
-  2. User enters text in large text area
-  3. User clicks submit (async processing begins)
-  4. System queues evaluation with progress feedback (designed async from inception)
-  5. User sees real-time status updates (queued → processing → completed)
-  6. Results displayed on OverallFeedbackPage when complete
-  7. User can navigate to DetailedFeedbackPage
-  8. User can initiate chat (Req 2.3.1)
-  9. User can export PDF (Req 2.7.1)
-  10. Progress data automatically calculated and displayed
-```
+### 6.1 Information Tooltips
+**Implementation**: Streamlit native tooltips (st.help())  
+**Requirement**: Information bubbles on hover (Req 2.1.3)
 
-### 6.5 Admin Configuration Flow (Req 2.4)
-```yaml
-ConfigurationManagementFlow:
-  1. Admin accesses AdminPage with authentication
-  2. Admin navigates to ConfigurationManager
-  3. Admin selects configuration category (5 categories)
-  4. Admin selects specific config file (13 total files)
-  5. YAML editor loads with syntax highlighting
-  6. Admin makes changes with real-time validation
-  7. System validates changes against schema
-  8. Admin previews changes before applying
-  9. Admin saves with optional change reason
-  10. System writes to filesystem and logs version
-  11. Configuration immediately available for use
-  12. Admin can view version history and rollback if needed
-```
+**Usage**:
+- Text input page: Explains text submission process
+- Overall feedback page: Explains each section
+- Detailed feedback page: Explains feedback components
 
-### 6.2 Tab Navigation Flow (Req 2.1.2)
-```yaml
-TabSwitching:
-  - Fast switching (<1s - Req 3.1.1)
-  - State preservation across tabs
-  - No data reloading for cached content
-  - Smooth transitions between tabs
-  - Active tab indication
-```
+- Help page: Context-sensitive guidance
 
-### 6.3 Error Handling Flow
-```yaml
-ErrorStates:
-  - Network errors: Retry button with user-friendly message
-  - Validation errors: Inline field validation with specific guidance
-  - LLM errors: Fallback message with debug option
-  - Session errors: Automatic session refresh
-  - System errors: Contact support with error details
-```
+### 6.2 Form Components
+**Text Input**:
+- Large, resizable text area
+- Real-time character counter
+- Auto-focus on page load
+- Maximum 10,000 character limit
+- Validation feedback
 
-### 6.4 Loading States Flow
-```yaml
-LoadingStates:
-  - Page load: Skeleton screens for content areas
-  - Text submission: Real-time progress bar with status updates (async-first design)
-  - Evaluation processing: Status polling with progress percentage and estimated completion
-  - Tab switching: Instant with cached data
-  - PDF generation: Download progress indicator
-  - Chat responses: Typing indicator
-```
+**Submit Button**:
+- Primary styling
+- Loading state during processing
+- Disabled state during validation
+- Clear success/error feedback
+
+### 6.3 Navigation Components
+**Tab Navigation**:
+- Horizontal layout on desktop
+- Dropdown menu on mobile
+- Active tab indication
+- State preservation across switches
+
+**Breadcrumbs**:
+- Context-aware navigation
+- Clear page hierarchy
+- Quick navigation between related pages
+
+### 6.4 Data Display Components
+**Score Display**:
+- Prominent positioning
+- Clear visual hierarchy
+- Color-coded for performance levels
+- Animated transitions
+
+
 
 ---
 
 ## 7.0 Accessibility and Usability
 
 ### 7.1 Accessibility Standards
-```yaml
-WCAGCompliance:
-  target_level: "AA"
-  requirements:
-    - Keyboard navigation support
-    - Screen reader compatibility
-    - Color contrast ratios (4.5:1 minimum)
-    - Focus indicators for all interactive elements
-    - Alt text for images and charts
-    - Semantic HTML structure
-```
+**Target Level**: WCAG 2.1 AA compliance
+
+**Requirements**:
+- Keyboard navigation support for all interactive elements
+- Screen reader compatibility with semantic HTML
+- Color contrast ratios of 4.5:1 minimum
+- Focus indicators for all interactive elements
+- Alternative text for images and charts
+- Semantic HTML structure for proper document outline
 
 ### 7.2 Usability Guidelines
-```yaml
-UsabilityPrinciples:
-  - Clear visual hierarchy
-  - Consistent navigation patterns
-  - Intuitive form design
-  - Helpful error messages
-  - Progressive disclosure of complexity
-  - Mobile-first responsive design
-```
+**Principles**:
+- Clear visual hierarchy with consistent styling
+- Intuitive navigation patterns across all pages
+- Progressive disclosure of complexity
+- Helpful error messages with actionable guidance
+- Mobile-first responsive design considerations
+- Consistent interaction patterns
+
+**User Experience**:
+- Minimal cognitive load for primary tasks
+- Clear feedback for all user actions
+- Efficient workflows for common tasks
+- Accessible design for diverse user needs
 
 ---
 
 ## 8.0 Performance Requirements
 
-### 8.1 Loading Performance (Req 3.1.1)
-```yaml
-PerformanceTargets:
-  main_page_load: "< 1 second"
-  tab_switching: "< 1 second"
-  text_submission_response: "< 15 seconds"
-  progress_data_calculation: "< 2 seconds"
-  pdf_generation: "< 10 seconds"
-```
+### 8.1 Loading Performance
+**Targets** (Req 3.1.1):
+- Main page load: < 1 second
+- Tab switching: < 1 second
+- Text submission response: < 15 seconds
+
 
 ### 8.2 Optimization Strategies
-```yaml
-OptimizationTechniques:
-  - Lazy loading of non-critical components
-  - Caching of evaluation results and progress data
-  - Efficient state management to prevent unnecessary re-renders
-  - Optimized chart rendering for large datasets
-  - Compressed static assets
-```
+**Implementation**:
+- Lazy loading of non-critical components
+- Caching of evaluation results
+- Efficient state management to prevent unnecessary re-renders
+- Optimized chart rendering for large datasets
+- Compressed static assets
+
+**Monitoring**:
+- Performance metrics tracking
+- User experience monitoring
+- Load time optimization
+- Resource usage optimization
 
 ---
 
 ## 9.0 Implementation Guidelines
 
-### 9.1 Reflex Component Structure
-```yaml
-ComponentOrganization:
-  - Single responsibility per component
-  - Reusable component library
-  - Consistent prop interfaces
-  - Clear component hierarchy
-  - Separation of concerns (UI vs logic)
-```
+### 9.1 Streamlit Component Structure
+**Organization**:
+- Single responsibility per component
+- Reusable component library
+- Consistent prop interfaces
+- Clear component hierarchy
+- Separation of concerns (UI vs logic)
+
+**Best Practices**:
+- Use Streamlit native components where possible
+- Minimal custom CSS for specific styling needs
+- Consistent naming conventions
+- Comprehensive error handling
+- Performance optimization
 
 ### 9.2 State Management Patterns
-```yaml
-StatePatterns:
-  - Global state for session and evaluation data
-  - Local state for UI interactions
-  - Computed state for derived data (progress calculations)
-  - Immutable state updates
-  - State persistence across page reloads
-```
+**Implementation**:
+- Global state for session and evaluation data
+- Local state for UI interactions
+- Immutable state updates
+- State persistence across page reloads
+
+**Data Flow**:
+- Unidirectional data flow
+- Clear state update patterns
+- Efficient state synchronization
+- Proper error state management
 
 ---
 
-## 10.0 Traceability Links
+## 10.0 Design Decisions and Rationale
 
-- **Source of Truth**: `01_Requirements.md`, `02_Architecture.md`
-- **Mapped Requirements**: 
-  - GUI Requirements (2.1)
-  - Tab Navigation (2.1.2)
-  - Visual Appeal (2.1.5)
-  - Information Bubbles (2.1.3)
-  - Help Resources (2.1.4)
-  - Fast Loading (3.1.1)
-  - Text Evaluation (2.2)
-  - Chat Integration (2.3)
-  - Admin Functions (2.4)
-  - Debug Mode (2.5)
-  - Progress Tracking (2.6)
-  - PDF Export (2.7)
+### 10.1 Framework Selection
+**Decision**: Streamlit for frontend development  
+**Rationale**: 
+- Aligns with Python backend stack for maintainability
+- Built-in session state management capabilities
+- Rapid development for MVP requirements
+- Excellent scalability for target user base
+
+### 10.2 Visual Design Approach
+**Decision**: Streamlit native styling with minimal custom CSS  
+**Rationale**:
+- Simplest implementation for MVP
+- Consistent design language
+- Minimal maintenance overhead
+- Clear upgrade path for future enhancements
+
+
+
+### 10.3 Responsive Design Strategy
+**Decision**: Desktop-first with mobile adaptations  
+**Rationale**:
+- Simpler development for MVP
+- Adequate mobile experience
+- Clear upgrade path to mobile-first design
+- Reduced complexity in initial implementation
+
+### 10.4 Error Handling Approach
+**Decision**: Hybrid inline/toast notification system  
+**Rationale**:
+- Contextual error messages for forms
+- Non-intrusive system notifications
+- Clear user feedback without workflow disruption
+- Consistent error handling patterns
+
+---
+
+## 11.0 Traceability Matrix
+
+| Requirement ID | Requirement Description | UI/UX Implementation | Status |
+|---------------|------------------------|---------------------|---------|
+| 2.1.1 | Main page shows text input | Text Input page as landing page | ✅ Implemented |
+| 2.1.2 | Tab navigation fast | Tab-based navigation with <1s switching | ✅ Implemented |
+| 2.1.3 | Info bubbles | Streamlit tooltips (st.help()) | ✅ Implemented |
+| 2.1.4 | Help tab resources | Help page with rubric/framework resources | ✅ Implemented |
+| 2.1.5 | Clean visuals | Streamlit native styling with custom CSS | ✅ Implemented |
+| 2.2.1 | Text input box | Large, resizable text area with validation | ✅ Implemented |
+| 2.2.2 | LLM processing | Synchronous processing with immediate feedback | ✅ Implemented |
+| 2.2.3a | Overall evaluation | Overall Feedback page with strengths/opportunities | ✅ Implemented |
+| 2.2.3b | Segment evaluation | Detailed Feedback page with comments/questions | ✅ Implemented |
+| 2.3.1 | Admin YAML editing | Admin page with configuration management | ✅ Implemented |
+| 2.4.1 | Debug output | Debug page with admin-only access | ✅ Implemented |
+| 2.4.2 | Raw prompts/responses | Debug page with performance metrics | ✅ Implemented |
+| 3.1.1 | Responsive system | Performance targets and optimization strategies | ✅ Implemented |
+| 3.1.2 | LLM response time | <15 second submission response target | ✅ Implemented |
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: Implementation Phase  
+**Next Review**: After MVP deployment

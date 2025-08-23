@@ -182,8 +182,7 @@ submissions (1) ← (N) evaluations
 CREATE INDEX idx_submissions_session_date ON submissions(session_id, created_at);
 CREATE INDEX idx_submissions_user_session ON submissions(user_id, session_id, created_at);
 CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, evaluation_timestamp);
-CREATE INDEX idx_chat_sessions_evaluation ON chat_sessions(evaluation_id);
-CREATE INDEX idx_chat_messages_session ON chat_messages(chat_session_id, timestamp);
+
 CREATE INDEX idx_config_versions_type_date ON configuration_versions(config_type, changed_at);
 CREATE INDEX idx_sessions_active ON sessions(session_id, is_active, expires_at);
 CREATE INDEX idx_sessions_user_activity ON sessions(user_id, last_activity);
@@ -202,7 +201,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 - **Cleanup frequency**: Weekly automated cleanup job
 - **Archive before delete**: Export old data to JSON before deletion
 - **Performance monitoring**: Log query execution times, optimize slow queries
-- **Cache cleanup**: Remove expired progress cache entries daily
+
 
 ---
 
@@ -285,7 +284,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 **Rationale**: 
 - **Pros**: Predictable storage usage, maintains useful history
 - **Cons**: May lose valuable long-term trends
-- **Decision Basis**: Provides predictable storage management while preserving recent user activity for progress tracking
+- **Decision Basis**: Provides predictable storage management while preserving recent user activity
 
 ### 9.5 Session Management Strategy ✅ **DECIDED**
 
@@ -323,7 +322,7 @@ PRAGMA temp_store = memory;  -- Use memory for temporary tables
 
 - **Source of Truth**: `02_Architecture.md`
 - **Mapped Requirements**: 
-  - Progress Tracking (2.6)
+  
   - Admin Functions (2.4)
   - Debug Mode (2.5)
   - Data Layer requirements from Architecture

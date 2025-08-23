@@ -18,12 +18,12 @@
 
 2.1 **User Interface (GUI)**
 - 2.1.1 On load, the text input page is displayed.
-- 2.1.2 Navigation between functions (help, text input, overall feedback, detailed feedback, progress tracking, debug) is implemented as tab switches that preserve session data and load quickly.
+- 2.1.2 Navigation between functions (help, text input, overall feedback, detailed feedback, debug) is implemented as tab switches that preserve session data and load quickly.
 - 2.1.3 Information bubbles appear on hover, explaining each section.
 - 2.1.4 The Help tab displays usage information and resources to learn the rubric and frameworks.
 - 2.1.5 The site must be visually clean but also pleasing.
 
-2.2 **Text Submission and Evaluation [MVP]**
+2.2 **Text Submission and Evaluation**
 - 2.2.1 The system provides a text input box for users.
 - 2.2.2 Upon submission, the system processes the text using an LLM synchronously.
 - 2.2.3 The system returns:
@@ -31,15 +31,23 @@
   - (b) Segment-level evaluation with comments and insight questions.
 - 2.2.4 Evaluation processing is straightforward with immediate feedback.
 
-2.3 **Admin Functions [MVP]**
-- 2.3.1 Admins can edit essential YAML files (4 files): `rubric.yaml`, `prompt.yaml`, `llm.yaml`, `auth.yaml`.
-- 2.3.2 All configuration changes are validated.
-- 2.3.3 Simple configuration management without version tracking for MVP.
+2.3 **Text Evaluation System**
+- 2.3.1 The system uses a grading rubric for evaluation.
+- 2.3.2 The system uses prompt templates for LLM interactions.
+- 2.3.3 The system provides overall strengths and improvement opportunities.
+- 2.3.4 The system provides detailed grading according to rubric.
+- 2.3.5 The system provides segment-level evaluation with comments and questions.
+- 2.3.6 The system provides immediate feedback after evaluation processing.
 
-2.4 **Debug Mode [MVP]**
-- 2.4.1 In debug mode, admins can review debug output for system diagnostics.
-- 2.4.2 Debug includes performance data, raw prompts, and raw responses.
-- 2.4.3 Debug mode is admin-only to prevent security risks.
+2.4 **Admin Functions**
+- 2.4.1 Admins can edit essential YAML files (4 files): `rubric.yaml`, `prompt.yaml`, `llm.yaml`, `auth.yaml`.
+- 2.4.2 All configuration changes are validated.
+- 2.4.3 Simple configuration management without version tracking.
+
+2.5 **Debug Mode**
+- 2.5.1 In debug mode, admins can review debug output for system diagnostics.
+- 2.5.2 Debug includes performance data, raw prompts, and raw responses.
+- 2.5.3 Debug mode is admin-only to prevent security risks.
 
 ---
 
@@ -88,17 +96,25 @@
 - Provides immediate feedback after evaluation processing.
 - Simple, straightforward evaluation system for reliable user experience.
 
-4.3 **Admin Functions**
+4.3 **Text Evaluation System**
+- Uses grading rubric for consistent evaluation standards.
+- Uses prompt templates for reliable LLM interactions.
+- Provides comprehensive strengths and improvement opportunities analysis.
+- Provides detailed rubric-based grading with specific criteria.
+- Provides segment-level evaluation with targeted comments and questions.
+- Provides immediate feedback with clear processing status.
+
+4.4 **Admin Functions**
 - Admin can edit 4 essential YAML configuration files.
 - YAML validated to prevent malformed input with basic checking.
 - Debug mode toggle available for system diagnostics.
 - Simple configuration management interface.
 
-4.4 **Debug Mode**
+4.5 **Debug Mode**
 - Debug shows raw prompts, raw responses, performance data.
 - Admin-only access to debug information for security.
 
-4.8 **Non-Functional**
+4.6 **Non-Functional**
 - Response times acceptable.
 - Scales to 100+ concurrent users using SQLite optimizations.
 - Error handling comprehensive.
@@ -119,23 +135,25 @@
 | 2.2.2  | Submission processed by LLM   | 4.2                 | TC-007       |
 | 2.2.3a | Overall evaluation returned   | 4.2                 | TC-008       |
 | 2.2.3b | Segment evaluation returned   | 4.2                 | TC-009       |
-| 2.3.1  | Chat after feedback           | 4.3                 | TC-010       |
-| 2.3.2  | Chat uses context             | 4.3                 | TC-011       |
-| 2.4.1  | Admin edits YAML              | 4.4                 | TC-012       |
-| 2.5.1  | Debug output accessible       | 4.5                 | TC-013       |
-| 2.5.2  | Raw prompts/responses shown   | 4.5                 | TC-014       |
-| 2.6.1  | Grading history recorded      | 4.6                 | TC-015       |
-| 2.6.2  | Progress data with evaluation | 4.6                 | TC-016       |
-| 2.7.1  | PDF generated                 | 4.7                 | TC-017       |
-| 2.7.2  | PDF includes text/feedback    | 4.7                 | TC-018       |
-| 3.1.1  | Responsive system             | 4.8                 | TC-019       |
-| 3.1.2  | LLM response within seconds   | 4.8                 | TC-020       |
-| 3.2.1  | MVP handles 10-20 users       | 4.8                 | TC-021       |
-| 3.2.2  | Scales to 100+ users with SQLite | 4.8                 | TC-022       |
-| 3.3.1  | High uptime                   | 4.8                 | TC-023       |
-| 3.3.2  | Robust error handling         | 4.8                 | TC-024       |
-| 3.5.1  | Maintainability priority      | 4.8                 | TC-025       |
-| 3.5.2  | Simplicity no duplicates      | 4.8                 | TC-026       |
-| 3.5.3  | Comprehensive comments        | 4.8                 | TC-027       |
-| 3.5.4  | Modular architecture          | 4.8                 | TC-028       |
+| 2.3.1  | System uses grading rubric    | 4.3                 | TC-010       |
+| 2.3.2  | System uses prompt templates   | 4.3                 | TC-011       |
+| 2.3.3  | Overall strengths/opportunities| 4.3                 | TC-012       |
+| 2.3.4  | Detailed rubric grading       | 4.3                 | TC-013       |
+| 2.3.5  | Segment-level evaluation      | 4.3                 | TC-014       |
+| 2.3.6  | Immediate feedback processing | 4.3                 | TC-015       |
+
+| 2.4.1  | Admin edits YAML              | 4.4                 | TC-016       |
+| 2.5.1  | Debug output accessible       | 4.5                 | TC-017       |
+| 2.5.2  | Raw prompts/responses shown   | 4.5                 | TC-018       |
+
+| 3.1.1  | Responsive system             | 4.6                 | TC-019       |
+| 3.1.2  | LLM response within seconds   | 4.6                 | TC-020       |
+| 3.2.1  | MVP handles 10-20 users       | 4.6                 | TC-021       |
+| 3.2.2  | Scales to 100+ users with SQLite | 4.6                 | TC-022       |
+| 3.3.1  | High uptime                   | 4.6                 | TC-023       |
+| 3.3.2  | Robust error handling         | 4.6                 | TC-024       |
+| 3.5.1  | Maintainability priority      | 4.6                 | TC-025       |
+| 3.5.2  | Simplicity no duplicates      | 4.6                 | TC-026       |
+| 3.5.3  | Comprehensive comments        | 4.6                 | TC-027       |
+| 3.5.4  | Modular architecture          | 4.6                 | TC-028       |
 

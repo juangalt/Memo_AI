@@ -108,7 +108,7 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 - Database: SQLite (for entire project lifecycle)
 - Schema: database tables to store user text submissions, LLM evaluation results, YAML configuration file copies (source files in filesystem), and system logs.
-- Store history and generate progress data integrated with evaluations.
+- Store history and evaluation data.
 - Scalability: SQLite with WAL mode and optimizations for 100+ concurrent users
 
 **Suggested Components:**
@@ -235,7 +235,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Overall scores and feedback stored in `evaluations` table
 - Segment-level feedback stored as JSON in `evaluations.segment_feedback`
 - Rubric scores stored as JSON for flexible scoring schemes
-- Progress metrics calculated and stored in `progress_metrics` table
+
 
 **Configuration Storage:**
 - YAML configurations stored in filesystem as source of truth
@@ -329,7 +329,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **Modular Architecture Support:**
 - Pluggable LLM providers via `LLMConnector` interface
 - Configurable evaluation rubrics via YAML configuration
-- Extensible progress metrics through `ProgressDataAdapter`
+
 - Modular frontend components for new features
 - API versioning support for backward compatibility
 
@@ -342,7 +342,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Feature Extension Points:**
 - Additional evaluation frameworks via configuration
-- New progress visualization types
+
 - Enhanced evaluation capabilities
 - Advanced admin analytics and reporting
 - Integration with external learning management systems
