@@ -33,44 +33,25 @@ This section refers to the method used for interacting with the database from th
 ## 3.0 Core Data Entities
 
 ### 3.1 Users and Authentication
-**Based on Requirements**: JWT + Session hybrid authentication system implemented from project start (Req 3.4.1). Session-based identification for anonymous users, full authentication for registered users.
+**Based on Requirements**: Session-based authentication system (Req 3.4.1). Session-based identification for users with admin support.
 
 **Schema**:
 ```sql
 users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE,
-    password_hash TEXT NOT NULL,  -- bcrypt hash
-    is_active BOOLEAN DEFAULT TRUE,
+    password_hash TEXT NOT NULL,  -- simple hash for MVP
     is_admin BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_login DATETIME
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT UNIQUE NOT NULL,  -- Secure random token
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,  -- NULL for anonymous sessions
+    user_id INTEGER REFERENCES users(id),  -- NULL for anonymous sessions
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL,
-    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    ip_address TEXT,
-    user_agent TEXT
-);
-
-auth_configuration (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    auth_enabled BOOLEAN DEFAULT TRUE,  -- Authentication enabled from MVP start
-    jwt_secret_key TEXT NOT NULL,
-    session_timeout INTEGER DEFAULT 3600,  -- seconds
-    max_login_attempts INTEGER DEFAULT 5,
-    lockout_duration INTEGER DEFAULT 900,  -- seconds
-    require_email_verification BOOLEAN DEFAULT FALSE,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT DEFAULT 'system'
+    is_active BOOLEAN DEFAULT TRUE
 );
 ```
 
@@ -82,126 +63,51 @@ auth_configuration (
 submissions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     text_content TEXT NOT NULL,
-    submission_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,  -- NULL for anonymous sessions
     session_id TEXT NOT NULL REFERENCES sessions(session_id),
-    version INTEGER DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ### 3.3 Evaluations [MVP]
-**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b) [MVP]. Support debug mode with raw prompts/responses (Req 2.5) [MVP]. Progress data integrated with evaluations (Req 2.6).
+**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b) [MVP]. Support debug mode with raw prompts/responses (Req 2.4) [MVP].
 
-**Design Philosophy**: Asynchronous-first evaluation system designed from inception. All evaluations follow async pattern for consistent user experience and scalability. This is the initial schema - no synchronous version exists.
+**Design Philosophy**: Simple synchronous evaluation system for reliable performance.
 
 **Schema Design Rationale**:
-- `status` field: Tracks evaluation lifecycle (queued → processing → completed/failed)
-- `progress_percentage`: Provides real-time user feedback during LLM processing
-- Timing fields: Enable performance monitoring and user experience optimization
-- Async fields integrated from day 1 for modern web application patterns
+- Simple structure focused on core evaluation functionality
+- JSON fields for flexible rubric and segment feedback storage
+- Debug fields for troubleshooting when enabled
 
 **Schema**:
 ```sql
 evaluations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'processing', 'completed', 'failed')),
-    progress_percentage INTEGER DEFAULT 0 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
     overall_score DECIMAL(5,2),
     strengths TEXT NOT NULL,
     opportunities TEXT NOT NULL,
     rubric_scores JSON NOT NULL,  -- Structure: {"category1": score, "category2": score}
     segment_feedback JSON NOT NULL,  -- Structure: [{"segment": "text", "comment": "feedback", "questions": ["q1", "q2"]}]
-    evaluation_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     llm_provider TEXT NOT NULL DEFAULT 'claude',
     llm_model TEXT NOT NULL,
     raw_prompt TEXT,  -- Stored when debug mode enabled
     raw_response TEXT,  -- Stored when debug mode enabled
     debug_enabled BOOLEAN DEFAULT FALSE,
     processing_time DECIMAL(6,3),  -- Processing time in seconds
-    processing_started_at DATETIME,
-    estimated_completion_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ### 3.4 Configuration Files [MVP]
-**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. Database only tracks version history when admin makes changes through UI (Req 2.4.1).
+**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking for MVP (Req 2.3).
 
-**Schema**:
-```sql
--- Track version history of YAML file changes made through admin UI
-configuration_versions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    config_type TEXT NOT NULL CHECK (config_type IN ('rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance')),
-    file_path TEXT NOT NULL,  -- Path to YAML file
-    old_content TEXT,  -- Previous file content (NULL for first version)
-    new_content TEXT NOT NULL,  -- New file content after change
-    change_reason TEXT,  -- Optional reason for change
-    changed_by TEXT NOT NULL,  -- Admin user who made the change
-    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    validation_status TEXT NOT NULL CHECK (validation_status IN ('valid', 'invalid')),
-    validation_errors TEXT  -- JSON array of validation errors if invalid
-);
-```
+**Configuration Files**:
+- `rubric.yaml` - Grading criteria and scoring
+- `prompt.yaml` - LLM prompt templates
+- `llm.yaml` - LLM provider configuration
+- `auth.yaml` - Authentication settings
 
-### 3.5 Chat History [Post-MVP]
-**Based on Requirements**: Chat available after feedback using submission context (Req 2.3). LLM uses submitted text, rubric, frameworks, and context template (Req 2.3.2).
 
-**Schema**:
-```sql
-chat_sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    evaluation_id INTEGER NOT NULL REFERENCES evaluations(id) ON DELETE CASCADE,
-    session_id TEXT NOT NULL REFERENCES sessions(session_id),  -- Link to user session
-    session_start DATETIME DEFAULT CURRENT_TIMESTAMP,
-    session_end DATETIME,
-    context_snapshot JSON,  -- Snapshot of evaluation context for chat
-    is_active BOOLEAN DEFAULT TRUE
-);
-
-chat_messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    chat_session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
-    message_type TEXT NOT NULL CHECK (message_type IN ('user', 'assistant')),
-    message_content TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    llm_provider TEXT,  -- Track which LLM generated response
-    llm_model TEXT
-);
-```
-
-### 3.6 Progress Tracking (Integrated with Evaluations) [Post-MVP]
-**Based on Architecture**: Progress data automatically calculated during evaluation processing and displayed in separate tab (Arch 5.1.B). Progress tracking populated by evaluation data output (Arch 4.1).
-
-**Strategy**: Progress metrics are computed from historical evaluations and rubric scores. Caching table used for performance optimization with automatic invalidation.
-
-**Computed Metrics**:
-- Overall score trends over time
-- Rubric category improvements
-- Submission frequency patterns
-- Strength/opportunity evolution
-
-**Schema** (Optional caching table for performance):
-```sql
-progress_cache (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL REFERENCES sessions(session_id),
-    metric_type TEXT NOT NULL,  -- 'overall_trend', 'rubric_category', 'submission_frequency'
-    metric_data JSON NOT NULL,  -- Computed chart data
-    last_calculated DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,  -- Cache expiration (1 hour default)
-    UNIQUE(session_id, metric_type)
-);
-
--- Cache Invalidation Rules:
--- 1. Invalidate session cache on new evaluation submission
--- 2. Expire cache after 1 hour (configurable)
--- 3. Recalculate during low-traffic periods
--- 4. Global cache clear on rubric configuration changes
-```
 
 ---
 
@@ -209,63 +115,43 @@ progress_cache (
 
 4.1 **Key Relationships**
 ```
+sessions (1) ← (N) submissions
 submissions (1) ← (N) evaluations
-evaluations (1) ← (N) chat_sessions  
-chat_sessions (1) ← (N) chat_messages
-configuration_versions (independent - tracks YAML file change history)
-progress_cache (computed from evaluations by user_session_id)
 ```
 
 4.2 **Foreign Key Constraints and Cascading Behaviors**
 - `evaluations.submission_id` → `submissions.id` (CASCADE DELETE)
-- `chat_sessions.evaluation_id` → `evaluations.id` (CASCADE DELETE)  
-- `chat_messages.chat_session_id` → `chat_sessions.id` (CASCADE DELETE)
 - `submissions.session_id` → `sessions.session_id` (CASCADE DELETE)
-- `chat_sessions.session_id` → `sessions.session_id` (CASCADE DELETE)
-- `progress_cache.session_id` → `sessions.session_id` (CASCADE DELETE)
 
 4.3 **Data Integrity Rules**
-- User sessions identified by `session_id` across all tables
-- Configuration types restricted to: 'rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance'
-- Chat message types restricted to: 'user', 'assistant'
-- YAML files are always read from filesystem (source of truth)
-- Configuration changes through admin UI are logged in configuration_versions table
-- Progress cache expires after 1 hour to ensure fresh data
-- Global debug mode affects all new evaluations when enabled
-- Startup validation ensures all YAML files are present and valid
+- User sessions identified by `session_id` across tables
+- Configuration files stored in filesystem, read directly each time
+- Debug mode affects evaluation storage when enabled
+- Simple foreign key relationships ensure data consistency
 
 ---
 
 ## 5.0 Data Access Patterns
 
 5.1 **Read Patterns**
-- **Evaluation History**: `SELECT * FROM evaluations WHERE submission_id IN (SELECT id FROM submissions WHERE session_id = ?) ORDER BY evaluation_timestamp DESC`
-- **Progress Data**: Check cache first, calculate from evaluations if cache expired
-- **YAML Configuration Files**: Read directly from filesystem each time (no database cache)
-- **Configuration Version History**: `SELECT * FROM configuration_versions WHERE config_type = ? ORDER BY changed_at DESC`
-- **Chat History**: `SELECT * FROM chat_messages WHERE chat_session_id = ? ORDER BY timestamp`
-- **Latest Evaluation**: `SELECT * FROM evaluations WHERE submission_id = ? ORDER BY evaluation_timestamp DESC LIMIT 1`
-- **Cached Progress**: `SELECT * FROM progress_cache WHERE session_id = ? AND expires_at > CURRENT_TIMESTAMP`
+- **Evaluation History**: `SELECT * FROM evaluations WHERE submission_id IN (SELECT id FROM submissions WHERE session_id = ?) ORDER BY created_at DESC`
+- **User Evaluations**: `SELECT * FROM evaluations e JOIN submissions s ON e.submission_id = s.id WHERE s.session_id = ? ORDER BY e.created_at DESC`
+- **YAML Configuration Files**: Read directly from filesystem each time
+- **Latest Evaluation**: `SELECT * FROM evaluations WHERE submission_id = ? ORDER BY created_at DESC LIMIT 1`
 
 5.2 **Write Patterns**
-- **Text Submission**: Single transaction (submissions → evaluations → progress_cache invalidation)
-- **Chat Messages**: Single insert with session validation
-- **Configuration Updates**: Transaction (validate YAML → write to filesystem → log version change to database)
+- **Text Submission**: Single transaction (submissions → evaluations)
+- **Configuration Updates**: Validate YAML → write to filesystem
 - **Debug Data**: Conditional writes based on debug_enabled flag
 
 5.3 **Performance Optimizations**
 - Index on `(session_id, created_at)` for session-based queries
-- Index on `(submission_id, evaluation_timestamp)` for evaluation history
-- Index on `(config_type, changed_at)` for configuration version history queries
-- Progress cache to avoid recalculating metrics on every request
+- Index on `(submission_id, created_at)` for evaluation history
 - YAML files read directly from filesystem (simple and reliable)
 
 **Configuration File Access Patterns:**
-- **Business Logic Configs** (`rubric`, `frameworks`, `context`, `prompt`): Read on evaluation request, cached during processing
-- **System Security Configs** (`auth`, `security`): Read on startup and admin changes, applied immediately
-- **Component Configs** (`frontend`, `backend`): Read on component initialization, hot-reload supported
-- **Infrastructure Configs** (`database`, `llm`): Read on startup, some settings require restart
-- **Operations Configs** (`logging`, `monitoring`, `performance`): Read on startup and runtime, dynamic adjustment supported
+- **Business Logic Configs** (`rubric`, `prompt`): Read on evaluation request
+- **System Configs** (`auth`, `llm`): Read on startup and admin changes
 
 ---
 

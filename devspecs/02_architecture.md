@@ -17,28 +17,27 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
   - Provides the main user interface as tabbed navigation (Req 2.1).
   - Framework: Streamlit
-  - Pages: Text Input, Overall Feedback, Detailed Feedback, Progress Tracking, Debug, Help, Admin.
-  - Progress Tracking tab is populated by evaluation data output.
+  - Pages: Text Input, Overall Feedback, Detailed Feedback, Debug, Help, Admin.
   - Supports fast load times (<1s main load, <15s submission response) and usability features (hover info bubbles, rubric/framework resources) (Req 3.1, 2.1).
 
 - **Backend Services**
 
-  - REST API layer providing asynchronous evaluation endpoints (designed async from inception), chat, admin functions, debugging info and exports (Req 2.2–2.7).
-  - Handles orchestration between frontend requests and the LLM engine with async processing patterns.
-  - Provides error handling, logging, and PDF generation (Req 2.7, 3.3).
+  - REST API layer providing synchronous evaluation endpoints, admin functions, and debug info (Req 2.2–2.4).
+  - Handles orchestration between frontend requests and the LLM engine.
+  - Provides error handling and logging.
 
 - **LLM Engine Integration**
 
-  - Connects with the chosen LLM provider for asynchronous evaluation processing.
-  - Uses context template, rubric, frameworks, and user submissions to produce evaluations with integrated progress data (Req 2.2, 2.6).
-  - Supports debug mode by exposing raw prompts, raw responses, and performance metrics (Req 2.5).
-  - Designed for async processing from inception to handle variable LLM response times gracefully.
+  - Connects with the chosen LLM provider for synchronous evaluation processing.
+  - Uses rubric and prompt templates with user submissions to produce evaluations (Req 2.2).
+  - Supports debug mode by exposing raw prompts, raw responses, and performance metrics (Req 2.4).
+  - Simple synchronous processing for reliable evaluation results.
 
 - **Data Layer**
 
-  - Stores user submissions, evaluation history, configuration version tracking, and logs (Req 2.6, 2.4, 3.5).
-  - YAML configuration files stored in filesystem, read directly each time
-  - Enables charting for progress tracking integrated with evaluations (Req 2.6).
+  - Stores user submissions, evaluation history, and logs (Req 2.2, 2.4, 3.5).
+  - YAML configuration files stored in filesystem, read directly each time.
+  - Simple database schema focused on core evaluation functionality.
 
 ### Key Properties
 
@@ -60,7 +59,7 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - Framework/library: **Streamlit**
 - Tabbed navigation
 - **State persistence**: Use **Streamlit Session State** to maintain a centralized source of truth for all frontend components.
-  - Ensures data (submitted text, evaluation results with progress data, chat history) is instantly available across tabs without re-fetching.
+  - Ensures data (submitted text, evaluation results) is instantly available across tabs without re-fetching.
   - Leverages Streamlit's built-in session state capabilities.
   - Provides consistent user experience and scalability.
 
@@ -68,7 +67,6 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - `TextInputPage`
 - `OverallFeedbackPage`
 - `DetailedFeedbackPage`
-- `ProgressTrackingPage` (populated by evaluation data output)
 - `DebugPage`
 - `HelpPage`
 - `AdminPage`
@@ -77,42 +75,33 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 
 **Backend API Design:**
 - **API Style**: REST (simple, maintainable, industry-standard).
-- **Framework**: **FastAPI** (lightweight, async-friendly, automatic OpenAPI documentation).
+- **Framework**: **FastAPI** (lightweight, automatic OpenAPI documentation).
 - **Endpoint Organization**: Grouped by functional domain to align with requirements:
-  - `/evaluations/submit` - Asynchronous text submission for LLM evaluation [MVP]
-  - `/evaluations/{id}/status` - Check evaluation processing status with polling [MVP]
-  - `/evaluations/{id}` - Retrieve completed evaluation results with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
-  - `/admin/config/*` - YAML configuration file management with hot-reload [MVP]
-  - `/debug` - Debug output, performance metrics, raw prompts/responses (Req 2.5) [MVP]
-  - `/chat` - LLM chat interactions with context (Req 2.3) [Post-MVP]
-  - `/progress` - User submission history and progress tracking (Req 2.6) [Post-MVP]
-  - `/export` - PDF generation and download with direct file serving (Req 2.7) [Post-MVP]
+  - `/evaluations/submit` - Text submission for LLM evaluation [MVP]
+  - `/evaluations/{id}` - Retrieve evaluation results with detailed feedback (Req 2.2.3a, 2.2.3b) [MVP]
+  - `/admin/config/*` - YAML configuration file management [MVP]
+  - `/debug` - Debug output, performance metrics, raw prompts/responses (admin-only, Req 2.4) [MVP]
 
 **Suggested Components:**
-- `EvaluationService` (asynchronous-first processing with status tracking - designed async from inception) [MVP]
-- `AdminService` (configuration management with hot-reload) [MVP]
+- `EvaluationService` (synchronous LLM evaluation processing) [MVP]
+- `AdminService` (simple configuration management) [MVP]
 - `AuthenticationService` (session-based authentication with admin support) [MVP]
 - `SessionService` (session lifecycle and validation) [MVP]
 - `AuthorizationMiddleware` (session-based authorization) [MVP]
 - `DebugService` [MVP]
-- `RateLimitingService` (in-memory rate limiting for MVP) [MVP]
-- `FileService` (direct file serving with temporary storage) [MVP]
-- `ConfigurationService` (hot-reload for business logic configs) [MVP]
-- `ChatService` [Post-MVP]
-- `ExportService` [Post-MVP]
+- `ConfigurationService` (direct filesystem configuration management) [MVP]
 
 ### 4.3 LLM Engine Integration
 
 - **Provider:** The system uses **Claude** as the default LLM provider, but the architecture allows for easy configuration to support alternative LLMs in the future.
-- **Prompt Engineering:** Prompts are constructed by combining the context template, grading rubric, communication frameworks, and the user's submitted text to ensure high-quality, context-aware LLM responses.
-- **Future Enhancement:** Retrieval-Augmented Generation (RAG) is planned for future versions to further improve response relevance and accuracy.
+- **Prompt Engineering:** Prompts are constructed using the grading rubric and prompt template with the user's submitted text for reliable evaluations.
 - **Debugging:** The integration exposes debug data for troubleshooting and transparency, while ensuring that no sensitive information is leaked.
 
 **Component Explanations:**
 
 - `LLMConnector`: Handles all communication with the LLM provider (e.g., sending prompts to Claude and receiving responses). It abstracts the details of the LLM API, making it easy to swap providers if needed.
-- `PromptBuilder`: Responsible for assembling the final prompt sent to the LLM. It merges the context template, rubric, frameworks, and user input into a structured prompt that guides the LLM to produce the desired output.
-- `ResponseParser`: Processes and interprets the raw output from the LLM, extracting structured data such as overall feedback, segment-level evaluations, and chat responses for use by other backend services.
+- `PromptBuilder`: Responsible for assembling the final prompt sent to the LLM. It combines the rubric, prompt template, and user input into a structured prompt that guides the LLM to produce the desired evaluation.
+- `ResponseParser`: Processes and interprets the raw output from the LLM, extracting structured data such as overall feedback and segment-level evaluations for use by other backend services.
 - `DebugAdapter`: Collects and formats debug information related to LLM interactions (such as prompt/response pairs and timing data), ensuring that this information is available for diagnostics without exposing sensitive user or system data.
 
 ### 4.4 Data Layer
@@ -125,11 +114,8 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 **Suggested Components:**
 - `SubmissionRepository`
 - `EvaluationRepository`
-- `ConfigRepository` (direct filesystem YAML operations with hot-reload)
-- `ConfigVersionRepository` (track admin changes)
-- `FileCleanupService` (automatic cleanup of temporary files after 24 hours)
+- `ConfigRepository` (direct filesystem YAML operations)
 - `LogRepository`
-- `ProgressAdapter` (integrated with evaluation processing)
 - `UserRepository` (authentication credentials and profiles)
 - `SessionRepository` (session management and validation)
 
@@ -141,54 +127,50 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 A. The main input to the system is user-generated text submitted for evaluation.
 
 B. The primary outputs are:
-   - Overall and segment-level evaluation results with integrated progress data.
-   - Progress tracking data automatically calculated with each evaluation and displayed in separate tab.
+   - Overall and segment-level evaluation results.
 
 C. Additional data flows include:
-   - User-initiated chat interactions with the LLM, generating further input and output.
-   - Admin submissions of YAML template files, validated and written to filesystem with version tracking.
+   - Admin configuration of YAML template files, validated and written to filesystem.
 
 **5.2 Data Movement Between Front-End, Back-End API, LLM Engine, and Database**
 
 A. **User Input (Front-End to Back-End API):**
-   - The user enters text or interacts with the UI (e.g., submits text for evaluation, requests chat, downloads PDF, or updates YAML configs).
-   - The front-end sends an HTTP request (typically JSON payload) to the appropriate back-end API endpoint (e.g., `/evaluation`, `/chat`, `/admin`, `/export`, `/debug`).
+   - The user enters text or interacts with the UI (e.g., submits text for evaluation or updates YAML configs).
+   - The front-end sends an HTTP request (typically JSON payload) to the appropriate back-end API endpoint (e.g., `/evaluation`, `/admin`, `/debug`).
 
 B. **Back-End API Processing:**
-   - The back-end receives the request and validates it through AuthorizationMiddleware (JWT + Session hybrid authentication implemented but disabled for MVP).
+   - The back-end receives the request and validates it through AuthorizationMiddleware.
    - Authentication flow: validates session_id for user isolation and admin access.
-   - For text evaluation or chat, the back-end:
-     - Stores the user submission and context in the database (`SubmissionRepository`).
-     - Builds a prompt using the context template, rubric, frameworks, and user text (`PromptBuilder`).
+   - For text evaluation, the back-end:
+     - Stores the user submission in the database (`SubmissionRepository`).
+     - Builds a prompt using the rubric, prompt template, and user text (`PromptBuilder`).
      - Sends the prompt to the LLM engine via the `LLMConnector`.
 
 C. **LLM Engine Interaction:**
    - The LLM engine (e.g., Claude) processes the prompt and returns a response.
-   - The back-end parses the LLM response (`ResponseParser`), extracting overall and segment-level evaluations, chat replies, or debug data.
+   - The back-end parses the LLM response (`ResponseParser`), extracting overall and segment-level evaluations.
 
 D. **Database and Filesystem Operations:**
-   - The back-end saves LLM results, evaluations, and any relevant metadata to the database (`EvaluationRepository`, `LogRepository`).
-   - Progress data is automatically calculated during evaluation processing using historical submissions and evaluations (`ProgressDataAdapter`).
-   - Admin updates to YAML files are validated, written to filesystem, and version changes logged to database (`ConfigVersionRepository`).
+   - The back-end saves LLM results and evaluations to the database (`EvaluationRepository`, `LogRepository`).
+   - Admin updates to YAML files are validated and written to filesystem.
 
 5. **Response to Front-End:**
-   - The back-end assembles the final response (evaluation results with integrated progress data, chat reply, PDF link with progress information, debug info, etc.).
-   - The response is sent back to the front-end as JSON or file download.
+   - The back-end assembles the final response (evaluation results).
+   - The response is sent back to the front-end as JSON.
 
 6. **Front-End Display:**
-   - The front-end updates the UI with the received data (e.g., displays overall and per segment feedback, progress data, chat, or error/debug info).
-   - For PDF export, the user is prompted to download the generated file.
+   - The front-end updates the UI with the received data (e.g., displays overall and per segment feedback).
 
 **Summary Table:**
 
 | Step              | Source      | Destination   | Data Type                          |
 |-------------------|-------------|---------------|-------------------------------------|
 | User Action       | Front-End   | Back-End API  | Text input, commands, config files  |
-| Evaluation/Chat   | Back-End    | LLM Engine    | Prompt (constructed from context)   |
-| LLM Response      | LLM Engine  | Back-End      | Evaluation results, chat reply      |
+| Evaluation        | Back-End    | LLM Engine    | Prompt (rubric + user text)         |
+| LLM Response      | LLM Engine  | Back-End      | Evaluation results                  |
 | Persistence       | Back-End    | Database      | Submissions, evaluations, logs      |
-| Progress/Config   | Back-End    | Database      | Progress data, configuration files  |
-| API Response      | Back-End    | Front-End     | JSON (results, progress), files     |
+| Configuration     | Back-End    | Filesystem    | Configuration files                 |
+| API Response      | Back-End    | Front-End     | JSON (evaluation results)           |
 
 This flow ensures that all data is securely transmitted, processed, and stored, with clear boundaries between the front-end, back-end, LLM engine, and database at each step.
 
@@ -198,55 +180,31 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 1. User submits text via frontend → `TextInputPage`
 2. Frontend validates input and sends to `/api/evaluations/submit`
 3. Backend validates request and stores submission (`SubmissionRepository`)
-4. Backend constructs prompt using context, rubric, frameworks (`PromptBuilder`)
+4. Backend constructs prompt using rubric and prompt template (`PromptBuilder`)
 5. Backend sends prompt to LLM engine (`LLMConnector`)
 6. LLM processes and returns evaluation response
 7. Backend parses response into structured data (`ResponseParser`)
-8. Backend calculates progress data from historical evaluations (`ProgressDataAdapter`)
-9. Backend stores evaluation and progress data (`EvaluationRepository`)
-10. Backend returns complete response (evaluation + progress) to frontend
-11. Frontend updates `OverallFeedbackPage` and `DetailedFeedbackPage`
+8. Backend stores evaluation (`EvaluationRepository`)
+9. Backend returns evaluation response to frontend
+10. Frontend updates `OverallFeedbackPage` and `DetailedFeedbackPage`
 
-**Chat Flow (Req 2.3):**
-1. User initiates chat after evaluation → `OverallFeedbackPage`
-2. Frontend sends chat request to `/api/chat/sessions`
-3. Backend creates chat session with evaluation context
-4. User sends message → `/api/chat/sessions/{session_id}/messages`
-5. Backend constructs chat prompt with context (`PromptBuilder`)
-6. LLM processes chat and returns response
-7. Backend stores chat message and response (`ChatRepository`)
-8. Frontend updates chat interface with response
 
-**Progress Tracking Flow (Req 2.6):**
-1. Progress data automatically calculated during evaluation processing
-2. Historical metrics queried from database (`ProgressDataAdapter`)
-3. Chart data generated from evaluation history
-4. Trends computed from previous submissions
-5. Progress data included in evaluation response
-6. Frontend displays progress charts on feedback pages
 
-**Admin Functions Flow (Req 2.4):**
-1. Admin accesses `AdminPage` → `/api/admin/configurations/{config_type}`
+**Admin Functions Flow (Req 2.3):**
+1. Admin accesses `AdminPage` → `/api/admin/config/{config_type}`
 2. Frontend reads and displays current YAML configuration from filesystem
-3. Admin edits configuration and submits → `/api/admin/configurations/{config_type}`
+3. Admin edits configuration and submits → `/api/admin/config/{config_type}`
 4. Backend validates YAML syntax and structure
-5. Backend writes validated configuration to filesystem and logs version change to database
+5. Backend writes validated configuration to filesystem
 6. Configuration immediately available for new evaluations (read from filesystem)
 
-**Debug Mode Flow (Req 2.5):**
-1. Debug mode enabled via admin interface
+**Debug Mode Flow (Req 2.4):**
+1. Debug mode enabled via admin interface (admin-only access)
 2. All LLM interactions include debug data collection
 3. Raw prompts and responses stored (`LogRepository`)
 4. Performance metrics captured during processing
-5. Debug data accessible via `/api/debug/info`
-6. Frontend displays debug information on `DebugPage`
-
-**PDF Export Flow (Req 2.7):**
-1. User requests PDF export → `/api/export/pdf`
-2. Backend retrieves evaluation data and progress information
-3. PDF generated with user text, evaluation, and segment feedback
-4. PDF stored temporarily and URL returned to frontend
-5. User downloads PDF file
+5. Debug data accessible via `/api/debug/info` (admin authentication required)
+6. Frontend displays debug information on `DebugPage` (admin-only)
 
 **Authentication Flow (Req 3.4):**
 1. **Session-Based Authentication:**
@@ -257,12 +215,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
    - Admin sessions validated for management functions
 
 2. **Admin Authentication:**
-   - Admin credentials validated via `AuthenticationService`
+   - Admin credentials validated via simple password check
    - Admin session provides elevated access to management functions
    - Admin sessions tracked in `SessionRepository`
 
 3. **Future Enhancement:**
-   - JWT authentication can be added if complex user management is needed
+   - Advanced authentication features can be added if complex user management is needed
    - Current session-based approach provides sufficient isolation for MVP
 
 **5.4 Intermediate Results Storage and Retrieval**
@@ -270,7 +228,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **LLM Response Storage:**
 - Raw LLM responses stored in `evaluations` table (debug mode only)
 - Parsed structured data stored in separate fields for efficient querying
-- Chat responses stored in `chat_messages` table with session context
+- Simple evaluation responses stored in evaluations table
 - All LLM interactions logged with timestamps and performance metrics
 
 **Evaluation Results Storage:**
@@ -288,7 +246,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **Session Context Management:**
 - User sessions identified by `session_id` across all tables
 - Session data persists across tab switches via global state
-- Historical data linked to sessions for progress tracking
+- Historical data linked to sessions for evaluation history
 - Session cleanup handled by scheduled maintenance
 
 **5.5 Data Integrity, Privacy, and Session Context**
@@ -304,15 +262,14 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Session-based authentication system for user isolation
 - User data isolated by session_id with admin sessions for management
 - No personal information collected beyond submitted text and admin credentials
-- Debug data sanitized to remove sensitive information including authentication tokens
+- Debug data sanitized to remove sensitive information
 - Data retention policies for old submissions and expired sessions
 - Secure session management with httpOnly cookies and CSRF protection
 
 **Session Context Maintenance:**
 - Global state manager maintains session data across tabs
 - Session_id passed in all API requests for data isolation
-- Progress tracking scoped to individual sessions
-- Chat context maintained within evaluation sessions
+- Evaluation context maintained within sessions
 - Session timeout handling for inactive users
 
 **5.6 Error Handling and Debug Data Propagation**
@@ -341,12 +298,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **5.7 Application Startup and Validation**
 
 **Startup Validation Process:**
-- All 13 YAML configuration files validated for syntax and structure on application startup
-- Required configuration files (13 total):
-  - **Business Logic (4 files)**: `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`
-  - **System Settings (4 files)**: `auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`
-  - **Component Settings (2 files)**: `frontend.yaml`, `backend.yaml`
-  - **Operational Settings (3 files)**: `logging.yaml`, `monitoring.yaml`, `performance.yaml`
+- All 4 essential YAML configuration files validated for syntax and structure on application startup
+- Required configuration files (4 total):
+  - `rubric.yaml`: Grading criteria and scoring
+  - `prompt.yaml`: LLM prompt templates
+  - `llm.yaml`: LLM provider configuration
+  - `auth.yaml`: Authentication settings
 - Validation includes schema checking, required fields verification, and format consistency
 - Application fails to start if any configuration file is missing or invalid
 - Clear error messages provided for configuration issues
@@ -359,30 +316,13 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Schema validation against predefined rules
 - UTF-8 encoding for all files
 
-**Configuration File Categories:**
+**Configuration File Details:**
 
-**Business Logic Configuration:**
+**Essential Configuration Files:**
 - `rubric.yaml`: Grading criteria, scoring categories, evaluation rubrics
-- `frameworks.yaml`: Communication frameworks, methodologies, assessment approaches
-- `context.yaml`: LLM context templates, evaluation context structures
 - `prompt.yaml`: LLM prompt templates, instruction formats, response schemas
-
-**System Security Configuration:**
-- `auth.yaml`: Authentication modes, JWT settings, session management
-- `security.yaml`: Security policies, input validation rules, rate limiting, CSRF protection
-
-**Component Configuration:**
-- `frontend.yaml`: UI settings, component behavior, client-side features, theming
-- `backend.yaml`: API settings, service endpoints, middleware configuration
-
-**Infrastructure Configuration:**
-- `database.yaml`: Database connections, performance tuning, WAL mode settings, indexing strategies
-- `llm.yaml`: LLM provider settings, API configuration, timeout settings, provider switching
-
-**Operations Configuration:**
-- `logging.yaml`: Log levels, output formats, retention policies, structured logging
-- `monitoring.yaml`: Health checks, performance metrics, alerting thresholds, business metrics
-- `performance.yaml`: Caching strategies, connection pooling, optimization settings, resource limits
+- `llm.yaml`: LLM provider settings, API configuration, timeout settings
+- `auth.yaml`: Authentication settings, session management
 
 **5.8 Extensibility and Future Enhancements**
 
@@ -403,14 +343,14 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **Feature Extension Points:**
 - Additional evaluation frameworks via configuration
 - New progress visualization types
-- Enhanced chat capabilities with memory
+- Enhanced evaluation capabilities
 - Advanced admin analytics and reporting
 - Integration with external learning management systems
 
 **Performance Optimization:**
 - Database indexing strategy for common queries
 - Caching layer for frequently accessed data
-- Asynchronous processing for long-running operations
+- Synchronous processing for reliable evaluation results
 - Resource pooling for LLM API connections
 - Monitoring and profiling for optimization opportunities
 
@@ -432,14 +372,13 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - **Validation**: Framework validation rules defined in configuration
 - **Versioning**: Framework version control for backward compatibility
 
-**6.3 Progress Tracking Extensibility**
-- **Metrics**: New progress metrics added through `ProgressDataAdapter`
-- **Caching**: `progress_cache` table for performance optimization
-- **Cache Invalidation**: Triggered on new evaluations, expires after 1 hour
-- **Visualizations**: Chart types configurable via frontend components
-- **Time Periods**: Customizable time ranges for progress analysis
-- **Trends**: Extensible trend calculation algorithms
-- **Export**: Additional export formats beyond PDF
+**6.3 System Extensibility**
+- **Metrics**: New evaluation metrics through modular components
+- **Storage**: Flexible data storage for additional features
+- **Integration**: Extension points for future capabilities
+- **Analysis**: Configurable analysis through frontend components
+- **Reporting**: Extensible reporting capabilities
+- **Export**: Additional export formats for future use
 
 **6.4 Frontend Component Extensibility**
 - **Modular Design**: Reusable components for new features
@@ -451,7 +390,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **6.5 API Extensibility**
 - **Versioning**: API versioning strategy for backward compatibility
 - **Endpoints**: New endpoints follow established patterns
-- **Authentication**: JWT + Session hybrid system ready for production deployment
+- **Authentication**: Session-based authentication system ready for production deployment
 - **Rate Limiting**: Configurable rate limiting per session/user
 - **Documentation**: Auto-generated OpenAPI documentation with authentication schemas
 
@@ -474,16 +413,14 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 ## 7.0 Traceability Links
 
 - **Source of Truth**: `01_Requirements.md`
-- **Mapped Requirements (placeholders)**:
+- **Mapped Requirements**:
   - GUI (2.1)
   - Text Evaluation (2.2)
-  - Chat with LLM (2.3)
-  - Admin Functions (2.4)
-  - Debug Mode (2.5)
-  - Progress Tracking (2.6)
-  - PDF Export (2.7)
+  - Admin Functions (2.3)
+  - Debug Mode (2.4)
   - Performance (3.1)
   - Scalability (3.2)
   - Reliability (3.3)
+  - Security (3.4)
   - Maintainability (3.5)
 

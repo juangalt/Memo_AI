@@ -204,50 +204,35 @@ PUT /api/v1/users/{user_id}
 ## 4.0 Core Application Endpoints
 
 ### 4.1 Text Evaluation Endpoints [MVP]
-**Design Philosophy**: All evaluation endpoints follow asynchronous-first design patterns. The system was designed from inception to handle LLM processing asynchronously for optimal user experience and scalability.
+**Design Philosophy**: Simple synchronous evaluation system for reliable performance.
 
-#### 4.1.1 Submit Text for Evaluation (Asynchronous by Design)
+#### 4.1.1 Submit Text for Evaluation
 ```yaml
 POST /api/v1/evaluations/submit
-  description: Submit text for LLM evaluation with detailed feedback (asynchronous-first design)
-  authentication: Session required (any mode)
-  design_note: System designed async from inception for consistent UX and scalability
+  description: Submit text for synchronous LLM evaluation with immediate feedback
+  authentication: Session required
   request:
     text_content: string (max 10,000 chars)
-    session_id: string (Anonymous) | derived from JWT (Authenticated)
+    session_id: string
   response:
     data:
-      evaluation_id: string
-      status: "queued"
-      estimated_completion: datetime (current_time + 60 seconds)
+      evaluation:
+        overall_score: decimal
+        strengths: string
+        opportunities: string
+        rubric_scores: object
+        segment_feedback: array
+        processing_time: decimal (seconds)
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 ```
 
-#### 4.1.2 Check Evaluation Status
-```yaml
-GET /api/v1/evaluations/{evaluation_id}/status
-  description: Check the status of an evaluation in progress
-  authentication: Session owner or admin
-  response:
-    data:
-      evaluation_id: string
-      status: "queued" | "processing" | "completed" | "failed"
-      progress_percentage: integer (0-100)
-      estimated_completion: datetime (if processing)
-      completed_at: datetime (if completed)
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
-
-#### 4.1.3 Retrieve Evaluation Results
+#### 4.1.2 Retrieve Evaluation Results
 ```yaml
 GET /api/v1/evaluations/{evaluation_id}
-  description: Retrieve completed evaluation details and results
+  description: Retrieve evaluation details and results
   authentication: Session owner or admin
   response:
     data:
@@ -257,121 +242,50 @@ GET /api/v1/evaluations/{evaluation_id}
         opportunities: string
         rubric_scores: object
         segment_feedback: array
-        evaluation_timestamp: datetime
         processing_time: decimal (seconds)
+        created_at: datetime
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
   error_responses:
     404: Evaluation not found or not accessible
-    425: Evaluation still processing (use status endpoint)
 ```
 
 ### 4.2 Configuration Management Endpoints [MVP]
 
-#### 4.2.1 Individual Configuration Management
+#### 4.2.1 Configuration Management
 ```yaml
 GET /api/v1/admin/config/{config_type}
   description: Get current configuration file content
   authentication: Admin required
   parameters:
-    config_type: enum [rubric, frameworks, context, prompt, auth, security, frontend, backend, database, llm, logging, monitoring, performance]
+    config_type: enum [rubric, prompt, llm, auth]
   response:
     data:
       config_content: string (YAML)
       file_path: string
-      last_modified: datetime
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 
 POST /api/v1/admin/config/{config_type}
-  description: Update configuration file with validation and versioning
+  description: Update configuration file with validation
   authentication: Admin required
   request:
     config_content: string (YAML)
-    change_reason: string (optional)
   response:
     data:
       validation_result: {is_valid, errors}
       file_updated: boolean
-      version_logged: boolean
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-
-GET /api/v1/admin/config/{config_type}/history
-  description: Get configuration change history
-  authentication: Admin required
-  response:
-    data:
-      versions: [{id, old_content, new_content, changed_by, changed_at, change_reason}]
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
 ```
 
-#### 4.2.2 Bulk Configuration Management
-```yaml
-GET /api/v1/admin/config/categories
-  description: Get all configuration categories and their purposes
-  authentication: Admin required
-  response:
-    data:
-      categories:
-        business_logic: ["rubric", "frameworks", "context", "prompt"]
-        system_security: ["auth", "security"]
-        component_config: ["frontend", "backend"]
-        infrastructure: ["database", "llm"]
-        operations: ["logging", "monitoring", "performance"]
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
 
-POST /api/v1/admin/config/validate-all
-  description: Validate all configuration files
-  authentication: Admin required
-  response:
-    data:
-      validation_results: {config_type: {is_valid, errors}}
-      overall_status: "valid" | "invalid"
-      failed_configs: array
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-
-GET /api/v1/admin/config/bulk-export
-  description: Export all configuration files as ZIP (direct file serving)
-  authentication: Admin required
-  response:
-    Content-Type: application/zip
-    Content-Disposition: attachment; filename="memoai-config-export-{timestamp}.zip"
-    File: Direct file serving from temporary storage (24-hour retention)
-    
-POST /api/v1/admin/config/bulk-import
-  description: Import and validate multiple configuration files (direct file handling)
-  authentication: Admin required
-  request:
-    Content-Type: multipart/form-data
-    files: configuration files (max 10MB total)
-    validate_only: boolean (default: false)
-  response:
-    data:
-      imported_configs: array
-      validation_results: object
-      applied: boolean
-      hot_reloaded: boolean (true for business logic configs)
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
 
 ### 4.3 Debug and System Management Endpoints [MVP]
 
@@ -408,98 +322,17 @@ POST /api/v1/admin/debug/toggle
 
 #### 4.3.2 Authentication Configuration
 ```yaml
-GET /api/v1/admin/auth/config
-  description: Get authentication configuration status
+GET /api/v1/admin/auth/status
+  description: Get authentication system status
   authentication: Admin required
   response:
     data:
-      auth_enabled: boolean
-      session_timeout: integer
-      max_login_attempts: integer
+      auth_system: "session-based"
+      active_sessions: integer
     meta:
       timestamp: ISO8601
       request_id: uuid
     errors: []
-
-PUT /api/v1/admin/auth/config
-  description: Update authentication configuration
-  authentication: Admin required
-  request:
-    auth_enabled: boolean
-    session_timeout: integer
-    max_login_attempts: integer
-  response:
-    data:
-      updated: boolean
-      config_applied: boolean
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
-
----
-
-## 5.0 Post-MVP Endpoints
-
-### 5.1 Chat Functionality [Post-MVP]
-```yaml
-POST /api/v1/chat/sessions
-  description: Start chat session after evaluation
-  authentication: Session required
-  request:
-    evaluation_id: integer
-  response:
-    data:
-      chat_session_id: string
-      context_loaded: boolean
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-
-POST /api/v1/chat/sessions/{session_id}/messages
-  description: Send message in chat session
-  authentication: Session required
-  request:
-    message_content: string
-  response:
-    data:
-      message_id: string
-      assistant_response: string
-      context_used: boolean
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
-
-### 5.2 Progress Tracking [Post-MVP]
-```yaml
-GET /api/v1/progress/{session_id}
-  description: Get progress data for session
-  authentication: Session owner or admin
-  response:
-    data:
-      overall_trends: array
-      rubric_improvements: object
-      submission_frequency: object
-      cached: boolean
-    meta:
-      timestamp: ISO8601
-      request_id: uuid
-    errors: []
-```
-
-### 5.3 PDF Export [Post-MVP]
-```yaml
-GET /api/v1/export/pdf/{evaluation_id}
-  description: Download PDF export of evaluation (direct file serving)
-  authentication: Session owner or admin
-  response:
-    Content-Type: application/pdf
-    Content-Disposition: attachment; filename="evaluation-{evaluation_id}-{timestamp}.pdf"
-    File: Direct file serving from temporary storage (24-hour retention)
 ```
 
 ---
@@ -510,7 +343,7 @@ GET /api/v1/export/pdf/{evaluation_id}
 - **Text Content**: Max 10,000 characters, XSS sanitization, UTF-8 encoding
 - **Session ID**: Format validation (UUID v4), expiration checks
 - **YAML Configuration**: Schema validation, syntax checking, required field validation, UTF-8 encoding
-- **Configuration Types**: Must be one of: 'rubric', 'frameworks', 'context', 'prompt', 'auth', 'security', 'frontend', 'backend', 'database', 'llm', 'logging', 'monitoring', 'performance'
+- **Configuration Types**: Must be one of: 'rubric', 'prompt', 'llm', 'auth'
 - **Authentication**: Username/password length limits, character restrictions
 
 ### 6.2 Output Sanitization
@@ -519,13 +352,12 @@ GET /api/v1/export/pdf/{evaluation_id}
 - **Debug Data**: Authentication token removal, PII scrubbing
 
 ### 6.3 Security Implementation
-- **JWT Configuration**: HS256 algorithm, configurable secret key rotation
-- **Session Security**: Secure random tokens (32 bytes), httpOnly cookies
-- **Password Policy**: bcrypt hashing with cost factor 12
-- **CSRF Protection**: Double-submit cookie pattern for state-changing operations
+- **Session Security**: Secure random tokens, httpOnly cookies
+- **Password Policy**: Simple password validation for admin access
+- **CSRF Protection**: Basic CSRF protection for state-changing operations
 - **Authorization Middleware**: `AuthorizationMiddleware` validates all protected endpoints
 - **Role-based Access**: Admin vs regular user permissions
-- **Session Isolation**: Data access restricted by session_id/user_id
+- **Session Isolation**: Data access restricted by session_id
 
 ### 6.4 Error Response Format
 ```json
@@ -638,5 +470,5 @@ GET /api/v1/export/pdf/{evaluation_id}
 ---
 
 **Document Version**: 2.0
-**Last Updated**: Implementation Phase
+**Last Updated**: Implementation Phase  
 **Next Review**: After MVP deployment

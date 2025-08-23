@@ -41,18 +41,14 @@
 - The AI coding agent will build the system following these specifications to ensure **modularity**, **simplicity**, and **extensibility**.
 
 3.3 **Core Functionality**
-- Provide asynchronous text feedback (designed async from inception) based on:
+- Provide text feedback based on:
   - 3.3.1 A grading rubric [MVP]
-  - 3.3.2 Communication frameworks [MVP]
-  - 3.3.3 Defined context template [MVP]
+  - 3.3.2 Prompt templates [MVP]
 - Feedback includes:
-  - 3.3.4 Overall strengths and improvement opportunities [MVP]
-  - 3.3.5 Detailed grading according to rubric [MVP]
-  - 3.3.6 Segment-level evaluation with comments and questions [MVP]
-  - 3.3.7 Real-time processing status and progress feedback [MVP]
-  - 3.3.8 Support for iterative improvement with chat [Post-MVP]
-  - 3.3.9 Ability to export evaluations as PDFs with progress information [Post-MVP]
-  - 3.3.10 Progress tracking displayed in separate tab populated by evaluation data [Post-MVP]
+  - 3.3.3 Overall strengths and improvement opportunities [MVP]
+  - 3.3.4 Detailed grading according to rubric [MVP]
+  - 3.3.5 Segment-level evaluation with comments and questions [MVP]
+  - 3.3.6 Immediate feedback after evaluation processing [MVP]
 
 ---
 

@@ -25,37 +25,21 @@
 
 2.2 **Text Submission and Evaluation [MVP]**
 - 2.2.1 The system provides a text input box for users.
-- 2.2.2 Upon submission, the system processes the text using an LLM asynchronously (designed async from inception).
+- 2.2.2 Upon submission, the system processes the text using an LLM synchronously.
 - 2.2.3 The system returns:
   - (a) Overall evaluation including strengths, opportunities, and rubric grading.
   - (b) Segment-level evaluation with comments and insight questions.
-- 2.2.4 Evaluation processing follows asynchronous patterns with status tracking and progress feedback.
+- 2.2.4 Evaluation processing is straightforward with immediate feedback.
 
-2.3 **Chat with LLM [Post-MVP]**
-- 2.3.1 After receiving feedback, users can chat with an LLM.
-- 2.3.2 The LLM uses as context: the submitted text (and past versions), grading rubric, communication frameworks, and context template.
+2.3 **Admin Functions [MVP]**
+- 2.3.1 Admins can edit essential YAML files (4 files): `rubric.yaml`, `prompt.yaml`, `llm.yaml`, `auth.yaml`.
+- 2.3.2 All configuration changes are validated.
+- 2.3.3 Simple configuration management without version tracking for MVP.
 
-2.4 **Admin Functions [MVP]**
-- 2.4.1 Admins can edit business logic YAML files (4 files): `rubric.yaml`, `frameworks.yaml`, `context.yaml`, `prompt.yaml`.
-- 2.4.2 Admins can configure system settings (4 files): `auth.yaml`, `security.yaml`, `database.yaml`, `llm.yaml`.
-- 2.4.3 Admins can configure component settings (2 files): `frontend.yaml`, `backend.yaml`.
-- 2.4.4 Admins can configure operational settings (3 files): `logging.yaml`, `monitoring.yaml`, `performance.yaml`.
-- 2.4.5 Admins can manage user sessions and view authentication logs.
-- 2.4.6 All configuration changes are validated and version tracked.
-- 2.4.7 Total of 13 YAML configuration files across 4 categories.
-
-2.5 **Debug Mode [MVP]**
-- 2.5.1 In debug mode, admins can review debug output for system diagnostics.
-- 2.5.2 Debug includes performance data, raw prompts, and raw responses.
-- 2.5.3 Debug mode is admin-only to prevent security risks.
-
-2.6 **Progress Tracking [Post-MVP]**
-- 2.6.1 User submissions are stored with grading history.
-- 2.6.2 Progress data is automatically calculated and displayed with each evaluation.
-
-2.7 **PDF Export [Post-MVP]**
-- 2.7.1 After submission, a PDF can be downloaded.
-- 2.7.2 PDF includes the user text, overall evaluation, segment feedback, and progress information.
+2.4 **Debug Mode [MVP]**
+- 2.4.1 In debug mode, admins can review debug output for system diagnostics.
+- 2.4.2 Debug includes performance data, raw prompts, and raw responses.
+- 2.4.3 Debug mode is admin-only to prevent security risks.
 
 ---
 
@@ -99,35 +83,20 @@
 - Site is clean and visually pleasing.
 
 4.2 **Text Evaluation**
-- Returns consistent overall evaluation (strengths, weaknesses, rubric) via asynchronous processing.
+- Returns consistent overall evaluation (strengths, weaknesses, rubric) via synchronous processing.
 - Returns segment-level feedback with comments and questions.
-- Provides real-time status updates and progress feedback during evaluation processing.
-- Evaluation system designed asynchronous from inception for optimal user experience.
+- Provides immediate feedback after evaluation processing.
+- Simple, straightforward evaluation system for reliable user experience.
 
-4.3 **Chat with LLM**
-- Chat available after feedback.
-- LLM uses submitted text, history, rubric, frameworks, context template.
+4.3 **Admin Functions**
+- Admin can edit 4 essential YAML configuration files.
+- YAML validated to prevent malformed input with basic checking.
+- Debug mode toggle available for system diagnostics.
+- Simple configuration management interface.
 
-4.4 **Admin Functions**
-- Admin can edit all 13 YAML configuration files across 5 categories.
-- YAML validated to prevent malformed input with schema checking.
-- Debug mode toggle available.
-- Authentication configuration toggle without code changes.
-- Session management and authentication logs accessible.
-- Configuration version history and rollback functionality available.
-- Startup validation prevents system start with invalid configurations.
-
-4.5 **Debug Mode**
+4.4 **Debug Mode**
 - Debug shows raw prompts, raw responses, performance data.
-- GUI allows triggering of test cases (frontend/backend/connectivity/logging).
-
-4.6 **Progress Tracking**
-- System records grading history.
-- Progress data is automatically calculated and displayed with evaluations.
-
-4.7 **PDF Export**
-- PDF generated per submission.
-- PDF includes text, overall evaluation, segment feedback, and progress information.
+- Admin-only access to debug information for security.
 
 4.8 **Non-Functional**
 - Response times acceptable.
