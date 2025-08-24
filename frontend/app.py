@@ -217,7 +217,11 @@ def main():
         
         evaluation_results = StateManager.get_evaluation_results()
         if evaluation_results:
-            results = st.session_state.evaluation_results.get('evaluation', {})
+            # Handle both old and new evaluation formats
+            if 'evaluation' in evaluation_results:
+                results = evaluation_results.get('evaluation', {})
+            else:
+                results = evaluation_results
             
             # Overall score with prominent display
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -237,17 +241,25 @@ def main():
             
             with col1:
                 st.markdown('<h3>💪 Strengths</h3>', unsafe_allow_html=True)
-                strengths = results.get('strengths', '')
+                strengths = results.get('strengths', [])
                 if strengths:
-                    st.markdown(f'<div class="strength-section">{strengths}</div>', unsafe_allow_html=True)
+                    if isinstance(strengths, list):
+                        strengths_text = '<br>• '.join([''] + strengths)
+                        st.markdown(f'<div class="strength-section">{strengths_text}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="strength-section">{strengths}</div>', unsafe_allow_html=True)
                 else:
                     st.info("No specific strengths identified")
             
             with col2:
                 st.markdown('<h3>🎯 Opportunities for Improvement</h3>', unsafe_allow_html=True)
-                opportunities = results.get('opportunities', '')
+                opportunities = results.get('opportunities', [])
                 if opportunities:
-                    st.markdown(f'<div class="opportunity-section">{opportunities}</div>', unsafe_allow_html=True)
+                    if isinstance(opportunities, list):
+                        opportunities_text = '<br>• '.join([''] + opportunities)
+                        st.markdown(f'<div class="opportunity-section">{opportunities_text}</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="opportunity-section">{opportunities}</div>', unsafe_allow_html=True)
                 else:
                     st.info("No improvement opportunities identified")
             
@@ -257,9 +269,14 @@ def main():
             rubric_scores = results.get('rubric_scores', {})
             if rubric_scores:
                 cols = st.columns(len(rubric_scores))
-                for i, (category, score) in enumerate(rubric_scores.items()):
+                for i, (category, score_data) in enumerate(rubric_scores.items()):
                     with cols[i]:
                         category_name = category.replace('_', ' ').title()
+                        # Handle both simple scores and score objects
+                        if isinstance(score_data, dict):
+                            score = score_data.get('score', score_data)
+                        else:
+                            score = score_data
                         st.metric(category_name, f"{score}/5")
             else:
                 st.info("No detailed rubric scores available")
@@ -278,7 +295,11 @@ def main():
         st.header("Detailed Feedback")
         
         if evaluation_results:
-            results = evaluation_results.get('evaluation', {})
+            # Handle both old and new evaluation formats
+            if 'evaluation' in evaluation_results:
+                results = evaluation_results.get('evaluation', {})
+            else:
+                results = evaluation_results
             segment_feedback = results.get('segment_feedback', [])
             
             if segment_feedback:

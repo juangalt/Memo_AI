@@ -116,7 +116,7 @@ class APIClient:
         Returns:
             Tuple of (success, session_id, error_message)
         """
-        success, data, error = self._make_request('GET', '/api/v1/sessions/create')
+        success, data, error = self._make_request('POST', '/api/v1/sessions/create')
         
         if success and data:
             session_id = data.get('data', {}).get('session_id')

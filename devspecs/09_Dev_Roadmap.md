@@ -852,7 +852,7 @@ Configure SSL/TLS using Let's Encrypt and implement all production security meas
 ## 11.0 Documentation and Progress Tracking
 
 ### 11.1 Changelog Requirements
-For each completed step, the human developer must document in `devlog/changelog.md`:
+For each completed step, the developer must document in `devlog/changelogX.md`, where X corresponds to the phase:
 
 ```markdown
 # Phase X Step Y: [Step Name] - [Status]

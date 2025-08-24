@@ -16,8 +16,8 @@ from typing import Dict, Any
 # Import database models
 from models import db_manager, Session, Submission, Evaluation
 
-# Import configuration service
-from services import config_service
+# Import services
+from services import config_service, get_llm_service, evaluate_text_with_llm
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +58,15 @@ async def health_check():
         # Check configuration health
         config_health = config_service.health_check()
         
+        # Check LLM health
+        try:
+            llm_service = get_llm_service()
+            llm_health = llm_service.health_check()
+            llm_status = llm_health["status"]
+        except Exception as e:
+            logger.error(f"LLM health check failed: {e}")
+            llm_status = "unhealthy"
+        
         # Basic health check
         health_status = {
             "status": "healthy",
@@ -67,7 +76,7 @@ async def health_check():
                 "api": "healthy",
                 "database": db_health["status"],
                 "configuration": config_health["status"],
-                "llm": "healthy"        # Will be implemented in Phase 4
+                "llm": llm_status
             }
         }
         
@@ -90,6 +99,17 @@ async def health_check():
             }
         else:
             health_status["config_error"] = config_health.get("error", "Unknown error")
+        
+        # Add LLM details if available
+        if llm_status == "healthy":
+            health_status["llm_details"] = {
+                "provider": llm_health.get("provider", ""),
+                "model": llm_health.get("model", ""),
+                "api_accessible": llm_health.get("api_accessible", False),
+                "config_loaded": llm_health.get("config_loaded", False)
+            }
+        else:
+            health_status["llm_error"] = llm_health.get("error", "Unknown error")
         
         # Check if any service is unhealthy
         if any(status != "healthy" for status in health_status["services"].values()):
@@ -142,6 +162,39 @@ async def config_health_check():
         }
     except Exception as e:
         logger.error(f"Configuration health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
+
+@app.get("/health/llm")
+async def llm_health_check():
+    """LLM service health check endpoint"""
+    try:
+        llm_service = get_llm_service()
+        llm_health = llm_service.health_check()
+        
+        if llm_health["status"] == "healthy":
+            return {
+                "status": "healthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "llm": llm_health
+            }
+        else:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "unhealthy",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "llm": llm_health
+                }
+            )
+    except Exception as e:
+        logger.error(f"LLM health check failed: {e}")
         return JSONResponse(
             status_code=503,
             content={
@@ -252,30 +305,26 @@ async def submit_evaluation(request: Request):
                 }
             )
         
-        # Placeholder evaluation response
-        evaluation_result = {
-            "overall_score": 3.5,
-            "strengths": "The text demonstrates clear organization and logical flow. The content is relevant and well-structured.",
-            "opportunities": "Consider adding more specific examples and strengthening the conclusion. Some technical details could be clarified.",
-            "rubric_scores": {
-                "overall_structure": 4,
-                "content_quality": 3,
-                "clarity_communication": 4,
-                "technical_accuracy": 3
-            },
-            "segment_feedback": [
-                {
-                    "segment": "Sample text segment",
-                    "comment": "This segment is well-written and clear.",
-                    "questions": [
-                        "How could this be expanded with more detail?",
-                        "What additional evidence would strengthen this point?"
-                    ]
+        # Use LLM service for text evaluation
+        success, evaluation_result, error = evaluate_text_with_llm(text_content)
+        
+        if not success:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "LLM_ERROR",
+                        "message": "Evaluation processing failed",
+                        "field": None,
+                        "details": error
+                    }]
                 }
-            ],
-            "processing_time": 2.5,
-            "created_at": datetime.utcnow().isoformat()
-        }
+            )
         
         return {
             "data": {
