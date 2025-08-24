@@ -3,12 +3,12 @@
 .env.local
 .env.production
 
-# Database files
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
-data/backups/
+# Database files - updated to catch all database files in any data directory
+**/data/*.db
+**/data/*.db-journal
+**/data/*.db-wal
+**/data/*.db-shm
+**/data/backups/
 
 # Logs
 logs/*.log

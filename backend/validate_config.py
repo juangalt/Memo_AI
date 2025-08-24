@@ -39,9 +39,17 @@ def validate_yaml_file(file_path, required_fields=None):
 def validate_rubric_config(config):
     """Validate rubric.yaml specific configuration"""
     try:
-        # Check grading criteria
-        if 'grading_criteria' not in config:
-            return False, "Missing grading_criteria section"
+        # Check rubric section
+        if 'rubric' not in config:
+            return False, "Missing rubric section"
+        
+        rubric = config['rubric']
+        
+        # Check required rubric fields
+        required_rubric_fields = ['name', 'description', 'total_weight', 'scoring_scale', 'criteria']
+        for field in required_rubric_fields:
+            if field not in rubric:
+                return False, f"Missing required field '{field}' in rubric section"
         
         # Check scoring categories
         if 'scoring_categories' not in config:
@@ -138,7 +146,7 @@ def validate_all_configs():
     # Define required configuration files and their validation functions
     config_files = {
         'rubric.yaml': {
-            'required_fields': ['grading_criteria', 'scoring_categories'],
+            'required_fields': ['rubric', 'scoring_categories'],
             'validator': validate_rubric_config
         },
         'prompt.yaml': {

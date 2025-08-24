@@ -521,7 +521,7 @@ def validate_all_configs():
     """Validate all 4 essential configuration files"""
     config_dir = os.getenv('CONFIG_DIR', '/app/config')
     required_configs = {
-        'rubric.yaml': ['grading_criteria', 'scoring_categories'],
+        'rubric.yaml': ['rubric', 'scoring_categories', 'evaluation_framework', 'frameworks'],  # ← CORRECTED
         'prompt.yaml': ['templates', 'instructions'],
         'llm.yaml': ['provider', 'api_key', 'model'],
         'auth.yaml': ['session_timeout', 'admin_credentials']

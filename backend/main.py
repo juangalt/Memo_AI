@@ -9,8 +9,15 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import os
 import logging
+import secrets
 from datetime import datetime
 from typing import Dict, Any
+
+# Import database models
+from models import db_manager, Session, Submission, Evaluation
+
+# Import configuration service
+from services import config_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +52,12 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     try:
+        # Check database health
+        db_health = db_manager.health_check()
+        
+        # Check configuration health
+        config_health = config_service.health_check()
+        
         # Basic health check
         health_status = {
             "status": "healthy",
@@ -52,10 +65,31 @@ async def health_check():
             "version": "1.0.0",
             "services": {
                 "api": "healthy",
-                "database": "healthy",  # Will be implemented
-                "llm": "healthy"        # Will be implemented
+                "database": db_health["status"],
+                "configuration": config_health["status"],
+                "llm": "healthy"        # Will be implemented in Phase 4
             }
         }
+        
+        # Add database details if available
+        if db_health["status"] == "healthy":
+            health_status["database_details"] = {
+                "tables": db_health.get("tables", []),
+                "journal_mode": db_health.get("journal_mode", ""),
+                "user_count": db_health.get("user_count", 0)
+            }
+        else:
+            health_status["database_error"] = db_health.get("error", "Unknown error")
+        
+        # Add configuration details if available
+        if config_health["status"] == "healthy":
+            health_status["config_details"] = {
+                "configs_loaded": config_health.get("configs_loaded", []),
+                "last_loaded": config_health.get("last_loaded", ""),
+                "config_dir": config_health.get("config_dir", "")
+            }
+        else:
+            health_status["config_error"] = config_health.get("error", "Unknown error")
         
         # Check if any service is unhealthy
         if any(status != "healthy" for status in health_status["services"].values()):
@@ -75,28 +109,102 @@ async def health_check():
             }
         )
 
-@app.get("/api/v1/sessions/create")
+@app.get("/health/database")
+async def database_health_check():
+    """Database-specific health check endpoint"""
+    try:
+        db_health = db_manager.health_check()
+        return {
+            "status": db_health["status"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "database": db_health
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
+
+@app.get("/health/config")
+async def config_health_check():
+    """Configuration-specific health check endpoint"""
+    try:
+        config_health = config_service.health_check()
+        return {
+            "status": config_health["status"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "configuration": config_health
+        }
+    except Exception as e:
+        logger.error(f"Configuration health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
+
+@app.post("/api/v1/sessions/create")
 async def create_session():
     """Create a new session for user"""
     try:
-        # Generate session ID (placeholder implementation)
-        import secrets
+        # Generate session ID
         session_id = secrets.token_urlsafe(32)
+        
+        # Create session in database
+        session = Session.create(session_id=session_id)
         
         return {
             "data": {
-                "session_id": session_id,
-                "expires_at": datetime.utcnow().isoformat()
+                "session_id": session.session_id,
+                "expires_at": session.expires_at.isoformat(),
+                "created_at": session.created_at.isoformat()
             },
             "meta": {
                 "timestamp": datetime.utcnow().isoformat(),
-                "request_id": "placeholder"
+                "request_id": session_id[:8]
             },
             "errors": []
         }
     except Exception as e:
         logger.error(f"Session creation failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to create session")
+
+@app.get("/api/v1/sessions/{session_id}")
+async def get_session(session_id: str):
+    """Get session by ID"""
+    try:
+        session = Session.get_by_session_id(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        return {
+            "data": {
+                "session_id": session.session_id,
+                "user_id": session.user_id,
+                "is_admin": session.is_admin,
+                "created_at": session.created_at.isoformat(),
+                "expires_at": session.expires_at.isoformat(),
+                "is_active": session.is_active
+            },
+            "meta": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": session_id[:8]
+            },
+            "errors": []
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Session retrieval failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve session")
 
 @app.post("/api/v1/evaluations/submit")
 async def submit_evaluation(request: Request):
@@ -233,3 +341,4 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
+
