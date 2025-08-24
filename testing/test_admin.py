@@ -11,7 +11,12 @@ import json
 from datetime import datetime
 
 # Add backend directory to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+backend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend')
+sys.path.append(backend_path)
+
+# Change to backend directory for proper config path resolution
+original_cwd = os.getcwd()
+os.chdir(backend_path)
 
 from services import get_auth_service, get_config_manager, authenticate_admin_user, validate_admin_session
 
@@ -215,6 +220,9 @@ def main():
     
     print("\n" + "=" * 60)
     print(f"📊 Test Results: {passed}/{total} tests passed")
+    
+    # Restore original working directory
+    os.chdir(original_cwd)
     
     if passed == total:
         print("🎉 All Phase 5 tests passed! Admin functions are working correctly.")

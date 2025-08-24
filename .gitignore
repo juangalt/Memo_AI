@@ -21,6 +21,9 @@ letsencrypt/
 *.key
 *.crt
 
+# Configuration backups
+config/backups/
+
 # Python
 __pycache__/
 *.py[cod]

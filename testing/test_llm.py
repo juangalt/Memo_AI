@@ -5,7 +5,12 @@ Test script for LLM integration and text evaluation
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+backend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backend')
+sys.path.append(backend_path)
+
+# Change to backend directory for proper config path resolution
+original_cwd = os.getcwd()
+os.chdir(backend_path)
 
 from services.llm_service import get_llm_service, evaluate_text_with_llm
 
@@ -148,6 +153,9 @@ def main():
     print(f"Health Check: {'✅ PASS' if health_ok else '❌ FAIL'}")
     print(f"Text Evaluation: {'✅ PASS' if eval_ok else '❌ FAIL'}")
     print(f"Error Handling: {'✅ PASS' if error_ok else '❌ FAIL'}")
+    
+    # Restore original working directory
+    os.chdir(original_cwd)
     
     if init_ok and health_ok and eval_ok and error_ok:
         print("\n🎉 All tests passed! LLM integration is working.")

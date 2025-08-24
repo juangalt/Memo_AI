@@ -5,7 +5,7 @@ Test script for API communication layer
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend'))
 
 from components.api_client import test_backend_connection, create_session_with_retry
 

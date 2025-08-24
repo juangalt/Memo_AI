@@ -136,6 +136,14 @@ memoai/
 │   ├── services/              # Business logic services
 │   ├── models/                # Data models and schemas
 │   └── utils/                 # Utility functions
+├── testing/                     # Testing framework and scripts
+│   ├── README.md               # Testing directory overview
+│   ├── README_TESTING.md       # Comprehensive testing documentation
+│   ├── test_system_integration.py # Main system integration testing
+│   ├── test_admin.py           # Admin authentication tests
+│   ├── test_llm.py             # LLM service tests
+│   ├── test_api.py             # Frontend API communication tests
+│   └── system_integration_test_results.json # Test results
 ├── config/                     # Configuration files
 │   ├── rubric.yaml            # Grading criteria and scoring
 │   ├── prompt.yaml            # LLM prompt templates
@@ -172,6 +180,12 @@ memoai/
 - LLM integration and evaluation logic
 - Database operations and business logic
 
+**Testing Framework (`testing/`)**:
+- Comprehensive testing scripts and framework
+- System integration testing for production validation
+- Component-specific tests for development and debugging
+- Test results and documentation
+
 **Configuration (`config/`)**:
 - YAML configuration files for system settings
 - Admin-editable configuration management
@@ -198,6 +212,7 @@ memoai/
 - `./config:/app/config:ro` - Read-only configuration access
 - `./data:/app/data` - Persistent database storage
 - `./logs:/app/logs` - Application log storage
+- `./testing:/app/testing:ro` - Read-only testing framework access
 - `./letsencrypt:/letsencrypt` - SSL certificate persistence
 
 **Security**:
@@ -320,6 +335,7 @@ services:
       - backend
     volumes:
       - ./config:/app/config:ro
+      - ./testing:/app/testing:ro
     restart: unless-stopped
 
   backend:
@@ -336,6 +352,7 @@ services:
     volumes:
       - ./data:/app/data
       - ./config:/app/config:ro
+      - ./testing:/app/testing:ro
       - ./logs:/app/logs
     restart: unless-stopped
 
@@ -585,6 +602,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 **Volume Strategy**:
 - **Data Volume**: Persistent SQLite database storage
 - **Config Volume**: Read-only configuration files
+- **Testing Volume**: Read-only testing framework and scripts
 - **Log Volume**: Application logs with rotation
 - **Backup Volume**: Automated backup storage
 - **SSL Volume**: Persistent SSL certificate storage for Traefik

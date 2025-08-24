@@ -131,14 +131,16 @@ memoai/
 
 Run the test suite:
 ```bash
-# Unit tests
-docker compose run backend pytest tests/unit/
+# System integration testing (comprehensive)
+python testing/test_system_integration.py
 
-# Integration tests
-docker compose run backend pytest tests/integration/
+# Component-specific tests
+python testing/test_admin.py      # Admin authentication and config
+python testing/test_llm.py        # LLM service and evaluation
+python testing/test_api.py        # Frontend-backend communication
 
-# End-to-end tests
-docker compose run backend pytest tests/e2e/
+# Docker-based testing (alternative)
+docker compose run backend python testing/test_system_integration.py
 ```
 
 ## Deployment
