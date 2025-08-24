@@ -1,0 +1,112 @@
+{
+  "timestamp": "2025-08-24T13:40:43.856915",
+  "total_tests": 8,
+  "passed_tests": 7,
+  "failed_tests": 1,
+  "success_rate": 87.5,
+  "test_results": [
+    {
+      "test": "SSL Configuration (Dev)",
+      "status": "INFO",
+      "message": "HTTP access returned: 404",
+      "timestamp": "2025-08-24T13:40:33.150706"
+    },
+    {
+      "test": "Security Header: X-Request-ID",
+      "status": "PASS",
+      "message": "Request tracking present",
+      "timestamp": "2025-08-24T13:40:33.160782"
+    },
+    {
+      "test": "Security Header: X-Process-Time",
+      "status": "PASS",
+      "message": "Performance tracking present",
+      "timestamp": "2025-08-24T13:40:33.161078"
+    },
+    {
+      "test": "Security Headers (Dev)",
+      "status": "INFO",
+      "message": "Found 2 basic headers",
+      "timestamp": "2025-08-24T13:40:33.161175"
+    },
+    {
+      "test": "Rate Limiting - Normal Request",
+      "status": "PASS",
+      "message": "Normal request allowed",
+      "timestamp": "2025-08-24T13:40:33.167087"
+    },
+    {
+      "test": "Rate Limiting - Abuse Prevention",
+      "status": "INFO",
+      "message": "Rate limiting may not be working as expected (development)",
+      "timestamp": "2025-08-24T13:40:35.813763"
+    },
+    {
+      "test": "Authentication - Invalid Credentials",
+      "status": "FAIL",
+      "message": "Expected 200 with error, got 401",
+      "timestamp": "2025-08-24T13:40:35.817726"
+    },
+    {
+      "test": "Input Validation - Test 1",
+      "status": "PASS",
+      "message": "Invalid input properly rejected: 400",
+      "timestamp": "2025-08-24T13:40:35.821062"
+    },
+    {
+      "test": "Input Validation - Test 2",
+      "status": "INFO",
+      "message": "Invalid input not rejected: 200 (development)",
+      "timestamp": "2025-08-24T13:40:37.826271"
+    },
+    {
+      "test": "Input Validation - Test 3",
+      "status": "INFO",
+      "message": "Invalid input not rejected: 200 (development)",
+      "timestamp": "2025-08-24T13:40:39.830712"
+    },
+    {
+      "test": "Input Validation - Test 4",
+      "status": "INFO",
+      "message": "Invalid input not rejected: 200 (development)",
+      "timestamp": "2025-08-24T13:40:41.834408"
+    },
+    {
+      "test": "Input Validation - Summary",
+      "status": "INFO",
+      "message": "1/4 tests passed",
+      "timestamp": "2025-08-24T13:40:41.834539"
+    },
+    {
+      "test": "Session Security - Creation",
+      "status": "PASS",
+      "message": "Session created successfully",
+      "timestamp": "2025-08-24T13:40:41.844469"
+    },
+    {
+      "test": "Session Security - Validation",
+      "status": "PASS",
+      "message": "Session validation working",
+      "timestamp": "2025-08-24T13:40:41.848489"
+    },
+    {
+      "test": "CSRF Protection",
+      "status": "INFO",
+      "message": "CSRF protection test skipped (implementation dependent)",
+      "timestamp": "2025-08-24T13:40:43.852707"
+    },
+    {
+      "test": "Monitoring - Health Check",
+      "status": "PASS",
+      "message": "Health check includes service status",
+      "timestamp": "2025-08-24T13:40:43.856789"
+    },
+    {
+      "test": "Monitoring - Request Tracking",
+      "status": "PASS",
+      "message": "Request ID present in headers",
+      "timestamp": "2025-08-24T13:40:43.856881"
+    }
+  ],
+  "environment": "development"
+}
