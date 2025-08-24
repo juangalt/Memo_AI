@@ -412,12 +412,23 @@ def main():
                 admin_password = st.text_input("Admin Password", type="password", help="Enter admin password")
             
             if st.button("🔑 Login", type="primary"):
-                if admin_username == "admin" and admin_password == os.getenv("ADMIN_PASSWORD", "admin123"):
-                    StateManager.set_admin_authenticated(True)
-                    st.success("✅ Admin access granted")
-                    st.rerun()
+                if admin_username and admin_password:
+                    api_client = get_api_client()
+                    success, data, error = api_client.admin_login(admin_username, admin_password)
+                    
+                    if success and data:
+                        session_token = data.get('data', {}).get('session_token')
+                        if session_token:
+                            StateManager.set_admin_authenticated(True)
+                            StateManager.set_admin_session_token(session_token)
+                            st.success("✅ Admin access granted")
+                            st.rerun()
+                        else:
+                            st.error("❌ No session token received")
+                    else:
+                        st.error(f"❌ Login failed: {error}")
                 else:
-                    st.error("❌ Invalid credentials")
+                    st.error("❌ Please enter both username and password")
             st.markdown('</div>', unsafe_allow_html=True)
         
         if StateManager.is_admin_authenticated():
@@ -454,12 +465,93 @@ def main():
                     config_details = health_data['config_details']
                     st.info(f"Configs Loaded: {', '.join(config_details.get('configs_loaded', []))}")
                     st.info(f"Last Loaded: {config_details.get('last_loaded', 'N/A')}")
+                
+                # Authentication details
+                if health_data.get('auth_details'):
+                    st.markdown("**Authentication Details:**")
+                    auth_details = health_data['auth_details']
+                    st.info(f"Config Loaded: {auth_details.get('config_loaded', False)}")
+                    st.info(f"Active Sessions: {auth_details.get('active_sessions', 0)}")
+                    st.info(f"Brute Force Protection: {auth_details.get('brute_force_protection', False)}")
+                
+                # LLM details
+                if health_data.get('llm_details'):
+                    st.markdown("**LLM Details:**")
+                    llm_details = health_data['llm_details']
+                    st.info(f"Provider: {llm_details.get('provider', 'N/A')}")
+                    st.info(f"Model: {llm_details.get('model', 'N/A')}")
+                    st.info(f"API Accessible: {llm_details.get('api_accessible', False)}")
+                    st.info(f"Config Loaded: {llm_details.get('config_loaded', False)}")
             else:
                 st.error(f"❌ Backend service is unhealthy: {error}")
             
-            # Configuration management placeholder
+            # Configuration management
             st.subheader("⚙️ Configuration Management")
-            st.info("Configuration management features will be implemented in Phase 5")
+            
+            # Get available configuration files
+            config_files = ["rubric", "prompt", "llm", "auth"]
+            selected_config = st.selectbox("Select Configuration File", config_files, help="Choose which configuration file to edit")
+            
+            if st.button("📖 Load Configuration"):
+                session_token = StateManager.get_admin_session_token()
+                if session_token:
+                    api_client = get_api_client()
+                    success, data, error = api_client.get_config(selected_config, session_token)
+                    
+                    if success and data:
+                        config_content = data.get('data', {}).get('content', '')
+                        st.session_state[f'config_{selected_config}'] = config_content
+                        st.success(f"✅ {selected_config} configuration loaded")
+                    else:
+                        st.error(f"❌ Failed to load configuration: {error}")
+                else:
+                    st.error("❌ No admin session token")
+            
+            # Configuration editor
+            if f'config_{selected_config}' in st.session_state:
+                st.subheader(f"📝 Edit {selected_config.title()} Configuration")
+                
+                config_content = st.text_area(
+                    "Configuration Content",
+                    value=st.session_state[f'config_{selected_config}'],
+                    height=400,
+                    help="Edit the YAML configuration content"
+                )
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("💾 Save Configuration"):
+                        session_token = StateManager.get_admin_session_token()
+                        if session_token:
+                            api_client = get_api_client()
+                            success, data, error = api_client.update_config(selected_config, config_content, session_token)
+                            
+                            if success:
+                                st.success("✅ Configuration saved successfully")
+                                st.session_state[f'config_{selected_config}'] = config_content
+                            else:
+                                st.error(f"❌ Failed to save configuration: {error}")
+                        else:
+                            st.error("❌ No admin session token")
+                
+                with col2:
+                    if st.button("🔄 Reload Configuration"):
+                        session_token = StateManager.get_admin_session_token()
+                        if session_token:
+                            api_client = get_api_client()
+                            success, data, error = api_client.get_config(selected_config, session_token)
+                            
+                            if success and data:
+                                config_content = data.get('data', {}).get('content', '')
+                                st.session_state[f'config_{selected_config}'] = config_content
+                                st.success(f"✅ {selected_config} configuration reloaded")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to reload configuration: {error}")
+                        else:
+                            st.error("❌ No admin session token")
+            else:
+                st.info("Click 'Load Configuration' to edit configuration files")
             
             # Session management
             st.subheader("🔗 Session Management")
@@ -480,9 +572,23 @@ def main():
             # Logout option
             st.markdown("---")
             if st.button("🚪 Logout"):
-                StateManager.set_admin_authenticated(False)
-                st.success("Logged out successfully")
-                st.rerun()
+                session_token = StateManager.get_admin_session_token()
+                if session_token:
+                    api_client = get_api_client()
+                    success, data, error = api_client.admin_logout(session_token)
+                    
+                    if success:
+                        StateManager.set_admin_authenticated(False)
+                        StateManager.clear_admin_session_token()
+                        st.success("✅ Logged out successfully")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Logout failed: {error}")
+                else:
+                    StateManager.set_admin_authenticated(False)
+                    StateManager.clear_admin_session_token()
+                    st.success("✅ Logged out successfully")
+                    st.rerun()
 
 if __name__ == "__main__":
     main()

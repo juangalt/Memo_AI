@@ -1,7 +1,7 @@
 # Project Overview
 ## Memo AI Coach
 
-**Document ID**: 00_ProjectOverview.md  
+**Document ID**: 00_Devspecs_Overview.md  
 **Document Version**: 1.4  
 **Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment  
@@ -102,7 +102,7 @@ The system provides comprehensive text feedback based on:
 ### 4.1 Reading Order
 Documents must be read sequentially to ensure proper understanding:
 
-1. **00_ProjectOverview.md** (This document) - Start here
+1. **00_Devspecs_Overview.md** (This document) - Start here
 2. **01_Requirements.md** - Functional and non-functional requirements
 3. **02_Architecture.md** - System architecture and component design
 4. **03_Data_Model.md** - Database schema and data relationships
@@ -115,7 +115,7 @@ Documents must be read sequentially to ensure proper understanding:
 
 ### 4.2 Document Relationships
 ```
-00_ProjectOverview.md
+00_Devspecs_Overview.md
 ├── 01_Requirements.md (Core functionality → Requirements)
 ├── 02_Architecture.md (Requirements → Architecture)
 ├── 03_Data_Model.md (Architecture → Data Model)
@@ -130,7 +130,7 @@ Documents must be read sequentially to ensure proper understanding:
 ### 4.3 Document Index
 | Document | Title | Purpose | Dependencies |
 |----------|-------|---------|--------------|
-| `00_ProjectOverview.md` | Project Overview | Entry point and navigation | None |
+| `00_Devspecs_Overview.md` | Project Overview | Entry point and navigation | None |
 | `01_Requirements.md` | Requirements | Functional and non-functional requirements | 00 |
 | `02_Architecture.md` | Architecture | System architecture and components | 01 |
 | `03_Data_Model.md` | Data Model | Database schema and relationships | 02 |
@@ -239,7 +239,7 @@ Documents must be read sequentially to ensure proper understanding:
 
 ---
 
-**Document ID**: 00_ProjectOverview.md  
+**Document ID**: 00_Devspecs_Overview.md  
 **Document Version**: 1.4  
 **Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment

@@ -22,7 +22,7 @@ Defines the REST API specifications for the Memo AI Coach project, including end
 - Performance requirements and rate limiting
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md
 - **Related Documents**: 05_UI_UX.md
 - **Requirements**: Implements API requirements from 01_Requirements.md (Req 2.2-2.5, 3.4)
 

@@ -109,6 +109,78 @@ class APIClient:
         """
         return self._make_request('GET', '/health')
     
+    def auth_health_check(self) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Check authentication service health
+        
+        Returns:
+            Tuple of (healthy, health_data, error_message)
+        """
+        return self._make_request('GET', '/health/auth')
+    
+    def admin_login(self, username: str, password: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Admin login
+        
+        Args:
+            username: Admin username
+            password: Admin password
+            
+        Returns:
+            Tuple of (success, login_data, error_message)
+        """
+        return self._make_request('POST', '/api/v1/admin/login', json={
+            'username': username,
+            'password': password
+        })
+    
+    def admin_logout(self, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Admin logout
+        
+        Args:
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, logout_data, error_message)
+        """
+        return self._make_request('POST', '/api/v1/admin/logout', headers={
+            'X-Session-Token': session_token
+        })
+    
+    def get_config(self, config_name: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Get configuration file content
+        
+        Args:
+            config_name: Name of configuration file
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, config_data, error_message)
+        """
+        return self._make_request('GET', f'/api/v1/admin/config/{config_name}', headers={
+            'X-Session-Token': session_token
+        })
+    
+    def update_config(self, config_name: str, content: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Update configuration file content
+        
+        Args:
+            config_name: Name of configuration file
+            content: New configuration content
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, update_data, error_message)
+        """
+        return self._make_request('PUT', f'/api/v1/admin/config/{config_name}', json={
+            'content': content
+        }, headers={
+            'X-Session-Token': session_token
+        })
+    
     def create_session(self) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Create a new session

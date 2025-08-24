@@ -24,7 +24,7 @@ Defines the deployment architecture, infrastructure requirements, containerizati
 - Scalability and performance optimization
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md, 06_Testing.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md, 06_Testing.md
 - **Related Documents**: 08_Maintenance.md, 09_Dev_Roadmap.md
 - **Requirements**: Implements deployment requirements from 01_Requirements.md (Req 3.1-3.5)
 
@@ -114,9 +114,9 @@ The Memo AI Coach project follows a structured directory layout optimized for co
 ```
 memoai/
 ├── devspecs/                    # Development specifications
-│   ├── 00_devspecs_overview.md
-│   ├── 01_requirements.md
-│   ├── 02_architecture.md
+│   ├── 00_Devspecs_Overview.md
+│   ├── 01_Requirements.md
+│   ├── 02_Architecture.md
 │   ├── 03_Data_Model.md
 │   ├── 04_API_Definitions.md
 │   ├── 05_UI_UX.md

@@ -26,6 +26,9 @@ class StateManager:
         if 'admin_authenticated' not in st.session_state:
             st.session_state.admin_authenticated = False
         
+        if 'admin_session_token' not in st.session_state:
+            st.session_state.admin_session_token = None
+        
         if 'last_evaluation_time' not in st.session_state:
             st.session_state.last_evaluation_time = None
         
@@ -83,6 +86,21 @@ class StateManager:
     def is_admin_authenticated() -> bool:
         """Check if admin is authenticated"""
         return st.session_state.admin_authenticated
+    
+    @staticmethod
+    def set_admin_session_token(token: str):
+        """Set admin session token"""
+        st.session_state.admin_session_token = token
+    
+    @staticmethod
+    def get_admin_session_token() -> Optional[str]:
+        """Get admin session token"""
+        return st.session_state.get('admin_session_token')
+    
+    @staticmethod
+    def clear_admin_session_token():
+        """Clear admin session token"""
+        st.session_state.admin_session_token = None
     
     @staticmethod
     def get_session_info() -> Dict[str, Any]:

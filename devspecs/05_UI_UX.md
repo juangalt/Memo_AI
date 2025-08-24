@@ -23,7 +23,7 @@ Defines the user interface design, user experience patterns, and frontend implem
 - Performance and responsive design specifications
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md
 - **Related Documents**: 06_Testing.md
 - **Requirements**: Implements UI/UX requirements from 01_Requirements.md (Req 2.1, 3.1)
 

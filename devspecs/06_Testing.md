@@ -50,7 +50,7 @@ All testing decisions in this document prioritize the following criteria for AI-
 - Test data management and mocking strategies
 
 ### 1.4 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md
 - **Related Documents**: 07_Deployment.md, 08_Maintenance.md
 - **Requirements**: Validates all requirements from 01_Requirements.md (Req 2.1-2.5, 3.1-3.5)
 

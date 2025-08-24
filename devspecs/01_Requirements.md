@@ -21,7 +21,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 - Complete traceability matrix for implementation tracking
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md
+- **Prerequisites**: 00_Devspecs_Overview.md
 - **Related Documents**: 02_Architecture.md, 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md
 - **Requirements**: All requirements defined in this document are implemented across the related documents
 
@@ -43,7 +43,7 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 | Non-Functional (3.x) | 13 | ✅ Defined | All implementation documents |
 
 ### 1.6 Document Navigation
-- **Previous Document**: 00_ProjectOverview.md
+- **Previous Document**: 00_Devspecs_Overview.md
 - **Next Document**: 02_Architecture.md
 - **Related Documents**: 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md
 
@@ -267,4 +267,3 @@ Defines the functional and non-functional requirements of the Memo AI Coach proj
 **Document Version**: 1.4  
 **Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment
-

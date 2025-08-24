@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with critical and high impact fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment
 
 ---
@@ -20,7 +20,7 @@ Defines the high-level system architecture, component design, and data flow patt
 - Technology stack and framework decisions
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md
 - **Related Documents**: 03_Data_Model.md, 04_API_Definitions.md, 05_UI_UX.md
 - **Requirements**: Implements requirements from 01_Requirements.md (Req 2.1-2.5, 3.1-3.5)
 
@@ -80,6 +80,8 @@ The Memo AI Coach system consists of a modular architecture designed for clarity
 - **Data Layer**
 
   - Stores user submissions, evaluation history, and logs (Req 2.2, 2.4, 3.5).
+  - Admin user accounts for system management (Req 3.4.4).
+  - Session management for user isolation and authentication (Req 3.4.1).
   - YAML configuration files stored in filesystem, read directly each time.
   - Simple database schema focused on core evaluation functionality.
 
@@ -133,10 +135,10 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 │  Database Tables    │  Configuration Files │  Session Storage   │
 │  (Req 2.2.1-4)      │     (Req 2.4.1-3)    │   (Req 3.4.1-3)    │
 │                     │                      │                    │
-│  • submissions      │  • rubric.yaml       │  • Session tokens  │
-│  • evaluations      │  • prompt.yaml       │  • User sessions   │
-│  • sessions         │  • llm.yaml          │  • Admin sessions  │
-│                     │  • auth.yaml         │  • Rate limits     │
+│  • users            │  • rubric.yaml       │  • Session tokens  │
+│  • sessions         │  • prompt.yaml       │  • User sessions   │
+│  • submissions      │  • llm.yaml          │  • Admin sessions  │
+│  • evaluations      │  • auth.yaml         │  • Rate limits     │
 │                     │                      │                    │
 │  WAL Mode           │  Direct File Access  │  Secure Storage    │
 │  (Req 3.2.2)        │  (Req 2.4.3)         │  (Req 3.4.1-5)     │
@@ -146,7 +148,7 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 **Key Architecture Principles:**
 - **Modular Design**: Clear separation between frontend, backend, and data layers
 - **API-Driven**: RESTful API communication between frontend and backend
-- **Session-Based**: Secure session management for user isolation
+- **Session-Based**: Secure session management for user isolation (anonymous users with admin user accounts)
 - **Synchronous Processing**: Immediate feedback for evaluation requests
 - **Scalable**: SQLite with WAL mode supports 100+ concurrent users
 - **Maintainable**: Simple, focused components with clear responsibilities
@@ -202,15 +204,15 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 ### 4.3 LLM Engine Integration
 
 - **Provider:** The system uses **Claude** as the default LLM provider, but the architecture allows for easy configuration to support alternative LLMs in the future.
-- **Prompt Engineering:** Prompts are constructed using the grading rubric and prompt template with the user's submitted text for reliable evaluations.
-- **Performance Optimization:** LLM integration includes performance optimization for <15 seconds response time requirement with real-time monitoring and alerting.
+- **Backend Prompt Generation:** The backend dynamically generates prompts by combining content from rubric.yaml and prompt.yaml. The PromptBuilder component reads framework definitions from rubric.yaml and populates template variables in prompt.yaml to create customized prompts.
+- **JSON Response Format:** The LLM is configured to respond in structured JSON format as defined in prompt.yaml response schemas, ensuring reliable parsing and consistent data structure.
 - **Debugging:** The integration exposes debug data for troubleshooting and transparency, while ensuring that no sensitive information is leaked.
 
 **Component Explanations:**
 
 - `LLMConnector`: Handles all communication with the LLM provider (e.g., sending prompts to Claude and receiving responses). It abstracts the details of the LLM API, making it easy to swap providers if needed.
-- `PromptBuilder`: Responsible for assembling the final prompt sent to the LLM. It combines the rubric, prompt template, and user input into a structured prompt that guides the LLM to produce the desired evaluation.
-- `ResponseParser`: Processes and interprets the raw output from the LLM, extracting structured data such as overall feedback and segment-level evaluations for use by other backend services.
+- `PromptBuilder`: Responsible for dynamically assembling the final prompt sent to the LLM. It reads framework definitions from rubric.yaml and populates template variables in prompt.yaml to create customized prompts. It combines the rubric content, framework definitions, prompt templates, and user input into a structured prompt that guides the LLM to produce the desired evaluation in JSON format.
+- `ResponseParser`: Processes and interprets the JSON response from the LLM, extracting structured data such as overall feedback and segment-level evaluations for use by other backend services. It validates the JSON structure against the defined response schemas in prompt.yaml.
 - `DebugAdapter`: Collects and formats debug information related to LLM interactions (such as prompt/response pairs and timing data), ensuring that this information is available for diagnostics without exposing sensitive user or system data.
 
 ### 4.4 Data Layer
@@ -225,6 +227,7 @@ The Memo AI Coach system follows a three-layer architecture designed for clarity
 - `EvaluationRepository`
 - `ConfigRepository` (direct filesystem YAML operations)
 - `LogRepository`
+- `UserRepository` (admin user credentials and profiles)
 - `SessionRepository` (session management and validation)
 
 ---
@@ -288,13 +291,15 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 1. User submits text via frontend → `TextInputPage`
 2. Frontend validates input and sends to `/api/evaluations/submit`
 3. Backend validates request and stores submission (`SubmissionRepository`)
-4. Backend constructs prompt using rubric and prompt template (`PromptBuilder`)
+4. Backend dynamically constructs prompt using rubric.yaml framework definitions and prompt.yaml templates (`PromptBuilder`)
 5. Backend sends prompt to LLM engine (`LLMConnector`)
-6. LLM processes and returns evaluation response
-7. Backend parses response into structured data (`ResponseParser`)
+6. LLM processes and returns JSON evaluation response
+7. Backend parses JSON response into structured data (`ResponseParser`)
 8. Backend stores evaluation (`EvaluationRepository`)
 9. Backend returns evaluation response to frontend
 10. Frontend updates `OverallFeedbackPage` and `DetailedFeedbackPage`
+
+
 
 **Admin Functions Flow (Req 2.3):**
 1. Admin accesses `AdminPage` → `/api/admin/config/{config_type}`
@@ -342,6 +347,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 - Overall scores and feedback stored in `evaluations` table
 - Segment-level feedback stored as JSON in `evaluations.segment_feedback`
 - Rubric scores stored as JSON for flexible scoring schemes
+
 
 **Configuration Storage:**
 - YAML configurations stored in filesystem as source of truth
@@ -441,6 +447,7 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 **Modular Architecture Support:**
 - Pluggable LLM providers via `LLMConnector` interface
 - Configurable evaluation rubrics via YAML configuration
+
 - Modular frontend components for new features
 - API versioning support for backward compatibility
 
@@ -453,9 +460,12 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 **Feature Extension Points:**
 - Additional evaluation frameworks via configuration
+
 - Enhanced evaluation capabilities
 - Advanced admin analytics and reporting
 - Integration with external learning management systems
+- Option to display spanish site
+- Have the AI make questions to prepare the human for presentation of the memo
 
 **Performance Optimization:**
 - Database indexing strategy for common queries
@@ -520,7 +530,68 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 
 ---
 
-## 7.0 Traceability Matrix
+## 7.0 Development Team Considerations
+
+### 7.1 Novice Programmer Support Architecture
+**7.1.1 Simplified Component Design**
+- **Clear Boundaries**: Each component has a single, well-defined responsibility
+- **Minimal Dependencies**: Components are loosely coupled with clear interfaces
+- **Straightforward Data Flow**: Linear, easy-to-follow data movement between components
+- **Predictable Behavior**: Components behave consistently and predictably
+
+**7.1.2 Learning-Friendly Patterns**
+- **Explicit Interfaces**: All component interactions are clearly defined
+- **Simple State Management**: Centralized state with clear update patterns
+- **Error Handling**: Comprehensive error handling with educational messages
+- **Debugging Support**: Built-in debugging capabilities for understanding system behavior
+
+**7.1.3 Educational Architecture**
+- **Modular Structure**: Easy to understand and modify individual components
+- **Configuration-Driven**: Behavior controlled through simple configuration files
+- **Documentation Integration**: Architecture supports comprehensive documentation
+- **Progressive Enhancement**: Simple base functionality with optional advanced features
+
+### 7.2 AI Coding Agent Collaboration Support
+**7.2.1 Code Generation-Friendly Design**
+- **Consistent Patterns**: Standardized patterns across all components
+- **Clear Contracts**: Well-defined interfaces and data structures
+- **Predictable Structure**: Consistent file and component organization
+- **Template-Based**: Reusable patterns for common functionality
+
+**7.2.2 Maintainability Focus**
+- **Single Responsibility**: Each component has one clear purpose
+- **Low Coupling**: Minimal dependencies between components
+- **High Cohesion**: Related functionality grouped together
+- **Clear Naming**: Descriptive names that explain purpose and function
+
+**7.2.3 Extensibility for Learning**
+- **Plugin Architecture**: Easy to add new features without modifying existing code
+- **Configuration Extensions**: New capabilities added through configuration
+- **API Extensions**: Clear patterns for adding new API endpoints
+- **UI Extensions**: Modular UI components for new features
+
+### 7.3 Implementation Guidelines for Development Team
+**7.3.1 Code Organization**
+- **Logical Grouping**: Related functionality organized in clear directory structures
+- **Consistent Naming**: Standard naming conventions throughout the codebase
+- **Documentation Integration**: Code and documentation co-located where possible
+- **Version Control**: Clear commit messages and change documentation
+
+**7.3.2 Quality Standards**
+- **Comprehensive Comments**: Every function and class thoroughly documented
+- **Error Handling**: Clear, educational error messages and handling
+- **Testing Support**: Architecture supports comprehensive testing
+- **Debugging Tools**: Built-in debugging and monitoring capabilities
+
+**7.3.3 Collaboration Support**
+- **Clear Interfaces**: Well-defined boundaries between components
+- **Documentation Standards**: Consistent documentation format and style
+- **Code Review Process**: Architecture supports effective code reviews
+- **Knowledge Transfer**: Design facilitates learning and understanding
+
+---
+
+## 8.0 Traceability Matrix
 
 | Requirement ID | Requirement Description | Architecture Implementation | Status |
 |---------------|------------------------|----------------------------|---------|
@@ -552,10 +623,10 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 | 3.2.2 | Scales to 100+ users | SQLite WAL mode and optimizations | ✅ Implemented |
 | 3.3.1 | High uptime | Error handling and logging | ✅ Implemented |
 | 3.3.2 | Robust error handling | Comprehensive error handling | ✅ Implemented |
-| 3.4.1 | Session-based authentication | AuthenticationService (4.2) | ✅ Implemented |
-| 3.4.2 | Secure session management | SessionService (4.2) | ✅ Implemented |
+| 3.4.1 | Session-based authentication | AuthenticationService (4.2) with admin user accounts | ✅ Implemented |
+| 3.4.2 | Secure session management | SessionService (4.2) with user isolation | ✅ Implemented |
 | 3.4.3 | CSRF protection and rate limiting | AuthorizationMiddleware (4.2) | ✅ Implemented |
-| 3.4.4 | Admin authentication | AuthenticationService (4.2) | ✅ Implemented |
+| 3.4.4 | Admin authentication | AuthenticationService (4.2) with users table | ✅ Implemented |
 | 3.4.5 | Optional JWT authentication | Future enhancement ready | ⏳ Planned |
 | 3.5.1 | Maintainability priority | Modular architecture design | ✅ Implemented |
 | 3.5.2 | Maximum simplicity | Simple, focused component design | ✅ Implemented |
@@ -565,6 +636,6 @@ This flow ensures that all data is securely transmitted, processed, and stored, 
 ---
 
 **Document ID**: 02_Architecture.md  
-**Document Version**: 1.2  
-**Last Updated**: Implementation Phase (Updated with consistency fixes)  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
 **Next Review**: After initial deployment

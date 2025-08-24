@@ -22,7 +22,7 @@ Defines the data structures, database schema, and data relationships for the Mem
 - Security and privacy considerations
 
 ### 1.3 Dependencies
-- **Prerequisites**: 00_ProjectOverview.md, 01_Requirements.md, 02_Architecture.md
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md
 - **Related Documents**: 04_API_Definitions.md, 05_UI_UX.md
 - **Requirements**: Implements data requirements from 01_Requirements.md (Req 2.2-2.5, 3.4)
 

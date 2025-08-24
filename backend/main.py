@@ -17,7 +17,17 @@ from typing import Dict, Any
 from models import db_manager, Session, Submission, Evaluation
 
 # Import services
-from services import config_service, get_llm_service, evaluate_text_with_llm
+from services import (
+    config_service, 
+    get_llm_service, 
+    evaluate_text_with_llm,
+    get_auth_service,
+    authenticate_admin_user,
+    validate_admin_session,
+    get_config_manager,
+    read_config_file,
+    write_config_file
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +77,15 @@ async def health_check():
             logger.error(f"LLM health check failed: {e}")
             llm_status = "unhealthy"
         
+        # Check authentication health
+        try:
+            auth_service = get_auth_service()
+            auth_health = auth_service.health_check()
+            auth_status = auth_health["status"]
+        except Exception as e:
+            logger.error(f"Auth health check failed: {e}")
+            auth_status = "unhealthy"
+        
         # Basic health check
         health_status = {
             "status": "healthy",
@@ -76,7 +95,8 @@ async def health_check():
                 "api": "healthy",
                 "database": db_health["status"],
                 "configuration": config_health["status"],
-                "llm": llm_status
+                "llm": llm_status,
+                "auth": auth_status
             }
         }
         
@@ -110,6 +130,16 @@ async def health_check():
             }
         else:
             health_status["llm_error"] = llm_health.get("error", "Unknown error")
+        
+        # Add authentication details if available
+        if auth_status == "healthy":
+            health_status["auth_details"] = {
+                "config_loaded": auth_health.get("config_loaded", False),
+                "active_sessions": auth_health.get("active_sessions", 0),
+                "brute_force_protection": auth_health.get("brute_force_protection", False)
+            }
+        else:
+            health_status["auth_error"] = auth_health.get("error", "Unknown error")
         
         # Check if any service is unhealthy
         if any(status != "healthy" for status in health_status["services"].values()):
@@ -201,6 +231,428 @@ async def llm_health_check():
                 "status": "unhealthy",
                 "timestamp": datetime.utcnow().isoformat(),
                 "error": str(e)
+            }
+        )
+
+@app.get("/health/auth")
+async def auth_health_check():
+    """Authentication service health check endpoint"""
+    try:
+        auth_service = get_auth_service()
+        auth_health = auth_service.health_check()
+        
+        if auth_health["status"] == "healthy":
+            return {
+                "status": "healthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "auth": auth_health
+            }
+        else:
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "unhealthy",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "auth": auth_health
+                }
+            )
+    except Exception as e:
+        logger.error(f"Auth health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
+        )
+
+@app.post("/api/v1/admin/login")
+async def admin_login(request: Request):
+    """Admin login endpoint"""
+    try:
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+        
+        # Validate input
+        if not username or not password:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Username and password are required",
+                        "field": "credentials",
+                        "details": "Please provide both username and password"
+                    }]
+                }
+            )
+        
+        # Authenticate admin
+        success, session_token, error = authenticate_admin_user(username, password)
+        
+        if success:
+            return {
+                "data": {
+                    "session_token": session_token,
+                    "username": username,
+                    "is_admin": True
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication failed",
+                        "field": "credentials",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"Admin login failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Login processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during login processing"
+                }]
+            }
+        )
+
+@app.post("/api/v1/admin/logout")
+async def admin_logout(request: Request):
+    """Admin logout endpoint"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Session token is required",
+                        "field": "session_token",
+                        "details": "Please provide session token in X-Session-Token header"
+                    }]
+                }
+            )
+        
+        # Validate session and logout
+        valid, session_data, error = validate_admin_session(session_token)
+        
+        if valid:
+            auth_service = get_auth_service()
+            logout_success = auth_service.logout_admin(session_token)
+            
+            if logout_success:
+                return {
+                    "data": {
+                        "message": "Logout successful"
+                    },
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": []
+                }
+            else:
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "data": None,
+                        "meta": {
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "request_id": "placeholder"
+                        },
+                        "errors": [{
+                            "code": "LOGOUT_ERROR",
+                            "message": "Logout failed",
+                            "field": None,
+                            "details": "Failed to terminate session"
+                        }]
+                    }
+                )
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"Admin logout failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Logout processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during logout processing"
+                }]
+            }
+        )
+
+@app.get("/api/v1/admin/config/{config_name}")
+async def get_config(config_name: str, request: Request):
+    """Get configuration file content"""
+    try:
+        # Validate admin session
+        session_token = request.headers.get("X-Session-Token", "")
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication required",
+                        "field": "session_token",
+                        "details": "Please provide valid session token"
+                    }]
+                }
+            )
+        
+        valid, session_data, error = validate_admin_session(session_token)
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        # Read configuration file
+        success, content, error = read_config_file(config_name)
+        
+        if success:
+            return {
+                "data": {
+                    "config_name": config_name,
+                    "content": content
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "CONFIG_ERROR",
+                        "message": "Configuration not found",
+                        "field": "config_name",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"Get config failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Configuration retrieval failed",
+                    "field": None,
+                    "details": "An internal error occurred during configuration retrieval"
+                }]
+            }
+        )
+
+@app.put("/api/v1/admin/config/{config_name}")
+async def update_config(config_name: str, request: Request):
+    """Update configuration file content"""
+    try:
+        # Validate admin session
+        session_token = request.headers.get("X-Session-Token", "")
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication required",
+                        "field": "session_token",
+                        "details": "Please provide valid session token"
+                    }]
+                }
+            )
+        
+        valid, session_data, error = validate_admin_session(session_token)
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        # Get new configuration content
+        body = await request.json()
+        content = body.get("content", "")
+        
+        if not content:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Configuration content is required",
+                        "field": "content",
+                        "details": "Please provide configuration content"
+                    }]
+                }
+            )
+        
+        # Update configuration file
+        success, error = write_config_file(config_name, content)
+        
+        if success:
+            return {
+                "data": {
+                    "config_name": config_name,
+                    "message": "Configuration updated successfully"
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "CONFIG_ERROR",
+                        "message": "Configuration update failed",
+                        "field": "content",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"Update config failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Configuration update failed",
+                    "field": None,
+                    "details": "An internal error occurred during configuration update"
+                }]
             }
         )
 
