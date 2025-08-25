@@ -55,7 +55,127 @@ docs/
 └── 13_Reference_Manual.md             # Technical reference
 ```
 
-### 2.2 Documentation Types
+### 2.2 Documentation File Topics
+
+#### **01_Project_Overview.md**
+- Project goals and objectives
+- Key features and capabilities
+- Technology stack overview
+- System architecture summary
+- Target users and use cases
+- Project timeline and milestones
+
+#### **02_Architecture_Documentation.md**
+- System architecture diagrams
+- Component relationships and interactions
+- Data flow and processing pipelines
+- Security architecture and design
+- Scalability and performance considerations
+- Technology choices and rationale
+
+#### **03_Installation_Guide.md**
+- Prerequisites and system requirements
+- Environment setup and configuration
+- Docker installation and setup
+- Database initialization and configuration
+- **Basic container users and permissions setup**
+- Configuration file setup and validation
+- Health checks and verification
+- Troubleshooting common installation issues
+
+#### **04_Configuration_Guide.md**
+- Environment variables and their purposes
+- YAML configuration file structure
+- Configuration validation procedures
+- Environment-specific configurations
+- Security configuration settings
+- Performance tuning parameters
+- Configuration file examples and templates
+
+#### **05_API_Documentation.md**
+- Complete API endpoint reference
+- Request/response formats and schemas
+- Authentication and authorization
+- Rate limiting and quotas
+- Error codes and handling
+- API versioning and compatibility
+- Code examples for all endpoints
+
+#### **06_User_Guide.md**
+- Getting started with the application
+- Text evaluation workflow
+- Understanding evaluation results
+- Session management and security
+- User interface navigation
+- Best practices and tips
+- Frequently asked questions
+
+#### **07_Administration_Guide.md**
+- Admin authentication and access
+- Configuration management procedures
+- User session monitoring
+- System health monitoring
+- Backup and recovery procedures
+- Security administration tasks
+- Performance monitoring and optimization
+
+#### **08_Development_Guide.md**
+- Development environment setup
+- Code structure and organization
+- Development workflow and procedures
+- Testing procedures and frameworks
+- Code review and quality standards
+- Debugging and troubleshooting
+- Contributing guidelines
+
+#### **09_Testing_Guide.md**
+- Test framework overview and structure
+- Unit testing procedures
+- Integration testing procedures
+- End-to-end testing procedures
+- Performance testing and benchmarks
+- Test automation and CI/CD integration
+- Test result interpretation and reporting
+
+#### **10_Deployment_Guide.md**
+- Production environment preparation
+- Container orchestration and scaling
+- **Advanced container users and permissions management**
+- SSL/TLS certificate management
+- Load balancing and high availability
+- Monitoring and alerting setup
+- Backup and disaster recovery
+- Deployment validation and verification
+
+#### **11_Maintenance_Guide.md**
+- Regular maintenance procedures
+- System updates and upgrades
+- Database maintenance and optimization
+- Log management and rotation
+- Security updates and patches
+- Performance monitoring and tuning
+- Incident response procedures
+
+#### **12_Troubleshooting_Guide.md**
+- Common issues and solutions
+- **Container permission and user access problems**
+- Error code reference and meanings
+- Diagnostic procedures and tools
+- Performance problem resolution
+- Security incident response
+- Recovery procedures
+- Support and escalation procedures
+
+#### **13_Reference_Manual.md**
+- Technical specifications and requirements
+- Database schema and relationships
+- Configuration file formats and options
+- API endpoint reference tables
+- Error code reference
+- Environment variable reference
+- Command-line tool reference
+
+### 2.3 Documentation Types
 
 #### **Overview Documentation**
 - **Purpose**: High-level understanding of the project
