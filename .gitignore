@@ -14,12 +14,16 @@
 logs/*.log
 logs/*.log.*
 *.log
+tests/logs/
 
 # SSL certificates
 letsencrypt/
 *.pem
 *.key
 *.crt
+
+# Secrets
+secrets/
 
 # Configuration backups
 config/backups/
