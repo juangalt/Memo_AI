@@ -810,6 +810,33 @@ Implement comprehensive end-to-end testing covering all user workflows and error
 **Key Skills**: Docker deployment, SSL configuration, monitoring setup, production validation  
 **Success Criteria**: System deployed, SSL working, monitoring operational, internet accessible
 
+### 10.1.1 Critical Configuration and Permission Considerations
+**CRITICAL**: This phase requires careful attention to configuration path mapping and container user permissions to prevent common deployment issues.
+
+**Configuration Path Mapping**:
+- **Host Structure**: `./config/` contains YAML configuration files
+- **Container Structure**: `/app/config/` mounted from host config directory
+- **Path Consistency**: All container code must reference `/app/config/` paths
+- **Read-Only Mount**: Configuration files mounted as read-only for security
+
+**Container User Permissions**:
+- **Non-Root Users**: All containers must run as non-root users
+- **Volume Permissions**: Container users must have appropriate permissions for mounted volumes
+- **File Ownership**: Ensure proper ownership of configuration and data files
+- **Permission Inheritance**: Host file permissions must be compatible with container users
+
+**Common Issues to Avoid**:
+- **Path Confusion**: Mixing host paths (`./config/`) with container paths (`/app/config/`)
+- **Permission Denied**: Container users unable to read configuration files
+- **File Not Found**: Applications looking for config files in wrong locations
+- **Security Vulnerabilities**: Running containers as root or with excessive permissions
+
+**Validation Requirements**:
+- All configuration files accessible inside containers
+- Container users have appropriate permissions
+- No permission errors in application logs
+- Configuration loading works correctly in production environment
+
 ### 10.2 Development Steps and Milestones
 
 #### Step 7.1: Docker Containerization and Initial Deployment
@@ -821,9 +848,11 @@ Implement comprehensive end-to-end testing covering all user workflows and error
 - Containers start and communicate
 - Docker Compose orchestration working
 - Production configuration functional
+- Configuration paths correctly mapped between host and containers
+- Container users have proper permissions for mounted volumes
 
 **AI Agent Instructions**:
-Create production-ready Docker containers following the specifications in 07_Deployment.md.
+Create production-ready Docker containers following the specifications in 07_Deployment.md. Pay special attention to configuration path mapping and user permissions.
 
 **Implementation Requirements**:
 - Production Dockerfiles for backend and frontend
@@ -831,6 +860,29 @@ Create production-ready Docker containers following the specifications in 07_Dep
 - Environment variable configuration
 - Health checks for all services
 - Volume mounts for data persistence
+- **CRITICAL**: Proper configuration path mapping between host and containers
+- **CRITICAL**: Container user permissions for mounted volumes
+
+**Configuration Path Mapping Requirements**:
+- **Host config path**: `./config/` (relative to project root)
+- **Backend container path**: `/app/config/` (mounted from host)
+- **Frontend container path**: `/app/config/` (mounted from host)
+- **Container user**: Non-root user with appropriate permissions
+- **Volume permissions**: Ensure container users can read/write mounted volumes
+
+**Docker Compose Volume Configuration**:
+```yaml
+volumes:
+  - ./config:/app/config:ro  # Read-only for security
+  - ./data:/app/data         # Read-write for database
+  - ./logs:/app/logs         # Read-write for logging
+```
+
+**Container User Setup**:
+- Create non-root user in Dockerfiles
+- Set proper ownership of mounted volumes
+- Ensure container processes run as non-root user
+- Configure proper file permissions for config files
 
 **Human Testing Procedures**:
 - Build images: `docker compose build`
@@ -838,6 +890,24 @@ Create production-ready Docker containers following the specifications in 07_Dep
 - Check container status: `docker compose ps`
 - Verify inter-container communication
 - Test basic functionality
+- **CRITICAL**: Verify configuration files accessible inside containers
+- **CRITICAL**: Test configuration file permissions and ownership
+- **CRITICAL**: Validate container users can access mounted volumes
+
+**Configuration Path Validation Commands**:
+```bash
+# Test configuration access inside containers
+docker compose exec backend ls -la /app/config/
+docker compose exec frontend ls -la /app/config/
+docker compose exec backend cat /app/config/rubric.yaml
+docker compose exec frontend cat /app/config/prompt.yaml
+
+# Test user permissions
+docker compose exec backend whoami
+docker compose exec frontend whoami
+docker compose exec backend ls -la /app/data/
+docker compose exec frontend ls -la /app/logs/
+```
 
 **Milestone Success Criteria**:
 - [ ] Docker images build successfully
@@ -845,6 +915,9 @@ Create production-ready Docker containers following the specifications in 07_Dep
 - [ ] Inter-container communication working
 - [ ] Production configuration functional
 - [ ] Health checks passing
+- [ ] Configuration files accessible inside containers
+- [ ] Container users have proper permissions
+- [ ] No permission errors in container logs
 
 ---
 
@@ -874,6 +947,23 @@ Configure SSL/TLS using Let's Encrypt and implement all production security meas
 - Check security headers: `curl -I https://your-domain.com`
 - Test rate limiting with multiple requests
 - Verify CSRF protection
+- **CRITICAL**: Validate configuration file security inside containers
+- **CRITICAL**: Test configuration file access permissions
+
+**Configuration Security Validation**:
+```bash
+# Verify configuration files are read-only in containers
+docker compose exec backend ls -la /app/config/
+docker compose exec frontend ls -la /app/config/
+
+# Test configuration file access from container users
+docker compose exec backend cat /app/config/auth.yaml
+docker compose exec frontend cat /app/config/llm.yaml
+
+# Verify no write access to config files
+docker compose exec backend touch /app/config/test.yaml
+docker compose exec frontend touch /app/config/test.yaml
+```
 
 **Milestone Success Criteria**:
 - [ ] HTTPS working with valid certificates
@@ -881,6 +971,9 @@ Configure SSL/TLS using Let's Encrypt and implement all production security meas
 - [ ] Security headers properly configured
 - [ ] Rate limiting functional
 - [ ] CSRF protection active
+- [ ] Configuration files read-only in containers
+- [ ] Container users cannot write to config files
+- [ ] Configuration access properly secured
 
 ---
 
@@ -910,6 +1003,23 @@ Implement comprehensive health monitoring and performance validation for all con
 - Test health endpoints: `curl https://your-domain.com/health`
 - Verify performance metrics
 - Test monitoring alerts
+- **CRITICAL**: Validate configuration health inside containers
+- **CRITICAL**: Test configuration loading from mounted volumes
+
+**Configuration Health Validation**:
+```bash
+# Test configuration health endpoints
+curl https://your-domain.com/health/config
+curl https://your-domain.com/api/health/config
+
+# Verify configuration loading inside containers
+docker compose exec backend python -c "import yaml; print('Backend config loaded:', yaml.safe_load(open('/app/config/rubric.yaml')))"
+docker compose exec frontend python -c "import yaml; print('Frontend config loaded:', yaml.safe_load(open('/app/config/prompt.yaml')))"
+
+# Test configuration file integrity
+docker compose exec backend python -c "import os; print('Config files:', os.listdir('/app/config/'))"
+docker compose exec frontend python -c "import os; print('Config files:', os.listdir('/app/config/'))"
+```
 
 **Milestone Success Criteria**:
 - [ ] All containers healthy and stable
@@ -917,6 +1027,9 @@ Implement comprehensive health monitoring and performance validation for all con
 - [ ] Performance benchmarks met
 - [ ] Monitoring system operational
 - [ ] Alert system functional
+- [ ] Configuration health endpoints responding
+- [ ] Configuration files loading correctly in containers
+- [ ] No configuration path errors in logs
 
 ---
 
@@ -982,6 +1095,28 @@ Perform final comprehensive validation of the complete production system.
 - Test backup and restore procedures
 - Perform load testing
 - Validate security measures
+- **CRITICAL**: Comprehensive configuration validation in production
+- **CRITICAL**: Test configuration persistence across container restarts
+
+**Production Configuration Validation**:
+```bash
+# Test configuration persistence
+docker compose restart backend
+docker compose restart frontend
+docker compose exec backend python -c "import yaml; print('Config after restart:', yaml.safe_load(open('/app/config/rubric.yaml')))"
+
+# Verify configuration consistency across containers
+docker compose exec backend python -c "import yaml; backend_config = yaml.safe_load(open('/app/config/rubric.yaml')); print('Backend config hash:', hash(str(backend_config)))"
+docker compose exec frontend python -c "import yaml; frontend_config = yaml.safe_load(open('/app/config/rubric.yaml')); print('Frontend config hash:', hash(str(frontend_config)))"
+
+# Test configuration file permissions after restart
+docker compose exec backend ls -la /app/config/
+docker compose exec frontend ls -la /app/config/
+
+# Validate configuration loading in production environment
+curl https://your-domain.com/health/config
+curl https://your-domain.com/api/health/config
+```
 
 **Milestone Success Criteria**:
 - [ ] All production features working
@@ -989,6 +1124,110 @@ Perform final comprehensive validation of the complete production system.
 - [ ] Backup system functional
 - [ ] Performance under load acceptable
 - [ ] Security measures validated
+- [ ] Configuration persistence verified across restarts
+- [ ] Configuration consistency maintained between containers
+- [ ] Configuration permissions preserved after restarts
+- [ ] Production configuration loading working correctly
+
+---
+
+### 10.6 Phase 7 Complete Testing and Validation
+
+#### Master Validation Checklist
+**Human Developer: Verify each milestone before proceeding to Phase 8**
+
+**Milestone 7.1: Docker Deployment Ready** ✓
+- [ ] Docker images build successfully
+- [ ] Containers start correctly
+- [ ] Inter-container communication working
+- [ ] Production configuration functional
+- [ ] Health checks passing
+- [ ] Configuration files accessible inside containers
+- [ ] Container users have proper permissions
+- [ ] No permission errors in container logs
+
+**Milestone 7.2: SSL and Security Active** ✓
+- [ ] HTTPS working with valid certificates
+- [ ] SSL certificates auto-renewing
+- [ ] Security headers properly configured
+- [ ] Rate limiting functional
+- [ ] CSRF protection active
+- [ ] Configuration files read-only in containers
+- [ ] Container users cannot write to config files
+- [ ] Configuration access properly secured
+
+**Milestone 7.3: Container Health Verified** ✓
+- [ ] All containers healthy and stable
+- [ ] Resource usage within limits
+- [ ] Performance benchmarks met
+- [ ] Monitoring system operational
+- [ ] Alert system functional
+- [ ] Configuration health endpoints responding
+- [ ] Configuration files loading correctly in containers
+- [ ] No configuration path errors in logs
+
+**Milestone 7.4: Internet Accessibility Confirmed** ✓
+- [ ] Domain resolves correctly
+- [ ] HTTPS accessible from internet
+- [ ] Port forwarding working
+- [ ] Firewall properly configured
+- [ ] External access functional
+
+**Milestone 7.5: Production System Operational** ✓
+- [ ] All production features working
+- [ ] Monitoring dashboard operational
+- [ ] Backup system functional
+- [ ] Performance under load acceptable
+- [ ] Security measures validated
+- [ ] Configuration persistence verified across restarts
+- [ ] Configuration consistency maintained between containers
+- [ ] Configuration permissions preserved after restarts
+- [ ] Production configuration loading working correctly
+
+#### Configuration and Permission Validation Commands
+```bash
+# Comprehensive configuration validation
+echo "=== Configuration Path Validation ==="
+docker compose exec backend ls -la /app/config/
+docker compose exec frontend ls -la /app/config/
+docker compose exec backend python -c "import yaml; print('Backend config files:', [f for f in os.listdir('/app/config/') if f.endswith('.yaml')])"
+docker compose exec frontend python -c "import yaml; print('Frontend config files:', [f for f in os.listdir('/app/config/') if f.endswith('.yaml')])"
+
+echo "=== Configuration Loading Validation ==="
+docker compose exec backend python -c "import yaml; print('Backend rubric loaded:', bool(yaml.safe_load(open('/app/config/rubric.yaml'))))"
+docker compose exec frontend python -c "import yaml; print('Frontend prompt loaded:', bool(yaml.safe_load(open('/app/config/prompt.yaml'))))"
+
+echo "=== User Permission Validation ==="
+docker compose exec backend whoami
+docker compose exec frontend whoami
+docker compose exec backend ls -la /app/data/
+docker compose exec frontend ls -la /app/logs/
+
+echo "=== Configuration Security Validation ==="
+docker compose exec backend touch /app/config/test.yaml 2>/dev/null && echo "WARNING: Write access to config files" || echo "OK: Config files read-only"
+docker compose exec frontend touch /app/config/test.yaml 2>/dev/null && echo "WARNING: Write access to config files" || echo "OK: Config files read-only"
+
+echo "=== Configuration Persistence Validation ==="
+docker compose restart backend
+docker compose restart frontend
+sleep 5
+docker compose exec backend python -c "import yaml; print('Config after restart:', bool(yaml.safe_load(open('/app/config/rubric.yaml'))))"
+
+echo "=== Production Health Validation ==="
+curl -I https://your-domain.com/health
+curl -I https://your-domain.com/health/config
+```
+
+#### Quick Validation Commands
+```bash
+# Verify all Phase 7 milestones at once
+docker compose ps
+docker stats --no-stream
+curl -I https://your-domain.com/health
+docker compose exec backend python -c "import yaml; print('Config OK:', bool(yaml.safe_load(open('/app/config/rubric.yaml'))))"
+docker compose exec backend whoami
+docker compose exec backend ls -la /app/config/
+```
 
 ---
 
