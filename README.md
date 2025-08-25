@@ -98,7 +98,29 @@ The system uses 4 essential YAML configuration files:
 
 ### Project Structure
 ```
-memoai/
+memo_AI/
+├── backend/                 # FastAPI backend services
+├── frontend/                # Streamlit frontend application
+├── config/                  # YAML configuration files
+├── data/                    # SQLite database and data files
+├── tests/                   # Comprehensive test suite (Phase 8)
+│   ├── config/             # Environment configuration tests
+│   ├── integration/        # System integration tests
+│   ├── performance/        # Performance and load tests
+│   ├── logs/              # Test results and reports
+│   ├── run_production_tests.py  # Complete test runner
+│   └── run_quick_tests.py       # Quick test runner
+├── devspecs/               # Development specifications
+├── devlog/                 # Development changelog
+├── docs/                   # Documentation
+├── logs/                   # Application logs
+├── letsencrypt/            # SSL certificates
+├── secrets/                # Secret files
+├── docker-compose.yml      # Container orchestration
+├── deploy-production.sh    # Production deployment script
+├── .env                    # Environment variables
+└── README.md              # This file
+```
 ├── devspecs/           # Development specifications
 ├── frontend/           # Streamlit frontend application
 ├── backend/            # FastAPI backend application
@@ -169,6 +191,28 @@ Scale backend services for higher load:
 ```bash
 docker compose up -d --scale backend=3
 ```
+
+## Testing
+
+### Production Test Suite
+The project includes comprehensive testing infrastructure for production validation:
+
+```bash
+# Run complete Phase 8 production test suite (includes performance tests)
+python3 tests/run_production_tests.py
+
+# Run quick Phase 8 production test suite (excludes performance tests for speed)
+python3 tests/run_quick_tests.py
+```
+
+### Test Coverage
+- **Environment Configuration**: Domain, SSL, database, LLM API validation
+- **Critical System Tests**: Container status, API health, sessions, evaluation workflow
+- **Performance Tests**: Response time benchmarks, concurrent user simulation
+- **Production Readiness**: System accessibility, security, functionality, monitoring
+
+### Test Results
+Test results are stored in `tests/logs/` with detailed JSON reports for analysis.
 
 ## Monitoring
 

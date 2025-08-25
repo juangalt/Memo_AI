@@ -607,6 +607,92 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 - **Backup Volume**: Automated backup storage
 - **SSL Volume**: Persistent SSL certificate storage for Traefik
 
+### 5.4 Container Users and Permissions Management
+
+**Critical Consideration**: Container users and file permissions must be carefully managed when transitioning from development to production environments. Containerization can change file access patterns, user contexts, and path references, leading to permission errors and configuration access issues.
+
+#### 5.4.1 Container User Strategy
+**General Rules**:
+- **Non-Root Execution**: All containers must run as non-root users (UID 1000+)
+- **Consistent User IDs**: Use consistent UID/GID across all containers (appuser:1000:1000)
+- **Host-Container Alignment**: Ensure host file ownership matches container user expectations
+- **Read-Only Mounts**: Configuration files mounted as read-only to prevent accidental modifications
+
+**Implementation Examples**:
+```dockerfile
+# Dockerfile - Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+USER appuser
+```
+
+```bash
+# Host file ownership setup
+sudo chown -R devops:devops config/ data/ logs/
+chmod -R 644 config/*.yaml
+chmod 755 config/ data/ logs/
+```
+
+#### 5.4.2 Path and Configuration Considerations
+**Development vs Production Path Differences**:
+- **Development**: Direct file access, local paths, user-owned files
+- **Production**: Containerized paths, mounted volumes, container user context
+
+**Common Issues and Solutions**:
+1. **Configuration Path Confusion**: Host `config/` vs container `/app/config/`
+   - **Solution**: Use consistent mount points and environment variables
+   - **Example**: `./config:/app/config:ro` with `CONFIG_DIR=/app/config`
+
+2. **File Permission Errors**: Container user cannot access host files
+   - **Solution**: Set proper host ownership before container startup
+   - **Example**: `chown -R 1000:1000 config/` or match host user to container user
+
+3. **Database Access Issues**: SQLite file permissions in mounted volumes
+   - **Solution**: Ensure data directory is writable by container user
+   - **Example**: `chmod 755 data/` and proper ownership
+
+4. **Log File Creation**: Container cannot write to log directories
+   - **Solution**: Pre-create log directories with correct permissions
+   - **Example**: `mkdir -p logs/ && chown 1000:1000 logs/`
+
+#### 5.4.3 Volume Mount Best Practices
+**Read-Only Configuration Mounts**:
+```yaml
+# docker-compose.yml
+volumes:
+  - ./config:/app/config:ro  # Read-only configuration
+  - ./data:/app/data         # Writable data
+  - ./logs:/app/logs         # Writable logs
+```
+
+**Permission Validation**:
+```bash
+# Pre-deployment permission check
+docker compose exec backend ls -la /app/config/
+docker compose exec backend whoami
+docker compose exec backend id
+```
+
+#### 5.4.4 Environment-Specific Considerations
+**Development Environment**:
+- Host user typically owns all files
+- Direct file access without permission issues
+- Local development paths work naturally
+
+**Production Environment**:
+- Container users must have proper access to mounted volumes
+- File ownership must be set before container startup
+- Path references must account for container mount points
+- Configuration files must be accessible to container user
+
+**General Implementation Rules**:
+1. **Always use non-root containers** with consistent UID/GID
+2. **Set host file ownership** to match container user before deployment
+3. **Use read-only mounts** for configuration files to prevent accidental changes
+4. **Validate permissions** inside containers after deployment
+5. **Test configuration access** from within containers during deployment
+6. **Use environment variables** for path configuration to handle differences
+7. **Pre-create directories** with correct permissions before container startup
+
 ---
 
 ## 6.0 Environment Configuration
@@ -835,6 +921,19 @@ ProductionConfig:
    # Edit configuration files as needed
    ```
 
+3. **Container User and Permission Setup**:
+   ```bash
+   # Set proper ownership for container access
+   sudo chown -R $USER:$USER config/ data/ logs/ letsencrypt/
+   
+   # Set correct permissions for configuration files
+   chmod -R 644 config/*.yaml
+   chmod 755 config/ data/ logs/ letsencrypt/
+   
+   # Ensure data directory is writable by container user
+   chmod 755 data/
+   ```
+
 3. **DNS Configuration Setup** (Production):
    ```bash
    # Configure DNS for your domain (replace with your actual domain)
@@ -857,10 +956,21 @@ ProductionConfig:
    chmod 600 letsencrypt
    ```
 
-4. **Configuration Validation**:
+5. **Configuration Validation**:
    ```bash
    # Validate all configuration files
    docker compose run backend python validate_config.py
+   ```
+
+6. **Permission Validation**:
+   ```bash
+   # Verify container can access configuration files
+   docker compose run backend ls -la /app/config/
+   docker compose run backend python -c "import yaml; yaml.safe_load(open('/app/config/rubric.yaml'))"
+   
+   # Verify container user and permissions
+   docker compose run backend whoami
+   docker compose run backend id
    ```
    
    **Configuration Validation Requirements**:
@@ -870,7 +980,7 @@ ProductionConfig:
    - `llm.yaml`: LLM provider configuration and API settings
    - `auth.yaml`: Authentication settings and session management
 
-5. **Database Initialization**:
+7. **Database Initialization**:
    ```bash
    # Initialize database schema
    docker compose run backend python init_db.py
@@ -884,7 +994,7 @@ ProductionConfig:
    - All required indexes and constraints
    - WAL mode configuration for concurrent access
 
-6. **Application Deployment**:
+8. **Application Deployment**:
    ```bash
    # Build and start containers
    docker compose up -d --build
