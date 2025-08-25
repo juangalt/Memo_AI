@@ -19,13 +19,16 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Service for admin authentication and session management"""
     
-    def __init__(self, config_path: str = "../config"):
-        """
-        Initialize authentication service
+    def __init__(self, config_path: str = None):
+        """Initialize auth service with automatic path detection"""
+        if config_path is None:
+            # In container, config is mounted at /app/config
+            # For development, fallback to ../config
+            if os.path.exists('/app/config'):
+                config_path = '/app/config'
+            else:
+                config_path = '../config'
         
-        Args:
-            config_path: Path to configuration directory
-        """
         self.config_path = config_path
         self.auth_config = None
         self.admin_sessions = {}  # In-memory session storage for development

@@ -20,13 +20,16 @@ logger = logging.getLogger(__name__)
 class LLMService:
     """Service for LLM integration with Claude API"""
     
-    def __init__(self, config_path: str = "../config"):
-        """
-        Initialize LLM service
+    def __init__(self, config_path: str = None):
+        """Initialize LLM service with automatic path detection"""
+        if config_path is None:
+            # In container, config is mounted at /app/config
+            # For development, fallback to ../config
+            if os.path.exists('/app/config'):
+                config_path = '/app/config'
+            else:
+                config_path = '../config'
         
-        Args:
-            config_path: Path to configuration directory
-        """
         self.config_path = config_path
         self.client = None
         self.llm_config = None

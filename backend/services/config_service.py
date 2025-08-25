@@ -17,7 +17,12 @@ class ConfigService:
     def __init__(self, config_dir: Optional[str] = None):
         """Initialize configuration service"""
         if config_dir is None:
-            config_dir = os.getenv('CONFIG_DIR', '../config')
+            # In container, config is mounted at /app/config
+            # For development, fallback to ../config
+            if os.path.exists('/app/config'):
+                config_dir = '/app/config'
+            else:
+                config_dir = os.getenv('CONFIG_DIR', '../config')
         
         self.config_dir = Path(config_dir)
         self.configs = {}

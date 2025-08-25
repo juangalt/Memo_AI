@@ -18,13 +18,16 @@ logger = logging.getLogger(__name__)
 class ConfigManager:
     """Service for managing YAML configuration files"""
     
-    def __init__(self, config_path: str = "../config"):
-        """
-        Initialize configuration manager
+    def __init__(self, config_path: str = None):
+        """Initialize config manager with automatic path detection"""
+        if config_path is None:
+            # In container, config is mounted at /app/config
+            # For development, fallback to ../config
+            if os.path.exists('/app/config'):
+                config_path = '/app/config'
+            else:
+                config_path = '../config'
         
-        Args:
-            config_path: Path to configuration directory
-        """
         self.config_path = config_path
         self.config_files = {
             'rubric': 'rubric.yaml',
