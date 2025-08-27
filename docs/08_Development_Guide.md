@@ -1,0 +1,63 @@
+# Development Guide
+## Memo AI Coach
+
+**Document ID**: 08_Development_Guide.md
+**Document Version**: 1.0
+**Last Updated**: Phase 9
+**Status**: Draft
+
+---
+
+## 1.0 Coding Principles
+Derived from project AGENTS guidelines:
+- Favor simplicity and readability over abstraction.
+- Each module serves a single responsibility.
+- Provide docstrings and inline comments for educational clarity.
+- Avoid editing `devspecs/` documents; `docs/` now acts as source of truth.
+- Follow PEP 8 style with 4-space indentation and descriptive variable names.
+
+## 2.0 Repository Structure
+```
+backend/    FastAPI service
+frontend/   Streamlit interface
+config/     YAML configuration files
+tests/      Test suites
+docs/       Comprehensive project documentation
+```
+
+## 3.0 Backend Development
+- Entry point: `backend/main.py`.
+- Data models in `backend/models/entities.py` reflect tables created by `init_db.py`.
+- Services in `backend/services/` handle configuration, authentication and LLM integration.
+- Use `evaluate_text_with_llm` for all evaluations; it handles prompt generation and error management.
+- Error responses should use the standard `{data: null, meta, errors}` schema defined in API documentation.
+- Add new endpoints by extending `backend/main.py` and documenting them in `docs/05_API_Documentation.md`.
+
+## 4.0 Frontend Development
+- Entry point: `frontend/app.py`.
+- `components/api_client.py` wraps REST calls with retry logic.
+- `components/state_manager.py` manages Streamlit session state and validation.
+- Follow existing tab structure to add new UI features.
+- Components should be added under `frontend/components/` with clear, commented functions.
+
+## 5.0 Configuration & Secrets
+- Never commit API keys or passwords. Use environment variables or `.env`.
+- Configuration editing should go through admin API or `config_manager.py` to ensure validation and backups.
+- When adding new configuration keys, update both `docs/04_Configuration_Guide.md` and validation logic.
+
+## 6.0 Testing
+- Tests reside in `tests/` and cover environment, integration, performance and security.
+- `tests/run_quick_tests.py` runs fast checks; `tests/run_production_tests.py` includes performance suite.
+- New features require corresponding unit or integration tests.
+- Test files mirror module paths to simplify discovery.
+
+## 7.0 Contribution Workflow
+1. Review relevant docs in this directory before coding.
+2. Implement changes in small, well-documented commits.
+3. Update changelog in `devlog/changelog.md` for historical context.
+4. Add or update tests when modifying behavior.
+5. Run appropriate test suites and document results in pull requests.
+
+## 8.0 References
+- `AGENTS.md`
+- `tests/README.md`

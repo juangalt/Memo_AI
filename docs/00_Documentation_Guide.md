@@ -323,16 +323,14 @@ Each documentation file must follow this structure:
 ## 5.0 Integration with Existing Documentation
 
 ### 5.1 Devspecs Integration
-- **Reference**: Link to relevant devspec documents
-- **Consistency**: Ensure alignment with devspec requirements
-- **Extension**: Build upon devspec foundation
-- **Validation**: Verify implementation matches specifications
+- Historical `devspecs/` documents remain in the repository for context but are no longer maintained.
+- All future work must reference files in `docs/` as the canonical specifications.
+- When discrepancies arise, the documentation in this directory takes precedence.
 
 ### 5.2 Changelog Integration
-- **History**: Reference relevant changelog entries
-- **Context**: Provide historical context for decisions
-- **Evolution**: Document how features evolved
-- **Lessons Learned**: Include insights from development
+- The development log (`devlog/changelog.md`) is frozen after Phase 8 and serves as an implementation history.
+- New changes should be documented directly in commit messages and pull request descriptions.
+- Historical entries may be referenced for context or lessons learned.
 
 ### 5.3 Code Integration
 - **Code Examples**: Include relevant code snippets
