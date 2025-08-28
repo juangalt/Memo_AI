@@ -1,0 +1,644 @@
+# Data Model Specification
+## Memo AI Coach
+
+**Document ID**: 03_Data_Model.md  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
+**Next Review**: After initial deployment  
+**Status**: Approved
+
+---
+
+## 1.0 Document Information
+
+### 1.1 Purpose
+Defines the data structures, database schema, and data relationships for the Memo AI Coach project, establishing the foundation for data persistence and management.
+
+### 1.2 Scope
+- Database technology decisions and rationale
+- Core data entities and schema definitions
+- Data relationships and integrity constraints
+- Data access patterns and optimization strategies
+- Security and privacy considerations
+
+### 1.3 Dependencies
+- **Prerequisites**: 00_Devspecs_Overview.md, 01_Requirements.md, 02_Architecture.md
+- **Related Documents**: 04_API_Definitions.md, 05_UI_UX.md
+- **Requirements**: Implements data requirements from 01_Requirements.md (Req 2.2-2.5, 3.4)
+
+### 1.4 Document Structure
+1. Document Information
+2. Database Technology Decisions
+3. Core Data Entities
+4. Data Relationships
+5. Data Access Patterns
+6. Security and Privacy
+7. Traceability Matrix
+
+### 1.5 Traceability Summary
+| Requirement ID | Requirement Description | Data Model Implementation | Status |
+|---------------|------------------------|---------------------------|---------|
+| 2.2.1-2.2.4 | Text Submission Requirements | Submissions Entity (3.3) | ✅ Implemented |
+| 2.3.1-2.3.6 | Text Evaluation Requirements | Evaluations Entity (3.4) | ✅ Implemented |
+| 2.4.1-2.4.3 | Admin Functions Requirements | Configuration Management | ✅ Implemented |
+| 2.5.1-2.5.3 | Debug Mode Requirements | Debug Data Storage | ✅ Implemented |
+| 3.4.1-3.4.5 | Security Requirements | Authentication Schema (3.1, 3.2) | ✅ Implemented |
+
+### 1.6 Document Navigation
+- **Previous Document**: 02_Architecture.md
+- **Next Document**: 04_API_Definitions.md
+- **Related Documents**: 05_UI_UX.md
+
+---
+
+## 2.0 Database Technology Decision
+
+2.1 **Primary Database**
+- **Decision**: SQLite for entire project lifecycle
+- **Rationale**: Simple, file-based, no external dependencies, excellent performance with WAL mode
+- **Scaling Strategy**: SQLite optimizations, connection pooling, and performance tuning for 100+ users
+
+2.2 **ORM/Query Layer**
+
+This section refers to the method used for interacting with the database from the application code. Instead of using a full-featured Object-Relational Mapper (ORM) like SQLAlchemy, the project uses the built-in `sqlite3` library and writes SQL queries directly ("Raw SQL"). This approach is chosen for its simplicity, transparency, and ease of maintenance. It allows developers to have direct control over database operations and schema evolution, and avoids the complexity and overhead of an ORM layer. See Section 10.1 for more details on this decision.
+- **Decision**: SQLite3 + Raw SQL (see Section 10.1 for rationale)
+- **Rationale**: Aligns with simplicity requirements and maintainability focus
+- **Migration Strategy**: Version-based migration scripts (see Section 10.2)
+
+---
+
+## 3.0 Core Data Entities
+
+### 3.1 Users and Authentication
+**Based on Requirements**: Session-based authentication system (Req 3.4.1) with admin user support for system management.
+
+**Users Schema**:
+```sql
+users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,    -- Admin username
+    password_hash TEXT NOT NULL,      -- bcrypt hashed password
+    is_admin BOOLEAN DEFAULT FALSE,   -- Admin flag for elevated access
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### 3.2 Sessions and Session Management
+**Based on Requirements**: Session-based authentication system (Req 3.4.1). Session-based identification for users with admin support.
+
+**Sessions Schema**:
+```sql
+sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT UNIQUE NOT NULL,  -- Secure random token
+    user_id INTEGER REFERENCES users(id),  -- Optional user reference (NULL for anonymous)
+    is_admin BOOLEAN DEFAULT FALSE,   -- Admin flag for elevated access
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### 3.3 User Submissions
+**Based on Requirements**: Session-based identification for all users.
+
+**Schema**:
+```sql
+submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text_content TEXT NOT NULL,
+    session_id TEXT NOT NULL REFERENCES sessions(session_id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 3.4 Evaluations
+**Based on Requirements**: Store overall and segment-level evaluation results (Req 2.2.3a, 2.2.3b). Support debug mode with raw prompts/responses (Req 2.4).
+
+**Design Philosophy**: Simple synchronous evaluation system for reliable performance.
+
+**Schema Design Rationale**:
+- Simple structure focused on core evaluation functionality
+- JSON fields for flexible rubric and segment feedback storage
+- Debug fields for troubleshooting when enabled
+
+**Schema**:
+```sql
+evaluations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    submission_id INTEGER NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
+    overall_score DECIMAL(5,2),
+    strengths TEXT NOT NULL,
+    opportunities TEXT NOT NULL,
+    rubric_scores TEXT NOT NULL,  -- JSON string: {"category1": score, "category2": score}
+    segment_feedback TEXT NOT NULL,  -- JSON string: [{"segment": "text", "comment": "feedback", "questions": ["q1", "q2"]}]
+    llm_provider TEXT NOT NULL DEFAULT 'claude',
+    llm_model TEXT NOT NULL,
+    raw_prompt TEXT,  -- Stored when debug mode enabled
+    raw_response TEXT,  -- Stored when debug mode enabled
+    debug_enabled BOOLEAN DEFAULT FALSE,
+    processing_time DECIMAL(6,3),  -- Processing time in seconds
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 3.5 Configuration Files
+**Based on Architecture**: Source YAML files stored in filesystem as source of truth. Files are read directly from filesystem each time they're needed. No database tracking (Req 2.3).
+
+**Backend Integration**: The backend dynamically generates prompts by combining framework definitions from rubric.yaml with template variables in prompt.yaml. This modular approach allows for flexible prompt generation while maintaining configuration separation.
+
+**Configuration Files**:
+- `rubric.yaml` - Grading criteria, scoring, and framework definitions
+- `prompt.yaml` - LLM prompt templates with dynamic variables for JSON response format
+- `llm.yaml` - LLM provider configuration
+- `auth.yaml` - Authentication settings
+
+
+
+---
+
+## 4.0 Data Relationships
+
+4.1 **Key Relationships**
+```
+users (1) ← (N) sessions
+sessions (1) ← (N) submissions
+submissions (1) ← (N) evaluations
+```
+
+4.2 **Foreign Key Constraints and Cascading Behaviors**
+- `sessions.user_id` → `users.id` (optional, NULL for anonymous)
+- `evaluations.submission_id` → `submissions.id` (CASCADE DELETE)
+- `submissions.session_id` → `sessions.session_id` (CASCADE DELETE)
+
+4.3 **Data Integrity Rules**
+- User sessions identified by `session_id` across tables
+- Configuration files stored in filesystem, read directly each time
+- Debug mode affects evaluation storage when enabled
+- Simple foreign key relationships ensure data consistency
+
+---
+
+## 5.0 Data Access Patterns
+
+5.1 **Read Patterns**
+- **Evaluation History**: `SELECT * FROM evaluations WHERE submission_id IN (SELECT id FROM submissions WHERE session_id = ?) ORDER BY created_at DESC`
+- **User Evaluations**: `SELECT * FROM evaluations e JOIN submissions s ON e.submission_id = s.id WHERE s.session_id = ? ORDER BY e.created_at DESC`
+- **YAML Configuration Files**: Read directly from filesystem each time
+- **Latest Evaluation**: `SELECT * FROM evaluations WHERE submission_id = ? ORDER BY created_at DESC LIMIT 1`
+
+5.2 **Write Patterns**
+- **Text Submission**: Single transaction (submissions → evaluations)
+- **Configuration Updates**: Validate YAML → write to filesystem
+- **Debug Data**: Conditional writes based on debug_enabled flag
+
+5.3 **Performance Optimizations**
+- Index on `(session_id, created_at)` for session-based queries
+- Index on `(submission_id, created_at)` for evaluation history
+- YAML files read directly from filesystem (simple and reliable)
+
+**Configuration File Access Patterns:**
+- **Business Logic Configs** (`rubric`, `prompt`): Read on evaluation request
+- **System Configs** (`auth`, `llm`): Read on startup and admin changes
+
+---
+
+## 6.0 Data Migration Strategy
+
+6.1 **Schema Evolution**
+- **Initial Schema (001_initial.sql)**: Complete synchronous evaluation system designed for production
+- **Synchronous-first design**: Simple schema focused on immediate evaluation processing
+- **Future migrations**: Numbered SQL files for async features and schema enhancements (002_add_async.sql, 003_optimize_indexes.sql)
+- **Migration tracking**: `schema_migrations` table to track applied migrations
+- **Rollback capability**: Down migration scripts for each version
+- **Development workflow**: Apply migrations on application startup
+
+6.2 **Data Backup and Recovery**
+- **SQLite backup**: Use SQLite backup API or file copy during quiet periods
+- **WAL checkpoint**: Ensure WAL files are merged before backup
+- **Automated backups**: Weekly backup script with rotation (keep 4 weeks)
+- **Recovery procedure**: Replace database.db with backup file, restart application
+- **Configuration backup**: Backup YAML files alongside database
+
+---
+
+## 7.0 Development Team Considerations
+
+### 7.1 Novice Programmer Data Model Support
+**7.1.1 Simplified Database Design**
+- **Clear Entity Relationships**: Straightforward, easy-to-understand data relationships
+- **Intuitive Naming**: Table and column names that clearly indicate their purpose
+- **Minimal Complexity**: Avoid complex database patterns and advanced features
+- **Documentation Integration**: Comprehensive documentation for all data structures
+
+**7.1.2 Learning-Friendly Schema**
+- **Logical Organization**: Tables organized in logical, easy-to-understand groups
+- **Consistent Patterns**: Standardized naming and structure conventions
+- **Clear Constraints**: Well-defined constraints that are easy to understand
+- **Educational Comments**: Extensive comments explaining data relationships and business rules
+
+**7.1.3 Progressive Data Complexity**
+- **Simple Base Schema**: Core functionality with straightforward data structures
+- **Optional Advanced Features**: Complex features added as optional extensions
+- **Clear Migration Paths**: Easy to understand schema evolution
+- **Backward Compatibility**: Changes maintain compatibility with existing data
+
+### 7.2 AI Coding Agent Data Model Collaboration
+**7.2.1 Code Generation-Friendly Schema**
+- **Consistent Patterns**: Standardized database patterns across all entities
+- **Clear Contracts**: Well-defined data structures and relationships
+- **Predictable Structure**: Consistent table and column organization
+- **Template-Based**: Reusable patterns for common data operations
+
+**7.2.2 Maintainability Focus**
+- **Single Responsibility**: Each table has one clear purpose
+- **Low Coupling**: Minimal dependencies between tables
+- **High Cohesion**: Related data grouped together logically
+- **Clear Naming**: Descriptive names that explain data purpose
+
+**7.2.3 Extensibility for Learning**
+- **Flexible Schema**: Easy to add new fields and tables without breaking existing functionality
+- **Configuration-Driven**: Data behavior controlled through configuration
+- **Plugin Architecture**: New data entities added through clear extension points
+- **Version Control**: Schema changes tracked and documented
+
+### 7.3 Implementation Guidelines for Data Model
+**7.3.1 Database Design Standards**
+- **Logical Organization**: Related tables grouped in clear, logical structures
+- **Consistent Naming**: Standard naming conventions throughout the database
+- **Documentation Integration**: Schema documentation co-located with implementation
+- **Version Control**: Database changes tracked and documented
+
+**7.3.2 Quality Standards**
+- **Comprehensive Documentation**: Every table and relationship thoroughly documented
+- **Error Handling**: Clear, educational error messages for data operations
+- **Validation Support**: Built-in data validation and integrity checks
+- **Debugging Tools**: Database debugging and monitoring capabilities
+
+**7.3.3 Collaboration Support**
+- **Clear Interfaces**: Well-defined data access patterns and APIs
+- **Documentation Standards**: Consistent documentation format and style
+- **Code Review Process**: Data model supports effective code reviews
+- **Knowledge Transfer**: Design facilitates learning and understanding
+
+---
+
+## 8.0 Security and Privacy
+
+8.1 **Data Protection**
+- **No PII collection**: Only text submissions and system-generated IDs stored
+- **Session isolation**: Data scoped by session_id, no cross-session access
+- **Debug data sanitization**: Remove sensitive information from debug logs
+- **Data anonymization**: Hash session IDs for analytics if needed
+- **Global debug mode**: When enabled, stores debug data for all new evaluations
+
+8.2 **Access Control**
+- **Database permissions**: Application has full access, no direct user access
+- **Admin functions**: Configuration editing through application only
+- **Session validation**: Verify session ownership before data access
+- **Authentication system**: Session-based authentication system implemented from project start
+- **User isolation**: Data access controlled by user_id and session_id
+- **Configuration security**: YAML files validated on startup and before each admin change
+- **Version tracking**: All admin configuration changes logged in database
+- **Password security**: bcrypt hashing for user passwords
+- **Session security**: Configurable session tokens and expiration
+
+---
+
+## 9.0 Design Decisions
+
+### 9.1 ORM vs Raw SQL Choice ✅ **DECIDED**
+
+**Decision**: **SQLite3 + Raw SQL** (implemented in Section 2.2)
+
+**Alternatives Considered**:
+1. **SQLAlchemy ORM**: Full-featured ORM with automatic migrations, relationships, validation
+2. **SQLite3 + Raw SQL**: Direct database access, minimal dependencies
+3. **Tortoise ORM**: Async-native ORM, lighter than SQLAlchemy
+
+**Rationale**: 
+- **Pros**: Maximum simplicity (Req 3.5.2), no external dependencies, explicit control
+- **Cons**: More boilerplate code, manual migration scripts
+- **Decision Basis**: Given MVP focus on simplicity and maintainability, raw SQL aligns with "no duplicate functions" principle
+
+### 9.2 Database Migration Strategy ✅ **DECIDED**
+
+**Decision**: **Synchronous-first schema with async migration path** (implemented in Section 6.1)
+
+**Alternatives Considered**:
+1. **Synchronous-first with async migration**: Start simple, add async fields later (CHOSEN)
+2. **Dual-mode support**: Support both sync and async evaluation patterns
+3. **Asynchronous-first design**: Design async from inception
+
+**Rationale**: 
+- **Pros**: Simpler implementation, clear migration path, maintains user experience
+- **Cons**: Requires schema migration for async features
+- **Decision Basis**: Synchronous-first design aligns with simplicity while providing clear upgrade path to async processing for scalability
+
+### 9.3 JSON Field Strategy for SQLite ✅ **DECIDED**
+
+**Decision**: **TEXT fields with JSON strings** (implemented in schema definitions)
+
+**Alternatives Considered**:
+1. **SQLite JSON1 extension**: Native JSON functions and operators
+2. **TEXT fields with JSON strings**: Manual JSON parsing in application
+3. **Separate normalized tables**: Traditional relational approach
+
+**Rationale**: 
+- **Pros**: Universal SQLite compatibility, simpler deployment
+- **Cons**: No database-level JSON queries
+- **Decision Basis**: Prioritizes deployment simplicity over query capabilities, aligns with simplicity requirements
+
+### 9.4 Data Retention and Cleanup ✅ **DECIDED**
+
+**Decision**: **Count-based retention (keep last 100 submissions per user)** (implemented in Section 7.2)
+
+**Alternatives Considered**:
+1. **Time-based retention**: Delete data older than X months
+2. **Count-based retention**: Keep last N submissions per user
+3. **No automatic cleanup**: Manual admin cleanup only
+4. **Archival system**: Move old data to separate archive database
+
+**Rationale**: 
+- **Pros**: Predictable storage usage, maintains useful history
+- **Cons**: May lose valuable long-term trends
+- **Decision Basis**: Provides predictable storage management while preserving recent user activity
+
+### 9.5 Session Management Strategy ✅ **DECIDED**
+
+**Decision**: **Server-generated session tokens with database tracking** (implemented in authentication schema)
+
+**Alternatives Considered**:
+1. **UUID-based sessions**: Generate UUID on first visit, store in browser
+2. **Browser fingerprinting**: Use browser characteristics as session ID
+3. **Temporary cookies**: Server-generated session cookies
+4. **localStorage persistence**: Client-side session storage
+
+**Rationale**: 
+- **Pros**: Simple, stateless, persistent across browser sessions, secure server control
+- **Cons**: No cross-device continuity
+- **Decision Basis**: Provides seamless user experience while supporting transition to authenticated sessions in production
+
+### 9.6 Configuration Validation Strategy ✅ **DECIDED**
+
+**Decision**: **Schema-based validation with runtime fallback** (implemented in configurations table)
+
+**Alternatives Considered**:
+1. **Schema-based validation**: YAML schema files with jsonschema validation
+2. **Code-based validation**: Python validation functions
+3. **Template validation**: Ensure required template variables exist
+4. **Runtime validation**: Validate during LLM prompt generation
+
+**Rationale**: 
+- **Pros**: Comprehensive validation, prevents system corruption
+- **Cons**: Additional schema maintenance overhead
+- **Decision Basis**: Ensures data integrity and prevents configuration errors that could break the evaluation system
+
+### 9.7 Configuration Validation Rules
+
+**9.7.1 Rubric Configuration (rubric.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required `rubric` key at root level
+- Required fields: `name`, `description`, `total_weight`, `scoring_scale`, `criteria`
+- `name`: String, non-empty, descriptive rubric name
+- `description`: String, non-empty, comprehensive description
+- `total_weight`: Integer, must equal sum of all criteria weights
+- `scoring_scale`: String, must be "1-5"
+- `criteria`: List, non-empty, contains 1-10 criteria
+
+**Criteria Validation**:
+- Each criterion must have: `name`, `description`, `scoring_guidance`, `weight`
+- `name`: String, non-empty, unique across all criteria
+- `description`: String, non-empty, explains evaluation focus
+- `scoring_guidance`: Object with exactly 5 keys: 1, 2, 3, 4, 5
+- Each scoring guidance value: String, non-empty, describes performance level
+- `weight`: Integer, 1-100, sum of all weights must equal total_weight
+
+**Scoring Categories Validation**:
+- Required `scoring_categories` field (list)
+- Each category must have: `name`, `max_score`, `weight`
+- `name`: String, must match criteria name (converted to snake_case)
+- `max_score`: Integer, must be 5 for all categories
+- `weight`: Integer, must match corresponding criteria weight
+- Sum of all category weights must equal total_weight
+
+**Evaluation Framework Validation**:
+- Required `evaluation_framework` field
+- Required sub-fields: `strengths_identification`, `improvement_opportunities`, `segment_evaluation`
+- `strengths_identification`: List, non-empty, contains strength descriptions
+- `improvement_opportunities`: List, non-empty, contains improvement areas
+- `segment_evaluation`: Object with `comment_categories` and `question_types`
+- `comment_categories`: List, non-empty, contains evaluation categories
+- `question_types`: List, non-empty, contains question types for feedback
+
+**Frameworks Validation**:
+- Required `frameworks` field (object)
+- Required sub-fields: `framework_definitions`, `application_guidance`
+- `framework_definitions`: Object containing framework definitions (can be empty)
+- `application_guidance`: Object containing application guidance for different contexts
+
+**Framework Definitions Validation**:
+- Each framework definition must have: `name`, `description`, `role`, `application`, `scoring_focus`, `segment_focus`
+- `name`: String, non-empty, display name for the framework
+- `description`: String, non-empty, framework description
+- `role`: String, must be one of: "logical_structure", "narrative_clarity", "domain_specific"
+- `application`: String, non-empty, how to apply the framework
+- `scoring_focus`: String, non-empty, framework focus for scoring
+- `segment_focus`: String, non-empty, framework focus for segment analysis
+
+**Application Guidance Validation**:
+- Required sub-fields: `overall_evaluation`, `scoring_evaluation`, `segment_evaluation`, `domain_focus`
+- `overall_evaluation`: String, non-empty, guidance for overall evaluation
+- `scoring_evaluation`: String, non-empty, guidance for scoring evaluation
+- `segment_evaluation`: String, non-empty, guidance for segment evaluation
+- `domain_focus`: String, non-empty, domain-specific focus areas
+
+**Healthcare-Specific Validation**:
+- `description` must mention healthcare context
+- Criteria descriptions must include healthcare examples
+- Scoring guidance must reference healthcare industry standards
+- Evaluation framework must include healthcare-specific strengths/opportunities
+
+**9.7.2 Prompt Configuration (prompt.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `templates`, `instructions`, `response_schemas`, `prompt_variables`, `error_handling`
+- `templates`: Object containing prompt templates
+- `instructions`: Object containing evaluation guidelines
+- `response_schemas`: Object defining expected response formats
+- `prompt_variables`: Object defining template variables
+- `error_handling`: Object defining error scenarios
+
+**Templates Validation**:
+- Required `evaluation_prompt` template
+- Each template must have: `system_message`, `user_template`
+- `system_message`: String, non-empty, defines AI role and must specify JSON response format
+- `user_template`: String, non-empty, contains template variables
+- Template variables must be defined in `prompt_variables`
+- `user_template` must contain: `{text_content}`, `{rubric_content}`, `{frameworks_section}`, `{framework_application_guidance}`
+- `system_message` must include instruction for LLM to respond in JSON format
+
+**Instructions Validation**:
+- Required sub-fields: `evaluation_guidelines`, `scoring_guidelines`, `segment_feedback_guidelines`
+- Each guideline list must be non-empty
+- Guidelines must be actionable and specific
+- Guidelines must contain: `{framework_evaluation_guidelines}`, `{framework_scoring_guidelines}`, `{framework_segment_guidelines}`
+
+**Response Schemas Validation**:
+- Required `evaluation_response` schema
+- Must define structure for: `overall_score`, `strengths`, `opportunities`, `rubric_scores`, `segment_feedback`
+- Data types must be specified for each field
+- `rubric_scores`: Generic description allowing dynamic rubric criteria
+- All response schemas must be valid JSON format specifications
+- Response schemas must include JSON validation rules for parsing
+
+**Prompt Variables Validation**:
+- Required fields: `text_content`, `rubric_content`, `frameworks_section`, `framework_application_guidance`
+- `text_content`: String, description of user's submitted text
+- `rubric_content`: String, description of evaluation rubric and criteria
+- `frameworks_section`: String, template for frameworks section (contains `{framework_list}`)
+- `framework_application_guidance`: String, template for framework application guidance
+- `framework_evaluation_guidelines`: String, template for evaluation guidelines
+- `framework_scoring_guidelines`: String, template for scoring guidelines
+- `framework_segment_guidelines`: String, template for segment guidelines
+
+**9.7.3 LLM Configuration (llm.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `provider`, `api_configuration`, `request_settings`, `response_handling`
+- `provider`: Object defining LLM provider settings
+- `api_configuration`: Object defining API connection settings
+- `request_settings`: Object defining request parameters
+- `response_handling`: Object defining response processing
+
+**Provider Validation**:
+- Required fields: `name`, `api_base_url`, `model`
+- `name`: String, must be one of: "claude", "openai", "gemini"
+- `api_base_url`: String, valid URL format
+- `model`: String, non-empty, specific model identifier
+
+**API Configuration Validation**:
+- Required fields: `api_key`, `timeout`, `max_retries`, `max_tokens`
+- `timeout`: Integer, 10-300 seconds
+- `max_retries`: Integer, 0-10
+- `max_tokens`: Integer, 100-8000
+- **Validation Fields**: `api_key_required`, `timeout_validation`, `max_retries_validation`, `max_tokens_validation` (all Boolean, must be true)
+
+**Request Settings Validation**:
+- Required fields: `max_text_length`, `min_text_length`
+- `max_text_length`: Integer, 1000-50000
+- `min_text_length`: Integer, 10-1000
+- `max_text_length` must be greater than `min_text_length`
+- **Validation Fields**: `max_text_length_validation`, `min_text_length_validation`, `text_length_validation` (all Boolean, must be true)
+
+**Performance Optimization Validation**:
+- Required fields: `target_response_time`, `max_response_time`, `performance_alerting`
+- `target_response_time`: Integer, 10-15 seconds (target under 15 seconds requirement)
+- `max_response_time`: Integer, 15 seconds (hard limit for Req 3.1.2)
+- `performance_alerting`: Boolean, must be true for production
+- `response_time_tracking`: Boolean, must be true
+- `max_concurrent_requests`: Integer, 1-10 (for 100+ user support)
+- `enable_response_caching`: Boolean, recommended for performance
+
+**Validation Rules Section**:
+- Required `validation_rules` section with explicit validation ranges
+- `timeout_range`: Array [10, 300] seconds
+- `max_retries_range`: Array [0, 10]
+- `max_tokens_range`: Array [100, 8000]
+- `max_text_length_range`: Array [1000, 50000]
+- `min_text_length_range`: Array [10, 1000]
+- `target_response_time`: Integer, 12 seconds (for <15 seconds requirement)
+- `max_response_time`: Integer, 15 seconds
+- `supported_providers`: Array ["claude", "openai", "gemini"]
+
+**9.7.4 Authentication Configuration (auth.yaml) Validation Rules**
+
+**Top-Level Structure**:
+- Required fields: `session_management`, `authentication_methods`, `security_settings`
+- `session_management`: Object defining session parameters
+- `authentication_methods`: Object defining auth methods
+- `security_settings`: Object defining security parameters
+
+**Session Management Validation**:
+- Required fields: `session_timeout`, `session_cleanup_interval`, `max_sessions_per_user`
+- `session_timeout`: Integer, 300-86400 seconds (5 minutes to 24 hours)
+- `session_cleanup_interval`: Integer, 60-3600 seconds
+- `max_sessions_per_user`: Integer, 1-20
+
+**Authentication Methods Validation**:
+- Required sub-fields: `session_based`, `admin_authentication`
+- `session_based.enabled`: Boolean, must be true
+- `admin_authentication.enabled`: Boolean, must be true
+- `admin_authentication.max_login_attempts`: Integer, 3-10
+
+**Security Settings Validation**:
+- Required sub-fields: `csrf_protection`, `rate_limiting`, `input_validation`
+- `csrf_protection.enabled`: Boolean
+- `rate_limiting.enabled`: Boolean
+- `input_validation.max_username_length`: Integer, 3-50
+- `input_validation.min_password_length`: Integer, 8-128
+
+---
+
+## 8.0 Performance Considerations
+
+### 8.1 Indexing Strategy
+```sql
+-- Performance indexes optimized for SQLite
+CREATE INDEX idx_users_username ON users(username, is_active);
+CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active, expires_at);
+CREATE INDEX idx_submissions_session_date ON submissions(session_id, created_at);
+CREATE INDEX idx_evaluations_submission ON evaluations(submission_id, created_at);
+CREATE INDEX idx_sessions_active ON sessions(session_id, is_active, expires_at);
+
+-- SQLite-specific optimizations
+PRAGMA journal_mode = WAL;  -- Enable Write-Ahead Logging for concurrency
+PRAGMA synchronous = NORMAL;  -- Balance safety and performance
+PRAGMA cache_size = 10000;  -- Increase cache for better performance
+PRAGMA temp_store = memory;  -- Use memory for temporary tables
+```
+
+### 8.2 Data Archiving and Retention
+- **Retention policy**: Keep last 100 submissions per session (configurable)
+- **Cleanup frequency**: Weekly automated cleanup job
+- **Archive before delete**: Export old data to JSON before deletion
+- **Performance monitoring**: Log query execution times, optimize slow queries
+
+---
+
+## 9.0 Traceability Matrix
+
+| Requirement ID | Requirement Description | Data Model Implementation | Status |
+|---------------|------------------------|---------------------------|---------|
+| 2.2.1 | Text input box available | Submissions table (3.3) - text_content field | ✅ Implemented |
+| 2.2.2 | Submission processed by LLM | Submissions table (3.3) - session tracking + LLM config (9.7.3) | ✅ Implemented |
+| 2.2.3a | Overall evaluation returned | Evaluations table (3.4) - overall_score, strengths, opportunities | ✅ Implemented |
+| 2.2.3b | Segment evaluation returned | Evaluations table (3.4) - segment_feedback JSON field | ✅ Implemented |
+| 2.2.4 | Evaluation processing straightforward | Evaluations table (3.4) - processing_time tracking | ✅ Implemented |
+| 2.3.1 | System uses grading rubric | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
+| 2.3.2 | System uses prompt templates | Configuration management (3.5) - modular prompt.yaml + llm.yaml (9.7.3) | ✅ Implemented |
+| 2.3.3 | Overall strengths/opportunities | Evaluations table (3.4) - strengths, opportunities fields | ✅ Implemented |
+| 2.3.4 | Detailed rubric grading | Evaluations table (3.4) - rubric_scores TEXT field | ✅ Implemented |
+| 2.3.5 | Segment-level evaluation | Evaluations table (3.4) - segment_feedback TEXT field | ✅ Implemented |
+| 2.3.6 | Immediate feedback processing | Evaluations table (3.4) - created_at timestamp | ✅ Implemented |
+| 2.4.1 | Admin edits YAML | Configuration management (3.5) - YAML file storage | ✅ Implemented |
+| 2.4.2 | Configuration changes validated | Configuration management (3.5) - Schema validation with detailed rules (9.7) | ✅ Implemented |
+| 2.4.3 | Simple configuration management | Configuration management (3.5) - Direct file access | ✅ Implemented |
+| 2.5.1 | Debug output accessible | Evaluations table (3.4) - debug_enabled, raw_prompt, raw_response | ✅ Implemented |
+| 2.5.2 | Raw prompts/responses shown | Evaluations table (3.4) - raw_prompt, raw_response fields | ✅ Implemented |
+| 2.5.3 | Debug mode admin-only | Users table (3.1) - is_admin field | ✅ Implemented |
+| 3.4.1 | Session-based authentication | Sessions table (3.2) - session management | ✅ Implemented |
+| 3.4.2 | Secure session management | Sessions table (3.2) - expires_at, is_active fields | ✅ Implemented |
+| 3.4.3 | CSRF protection and rate limiting | Sessions table (3.2) - session tracking for rate limiting | ✅ Implemented |
+| 3.4.4 | Admin authentication | Users table (3.1) - is_admin field | ✅ Implemented |
+| 3.4.5 | Optional JWT authentication | Sessions table (3.2) - Ready for JWT extension | ⏳ Planned |
+| 3.1.2 | Text submission response: < 15 seconds | LLM config (9.7.3) - Performance optimization | ✅ Implemented |
+
+---
+
+**Document ID**: 03_Data_Model.md  
+**Document Version**: 1.4  
+**Last Updated**: Implementation Phase (Complete consistency fixes and standardization)  
+**Next Review**: After initial deployment

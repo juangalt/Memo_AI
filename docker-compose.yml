@@ -1,0 +1,123 @@
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ADMIN_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # Security configurations
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Rate limiting
+      - "--entrypoints.websecure.http.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # Default headers middleware
+      - "traefik.http.middlewares.default-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.default-headers.headers.sslRedirect=true"
+      - "traefik.http.middlewares.default-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.default-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.default-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.default-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.default-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.default-headers.headers.stsSeconds=31536000"
+      # Secure headers middleware
+      - "traefik.http.middlewares.secure-headers.headers.accessControlAllowMethods=GET,OPTIONS,PUT,POST,DELETE"
+      - "traefik.http.middlewares.secure-headers.headers.accessControlMaxAge=100"
+      - "traefik.http.middlewares.secure-headers.headers.hostsProxyHeaders=X-Forwarded-For,X-Forwarded-Proto,X-Forwarded-Host"
+      - "traefik.http.middlewares.secure-headers.headers.customRequestHeaders.X-Forwarded-Proto=https"
+      # Rate limiting middleware
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+      # Dashboard access (restricted)
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN:-localhost}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dashboard.service=api@internal"
+
+  frontend:
+    build: ./frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+    depends_on:
+      - backend
+    volumes:
+      # Configuration files - read-only for security
+      - ./config:/app/config:ro
+      # Logs directory - read-write for application logging
+      - ./logs:/app/logs
+    user: "1000:1000"  # Match container user UID/GID
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    build: ./backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+    environment:
+      - DATABASE_URL=sqlite:///app/data/memoai.db
+      - LLM_API_KEY=${LLM_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LLM_PROVIDER=${LLM_PROVIDER:-claude}
+      - LLM_MODEL=${LLM_MODEL:-claude-3-sonnet-20240229}
+      - LLM_TIMEOUT=${LLM_TIMEOUT:-30}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - MAX_CONCURRENT_USERS=${MAX_CONCURRENT_USERS:-100}
+      - RATE_LIMIT_PER_SESSION=${RATE_LIMIT_PER_SESSION:-20}
+      - RATE_LIMIT_PER_HOUR=${RATE_LIMIT_PER_HOUR:-1000}
+    volumes:
+      # Database directory - read-write for data persistence
+      - ./data:/app/data
+      # Configuration files - read-only for security
+      - ./config:/app/config:ro
+      # Logs directory - read-write for application logging
+      - ./logs:/app/logs
+    user: "1000:1000"  # Match container user UID/GID
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  data:
+  logs:

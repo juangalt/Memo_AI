@@ -1,0 +1,96 @@
+# Configuration Guide
+## Memo AI Coach
+
+**Document ID**: 04_Configuration_Guide.md
+**Document Version**: 1.0
+**Last Updated**: Phase 9
+**Status**: Draft
+
+---
+
+## 1.0 Configuration Overview
+All runtime behavior is controlled by four YAML files in `config/`.
+Files are mounted read-only into containers at `/app/config/` and validated by `backend/validate_config.py`.
+Configuration edits made through the Admin interface create timestamped backups under `config/backups/` before any changes are written.
+
+## 2.0 Environment Variables
+`.env` provides base values such as `DOMAIN`, `LLM_API_KEY`, `SECRET_KEY`, `ADMIN_PASSWORD`, and performance settings like `MAX_CONCURRENT_USERS`.
+Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`).
+| Variable | Description |
+|----------|-------------|
+| `DOMAIN` | Public domain name used by Traefik for routing and certificate generation |
+| `LLM_API_KEY` | Anthropic key for Claude API access |
+| `SECRET_KEY` | Key used for signing session tokens |
+| `ADMIN_PASSWORD` | Initial administrator password used on first login |
+| `MAX_CONCURRENT_USERS` | Target concurrency for performance testing |
+| `SESSION_TIMEOUT` | Override for session expiration in minutes |
+
+## 3.0 YAML Files
+
+### 3.1 rubric.yaml
+Defines evaluation rubric and scoring categories.
+Key sections:
+- `rubric`: name, description, total_weight, scoring_scale, criteria with weights and scoring guidance.
+- `scoring_categories`: machine-friendly keys for each criterion.
+- `evaluation_framework`: lists strengths, improvement opportunities, segment evaluation metadata and frameworks.
+Example:
+```yaml
+rubric:
+  name: Healthcare Investment Memo
+  total_weight: 100
+  criteria:
+    thesis_clarity:
+      weight: 20
+      description: "Clarity of investment thesis"
+```
+
+### 3.2 prompt.yaml
+Holds prompt templates and instruction lists used to query the LLM.
+Important keys:
+- `templates.evaluation_prompt.system_message` and `user_template`.
+- `instructions` blocks for evaluation, scoring and segment feedback.
+- `prompt_variables` describing dynamic fields injected by backend.
+Example snippet showing variable substitution:
+```yaml
+templates:
+  evaluation_prompt:
+    user_template: |
+      Evaluate the following memo:
+      {{ submission_text }}
+```
+
+### 3.3 llm.yaml
+Configures LLM provider and runtime limits.
+- `provider`: name, base URL, model, API version.
+- `api_configuration`: API key, timeouts, retries and token limits.
+- `request_settings` for text length and chunking.
+- `response_handling` and `error_handling` options.
+- `performance_optimization` enforcing <15s processing.
+- `fallback_configuration` for alternate providers.
+- `validation_rules` defining allowed ranges for key settings.
+Example configuration:
+```yaml
+provider: anthropic
+api_configuration:
+  model: claude-3-sonnet
+  timeout: 15
+```
+
+### 3.4 auth.yaml
+Defines authentication and security parameters.
+- `session_management`: timeout, token length, cookie settings.
+- `authentication_methods`: admin login and brute force protection.
+- `security_settings`: CSRF, rate limiting, input validation, data protection.
+- `admin_credentials`: default admin and role permissions.
+- `session_storage`: database settings and connection pooling.
+- `audit_logging` and `security_monitoring` for compliance.
+When the admin updates configuration through the UI, `config_manager.py` writes the new YAML file atomically and preserves the previous version in `config/backups/<timestamp>_<filename>`.
+
+## 4.0 Validation
+Run `python3 backend/validate_config.py` to ensure all configs exist and satisfy required fields.
+Failure details are logged and exit code signals success.
+
+## 5.0 References
+- `config/*.yaml`
+- `backend/services/config_service.py`
+- `backend/services/config_manager.py`
