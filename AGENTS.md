@@ -1,189 +1,374 @@
-# AI Coding Agent Guidelines
+# AI Agent Guidelines
 ## Memo AI Coach Project
 
-**Purpose**: Practical guidance for AI coding agents working with novice programmers on the Memo AI Coach project.
+**Version**: 2.0
+**Last Updated**: Implementation Phase
+**Purpose**: Comprehensive guidance for AI agents working on the Memo AI Coach project
 
 ---
 
-## 🎯 Project Overview
+## 🚨 CRITICAL: Project Specifications
 
-**Team Composition**: Novice programmer + AI coding agent collaboration
-**Goal**: Build a text evaluation system with maximum simplicity, comprehensive documentation, and learning-focused development
+### **MANDATORY: Read All Documentation in `docs/` Directory**
 
-**Core Documents**: Read these in order before starting any implementation:
-1. `devspecs/00_devspecs_overview.md` - Project overview and navigation
-2. `devspecs/01_requirements.md` - Functional and non-functional requirements
-3. `devspecs/02_architecture.md` - System architecture and components
-4. `devspecs/03_Data_Model.md` - Database schema and data relationships
-5. `devspecs/04_API_Definitions.md` - REST API specifications
-6. `devspecs/05_UI_UX.md` - User interface and experience design
-7. `devspecs/06_Testing.md` - Testing strategy and test cases
-8. `devspecs/07_Deployment.md` - Deployment and infrastructure
-9. `devspecs/08_Maintenance.md` - Maintenance and support procedures
+**BEFORE STARTING ANY WORK**, AI agents **MUST** read and understand the complete project specifications:
 
----
+#### **📋 Required Reading Order:**
+1. **`docs/01_Project_Overview.md`** - Project goals, technology stack, and requirements
+2. **`docs/02_Architecture_Documentation.md`** - System architecture and component relationships
+3. **`docs/04_Configuration_Guide.md`** - Configuration management and YAML files
+4. **`docs/05_API_Documentation.md`** - Complete API reference and endpoints
+5. **`docs/08_Development_Guide.md`** - Development procedures and coding standards
+6. **`docs/09_Testing_Guide.md`** - Testing procedures and frameworks
+7. **`docs/AGENTS.md`** (in docs/) - Documentation guidelines and quality standards
 
-## 🚨 Critical Rules
+#### **📚 Additional Reference Documents:**
+- `docs/03_Installation_Guide.md` - Installation and setup procedures
+- `docs/06_User_Guide.md` - End-user documentation
+- `docs/07_Administration_Guide.md` - System administration
+- `docs/10_Deployment_Guide.md` - Production deployment
+- `docs/11_Maintenance_Guide.md` - System maintenance
+- `docs/12_Troubleshooting_Guide.md` - Problem resolution
+- `docs/13_Reference_Manual.md` - Technical reference
 
-### **MANDATORY**: Never edit devspec files (00-09) unless explicitly instructed
-### **MANDATORY**: Read devspec documents sequentially (00 → 09) before implementation
-### **MANDATORY**: Treat missing details as deferred, never infer or assume
-
----
-
-## 💡 Implementation Principles
-
-### **Simplicity First**
-- Avoid complex patterns and abstractions
-- Prefer straightforward, readable code over clever solutions
-- Use well-established, beginner-friendly libraries
-- Minimize external dependencies
-
-### **Comprehensive Documentation**
-- Every function and class must have clear docstrings
-- Inline comments explaining complex logic
-- README files for each major component
-- Clear explanations of design decisions
-
-### **Modular Design**
-- Single responsibility principle for all components
-- Well-defined interfaces between modules
-- Minimal coupling between different parts
-- Easy to understand component boundaries
-
-### **Extensibility**
-- Clear extension points for new features
-- Configuration-driven behavior where possible
-- Plugin-like architecture for new capabilities
-- Backward compatibility considerations
+### **🚫 CRITICAL RULE: DO NOT EDIT `docs/` DIRECTORY**
+- **NEVER** modify, update, or edit any files in the `docs/` directory
+- **NEVER** add, remove, or change content in documentation files
+- The `docs/` directory contains the **authoritative project specifications**
+- Only modify `docs/` files when the **user explicitly requests** it
+- All other directories (backend/, frontend/, config/, etc.) can be modified as needed
 
 ---
 
-## 🔧 Technology Stack
+## 🎯 Project Overview Summary
 
-**Backend**: FastAPI (Python) with SQLite database
-**Frontend**: Streamlit (Python) with tabbed navigation
-**Database**: SQLite with WAL mode for 100+ concurrent users
-**Configuration**: YAML files (4 essential files)
-**Deployment**: Docker containers with docker-compose
+### **What is Memo AI Coach?**
+Memo AI Coach is an **instructional text evaluation system** that provides AI-generated feedback for business memos. The application helps writers improve by:
 
-**Essential YAML Files**:
-- `config/rubric.yaml` - Grading criteria and scoring
-- `config/prompt.yaml` - LLM prompt templates
-- `config/llm.yaml` - LLM provider configuration
-- `config/auth.yaml` - Authentication settings
+- Evaluating text against a detailed rubric
+- Returning strengths, opportunities, and rubric scores
+- Providing segment-level suggestions
+- Maintaining simplicity for novice developers while remaining extensible
+
+### **Key Features:**
+- **FastAPI backend** with RESTful API
+- **Streamlit frontend** with tabbed interface
+- **SQLite database** with WAL mode for 100+ concurrent users
+- **YAML-based configuration** for rubric, prompts, LLM, and authentication
+- **Claude LLM integration** with mock mode for development
+- **Admin authentication** and configuration editor
+- **Comprehensive testing** and deployment scripts
+
+### **Technology Stack:**
+| Component | Technology |
+|-----------|------------|
+| Backend | Python, FastAPI |
+| Frontend | Python, Streamlit |
+| Database | SQLite with WAL mode |
+| LLM | Anthropic Claude API |
+| Deployment | Docker, docker-compose, Traefik |
+| Configuration | YAML files |
+
+### **Performance Requirements:**
+- **<15 seconds** for LLM evaluation responses
+- **<1 second** for UI loads
+- **100+ concurrent users** support via SQLite WAL mode
+
+---
+
+## 🏗️ System Architecture Summary
+
+### **Component Overview:**
+- **Frontend**: Streamlit application (`frontend/app.py`) with tabbed interface
+- **Backend**: FastAPI service (`backend/main.py`) exposing REST endpoints
+- **Database**: SQLite accessed through `backend/models/database.py` with WAL mode
+- **LLM Service**: `backend/services/llm_service.py` for Claude API interaction
+- **Configuration Service**: `backend/services/config_service.py` and `config_manager.py`
+- **Authentication Service**: `backend/services/auth_service.py` for admin login
+
+### **Data Flow:**
+1. User submits text via Streamlit UI
+2. Frontend calls backend evaluation endpoint (`/api/v1/evaluations/submit`)
+3. Backend loads YAML configs and sends prompt to Claude API
+4. LLM response is parsed and stored in SQLite database
+5. Backend returns evaluation to frontend for display
+
+### **Data Model:**
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `users` | Future extension | `id`, `email`, `created_at` |
+| `sessions` | Active evaluation sessions | `id`, `created_at`, `updated_at` |
+| `submissions` | Original memo text | `id`, `session_id`, `content` |
+| `evaluations` | LLM feedback | `id`, `submission_id`, `overall`, `strengths`, `opportunities`, `rubric_scores`, `segments` |
+
+### **Security Architecture:**
+- Admin operations require session tokens via `X-Session-Token` header
+- Rate limiting and brute force protection
+- Configuration files mounted read-only in containers
+- HTTPS termination handled by Traefik
+
+---
+
+## ⚙️ Configuration Management
+
+### **YAML Configuration Files:**
+All runtime behavior controlled by **4 YAML files** in `config/`:
+
+#### **`config/rubric.yaml`**
+- Defines evaluation rubric and scoring categories
+- Contains criteria with weights and scoring guidance
+- Includes evaluation framework for strengths and opportunities
+
+#### **`config/prompt.yaml`**
+- Holds prompt templates and instruction lists for LLM
+- Contains system messages and user templates
+- Defines prompt variables for dynamic field injection
+
+#### **`config/llm.yaml`**
+- Configures LLM provider and runtime limits
+- Sets API configuration, timeouts, retries, token limits
+- Defines performance optimization (<15s requirement)
+
+#### **`config/auth.yaml`**
+- Defines authentication and security parameters
+- Configures session management, timeouts, cookie settings
+- Sets security settings, rate limiting, input validation
+
+### **Environment Variables:**
+- `.env` provides base values: `DOMAIN`, `LLM_API_KEY`, `SECRET_KEY`, `ADMIN_PASSWORD`
+- Can override YAML fields for flexibility
+- Used for performance settings and sensitive data
+
+### **Configuration Validation:**
+- Run `python3 backend/validate_config.py` to ensure configs are valid
+- Admin UI creates timestamped backups before changes
+- Configuration reloads happen without service restarts
+
+---
+
+## 🔌 API Reference Summary
+
+### **Base URL:** `http://<domain>/api`
+All endpoints return JSON with `data`, `meta`, and `errors` keys.
+
+### **Public Endpoints:**
+- `GET /` - Root information
+- `GET /health` - Aggregate health status
+- `GET /docs` - Swagger UI with OpenAPI schema
+
+### **Session Management:**
+- `POST /api/v1/sessions/create` - Generate anonymous session
+- `GET /api/v1/sessions/{session_id}` - Retrieve session details
+- `DELETE /api/v1/sessions/{session_id}` - End session
+
+### **Evaluation Endpoints:**
+- `POST /api/v1/evaluations/submit` - Submit text for evaluation
+- `GET /api/v1/evaluations/{evaluation_id}` - Retrieve evaluation result
+- `GET /api/v1/evaluations/session/{session_id}` - List evaluations for session
+
+### **Admin Endpoints:**
+- `POST /api/v1/admin/login` - Admin login
+- `POST /api/v1/admin/logout` - Logout
+- `GET /api/v1/admin/config/{config_name}` - Read configuration
+- `PUT /api/v1/admin/config/{config_name}` - Update configuration
+
+### **Request/Response Format:**
+```json
+{
+  "data": {
+    "evaluation": {
+      "overall_score": 4.2,
+      "strengths": ["..."],
+      "opportunities": ["..."],
+      "rubric_scores": {"criterion": {"score": 4, "justification": "..."}},
+      "segment_feedback": [...]
+    }
+  },
+  "meta": {"timestamp": "...", "request_id": "..."},
+  "errors": []
+}
+```
+
+### **Authentication:**
+- Session creation is anonymous
+- Admin endpoints require `X-Session-Token` header
+- Tokens expire according to `auth.yaml` configuration
+
+---
+
+## 💻 Development Standards
+
+### **Coding Principles:**
+- **Favor simplicity and readability** over abstraction
+- Each module serves a **single responsibility**
+- Provide **docstrings and inline comments** for educational clarity
+- **Follow PEP 8** style with descriptive variable names
+- **Use `evaluate_text_with_llm`** for all evaluations (handles prompt generation and error management)
+
+### **Repository Structure:**
+```
+backend/     # FastAPI service
+frontend/    # Streamlit interface
+config/      # YAML configuration files
+tests/       # Test suites
+docs/        # Comprehensive project documentation
+```
+
+### **Backend Development:**
+- Entry point: `backend/main.py`
+- Data models in `backend/models/entities.py`
+- Services in `backend/services/` (config, auth, LLM)
+- Error responses use standard `{data: null, meta, errors}` schema
+- Add new endpoints by extending `backend/main.py`
+
+### **Frontend Development:**
+- Entry point: `frontend/app.py`
+- `components/api_client.py` wraps REST calls with retry logic
+- `components/state_manager.py` manages Streamlit session state
+- Follow existing tab structure for new UI features
+- Components added under `frontend/components/` with clear functions
+
+### **Configuration & Secrets:**
+- Never commit API keys or passwords
+- Use environment variables or `.env` for sensitive data
+- Configuration editing through admin API or `config_manager.py`
+- Update documentation when adding new config keys
+
+---
+
+## 🧪 Testing Standards
+
+### **Test Categories:**
+- **Configuration Tests** - Environment and config file validation
+- **Integration Tests** - API endpoints, session management, LLM responses
+- **Performance Tests** - Load testing against <15s requirement
+- **Security Tests** - Basic security validation
+- **End-to-End Tests** - Production deployment verification
+
+### **Running Tests:**
+```bash
+# Quick suite (non-performance tests)
+python3 tests/run_quick_tests.py
+
+# Full production suite (includes performance)
+python3 tests/run_production_tests.py
+```
+
+### **Test Outputs:**
+- Results stored in `logs/` directory
+- JSON files with summary statistics and assertion outcomes
+- Category-specific results for each test type
+
+### **Test Data:**
+- Tests interact with running containers
+- Use mock LLM responses for local development (unset `LLM_API_KEY`)
+- Performance tests adjustable via environment variables
 
 ---
 
 ## 📋 Implementation Checklist
 
-### Before Starting Any Code
-- [ ] Read all devspec documents (00-09) sequentially
+### **Before Starting Any Work:**
+- [ ] **MANDATORY**: Read all relevant `docs/` files completely
 - [ ] Understand the specific requirement being implemented
 - [ ] Review related architecture components
 - [ ] Check data model requirements
 - [ ] Verify API specifications
 - [ ] Consider UI/UX implications
+- [ ] Review testing requirements
 
-### Code Generation Standards
-- [ ] Generate modular, single-responsibility code
-- [ ] Add extensive comments and documentation
-- [ ] Use simple, predictable patterns
-- [ ] Follow established naming conventions
+### **During Implementation:**
+- [ ] Follow coding principles (simplicity, readability, single responsibility)
+- [ ] Add comprehensive docstrings and inline comments
+- [ ] Use established patterns and naming conventions
 - [ ] Include error handling with educational messages
 - [ ] Ensure backward compatibility
+- [ ] Test all procedures and examples
+- [ ] Validate against documented acceptance criteria
 
-### Quality Assurance
+### **Code Quality Standards:**
 - [ ] Code is self-documenting and easy to understand
 - [ ] All functions have clear docstrings
 - [ ] Error messages are helpful and educational
-- [ ] Code follows the established patterns
+- [ ] Code follows established patterns
 - [ ] No complex abstractions unless absolutely necessary
+- [ ] Maintains consistency with existing codebase
+
+### **Quality Assurance:**
+- [ ] Run appropriate test suites
+- [ ] Verify technical accuracy against specifications
+- [ ] Ensure consistency with existing codebase
+- [ ] Test all code changes thoroughly
+- [ ] Validate that changes meet acceptance criteria
 
 ---
 
-## 🎓 Learning-Focused Development
+## 🔍 Best Practices for AI Agents
 
-### For the Novice Programmer
+### **Documentation Generation:**
+- Use provided templates and structures consistently
+- Maintain consistent formatting and style
+- Ensure all required sections are included
+- Verify all technical information is accurate and current
+
+### **Code Development:**
+- Write clear, understandable code with comprehensive comments
+- Include practical examples in documentation
+- Link to related documentation and resources
+- Verify procedures and examples work correctly
+
+### **Quality Standards:**
+- Review content for completeness and accuracy
+- Test all procedures and examples before finalizing
+- Ensure consistency with existing documentation
+- Update related documentation when system changes occur
+
+### **Learning-Focused Development:**
 - Structure code to help understanding
 - Explain design decisions and trade-offs
 - Provide context for technical choices
 - Use progressive complexity (simple first, advanced later)
 - Include debugging support and helpful error messages
 
-### Educational Considerations
-- Document why certain approaches were chosen
-- Explain alternative solutions when relevant
-- Demonstrate industry-standard practices simply
-- Provide clear paths for understanding and extending
-
 ---
 
-## 🔍 Reference Quick Guide
+## ⚡ Quick Reference
 
-| Document | Key Focus | Implementation Impact |
-|----------|-----------|----------------------|
-| **00** | Project overview, navigation, rules | Entry point, mandatory reading |
-| **01** | Functional requirements, acceptance criteria | What to build, how to validate |
-| **02** | System architecture, component design | How to structure the code |
-| **03** | Database schema, data relationships | How to store and manage data |
-| **04** | REST API specifications, endpoints | How to expose functionality |
-| **05** | UI/UX design, user experience | How to present to users |
-| **06** | Testing strategy, quality assurance | How to ensure reliability |
-| **07** | Deployment, infrastructure | How to run the system |
-| **08** | Maintenance, operational procedures | How to keep it running |
-
----
-
-## ⚡ Quick Commands
-
-### Project Structure
-```
-memoai/
-├── backend/          # FastAPI backend
-├── frontend/         # Streamlit frontend
-├── config/           # YAML configuration files
-├── devspecs/         # Specification documents
-└── docker-compose.yml
-```
-
-### Essential Files
+### **Essential Files:**
 - `backend/main.py` - FastAPI application entry point
 - `frontend/app.py` - Streamlit application entry point
 - `config/*.yaml` - Configuration files (4 essential files)
 - `docker-compose.yml` - Container orchestration
+- `docs/` - **Authoritative project specifications**
 
-### Key Requirements
+### **Key Requirements:**
 - **Performance**: <15 seconds for LLM evaluation responses
-- **Scalability**: Support 100+ concurrent users with SQLite
+- **Scalability**: Support 100+ concurrent users with SQLite WAL mode
 - **Simplicity**: Maximum simplicity, no duplicate functions
 - **Documentation**: Comprehensive comments required
+- **Security**: All admin operations require authentication
+
+### **Development Workflow:**
+1. **Read the Specs**: Start with `docs/01_Project_Overview.md`
+2. **Understand Requirements**: Review relevant specification documents
+3. **Plan Implementation**: Study architecture and data model
+4. **Implement**: Follow coding standards and patterns
+5. **Test**: Run appropriate test suites
+6. **Validate**: Ensure compliance with specifications
 
 ---
 
-## 🚀 Getting Started
+## 🚨 FINAL REMINDER
 
-1. **Read the Specs**: Start with `devspecs/00_devspecs_overview.md`
-2. **Understand Requirements**: Review `devspecs/01_requirements.md`
-3. **Plan Architecture**: Study `devspecs/02_architecture.md`
-4. **Design Data Model**: Review `devspecs/03_Data_Model.md`
-5. **Define APIs**: Check `devspecs/04_API_Definitions.md`
-6. **Plan UI/UX**: Review `devspecs/05_UI_UX.md`
-7. **Plan Testing**: Study `devspecs/06_Testing.md`
-8. **Plan Deployment**: Review `devspecs/07_Deployment.md`
-9. **Plan Maintenance**: Check `devspecs/08_Maintenance.md`
-10. **Start Implementation**: Follow the specifications exactly
+**DO NOT EDIT ANY FILES IN THE `docs/` DIRECTORY UNLESS EXPLICITLY REQUESTED BY THE USER**
 
----
-
-## 📞 When in Doubt
-
-- **Refer to devspecs**: The specifications are the source of truth
-- **Keep it simple**: Prefer straightforward solutions over complex ones
-- **Document everything**: Explain your decisions and approach
-- **Focus on learning**: Structure code to help the novice programmer understand
-- **Ask for clarification**: If something is unclear, ask rather than assume
-
----
+This rule is critical to maintain the integrity of the project specifications. The `docs/` directory contains the authoritative documentation that guides all development work.
 
 **Remember**: This project is about learning and collaboration. Every line of code should be educational, maintainable, and extensible.
+
+---
+
+**Document ID**: AGENTS.md (Project Root)
+**Version**: 2.0
+**Last Updated**: Implementation Phase
+**Status**: Active
