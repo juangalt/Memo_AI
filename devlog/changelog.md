@@ -2260,6 +2260,16 @@ Implement full user authentication system requiring authentication for all featu
     - Backend: Disabled password length check in `create_user` method
     - Current Rules: Username ≥3 chars, password any length, no duplicate usernames
     - Status: Password validation can be easily re-enabled by uncommenting code
+  - **Admin Session Persistence Fix**: Fixed admin logout issue after user management operations
+    - Issue: Admin was being logged out after creating or deleting users due to `st.rerun()` calls
+    - Root Cause: `st.rerun()` was refreshing the entire page and potentially clearing admin session state
+    - Solution: Replaced `st.rerun()` with direct API calls to refresh user lists
+    - Improvements:
+      - User creation: Refreshes user list without page rerun
+      - User deletion: Refreshes user list without page rerun
+      - Error handling: Graceful fallback if list refresh fails
+      - Session preservation: Admin session state maintained during operations
+    - Result: Admin can now perform user management operations without being logged out
 
 ### 🆕 New Features Added
 - **User Management GUI**: Complete user management interface in Admin tab

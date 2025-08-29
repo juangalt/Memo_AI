@@ -843,7 +843,14 @@ def main():
                                 # Clear the form
                                 st.session_state.new_user_username = ""
                                 st.session_state.new_user_password = ""
-                                st.rerun()
+                                # Refresh the user list to show the new user
+                                try:
+                                    success, data, error = api_client.list_users(session_token)
+                                    if success and data:
+                                        users = data.get('data', {}).get('users', [])
+                                        st.session_state.admin_users_list = users
+                                except Exception as e:
+                                    st.warning(f"⚠️ User created but failed to refresh list: {e}")
                             else:
                                 st.error(f"❌ Failed to create user: {error}")
                         else:
@@ -890,9 +897,17 @@ def main():
                                 
                                 if success:
                                     st.success(f"✅ User '{user.get('username', '')}' deleted successfully")
-                                    # Refresh the user list
-                                    st.session_state.admin_users_list = None
-                                    st.rerun()
+                                    # Refresh the user list without full page rerun
+                                    try:
+                                        success, data, error = api_client.list_users(session_token)
+                                        if success and data:
+                                            users = data.get('data', {}).get('users', [])
+                                            st.session_state.admin_users_list = users
+                                        else:
+                                            st.session_state.admin_users_list = []
+                                    except Exception as e:
+                                        st.warning(f"⚠️ User deleted but failed to refresh list: {e}")
+                                        st.session_state.admin_users_list = None
                                 else:
                                     st.error(f"❌ Failed to delete user: {error}")
                             else:
