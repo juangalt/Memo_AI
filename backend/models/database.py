@@ -17,19 +17,38 @@ class DatabaseManager:
     def __init__(self, db_path: Optional[str] = None):
         """Initialize database manager"""
         if db_path is None:
-            # Default to data directory
-            db_path = os.getenv('DATABASE_URL', 'sqlite:///data/memoai.db').replace('sqlite:///', '')
-            # Ensure we're using absolute path from project root
+            # Get database URL from environment
+            database_url = os.getenv('DATABASE_URL', 'sqlite:///data/memoai.db')
+
+            # Parse SQLite URL format
+            if database_url.startswith('sqlite:///'):
+                db_path = database_url[10:]  # Remove 'sqlite:///' (10 characters)
+            else:
+                # Fallback for other formats
+                db_path = database_url
+
+            # Normalize path resolution
             if not os.path.isabs(db_path):
-                db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), db_path)
-        
+                # In container environment, use /app as base
+                if os.path.exists('/app'):
+                    # We're in container - use absolute path from container root
+                    db_path = os.path.join('/app', db_path.lstrip('/'))
+                else:
+                    # We're on host - use project root relative path
+                    project_root = os.path.dirname(os.path.dirname(__file__))
+                    db_path = os.path.join(project_root, db_path)
+
+            # Normalize and resolve any .. or . in path
+            db_path = os.path.normpath(db_path)
+
         self.db_path = db_path
         self._connection = None
-        
+
         # Ensure data directory exists
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        
+
         logger.info(f"Database manager initialized with path: {self.db_path}")
+        logger.info(f"Database URL: {os.getenv('DATABASE_URL', 'not set')}")
     
     @contextmanager
     def get_connection(self):
