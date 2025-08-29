@@ -19,7 +19,7 @@ templates:
 
       Please provide your evaluation in the following JSON format:
 
-      {
+      {{
         "overall_score": 4.2,
         "strengths": [
           "Clear executive summary with logical structure",
@@ -31,17 +31,17 @@ templates:
           "Add more specific implementation timeline",
           "Enhance strategic alignment section"
         ],
-        "rubric_scores": {
-          "structure_and_logic": {"score": 4, "justification": "Clear organization with logical flow"},
-          "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
-          "clarity_style_financial_metrics": {"score": 4, "justification": "Effective financial metrics integration"},
-          "relevance_strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
-          "clear_opportunity_ask": {"score": 4, "justification": "Clear opportunity presentation"},
-          "risk_mitigation": {"score": 3, "justification": "Basic risk identification"},
-          "feasibility_implementation": {"score": 4, "justification": "Practical implementation plan"}
-        },
+        "rubric_scores": {{
+          "structure_and_logic": {{"score": 4, "justification": "Clear organization with logical flow"}},
+          "arguments_and_evidence": {{"score": 5, "justification": "Strong evidence from credible sources"}},
+          "clarity_style_financial_metrics": {{"score": 4, "justification": "Effective financial metrics integration"}},
+          "relevance_strategic_alignment": {{"score": 4, "justification": "Good strategic alignment"}},
+          "clear_opportunity_ask": {{"score": 4, "justification": "Clear opportunity presentation"}},
+          "risk_mitigation": {{"score": 3, "justification": "Basic risk identification"}},
+          "feasibility_implementation": {{"score": 4, "justification": "Practical implementation plan"}}
+        }},
         "segment_feedback": [
-          {
+          {{
             "segment": "The executive summary effectively...",
             "comment": "Strong opening that clearly states the investment opportunity",
             "questions": [
@@ -52,9 +52,9 @@ templates:
               "Consider adding a brief market context",
               "Include a clear timeline for implementation"
             ]
-          }
+          }}
         ]
-      }
+      }}
 
       Focus on providing constructive, actionable feedback that will help the writer improve their skills. Ensure all scores are integers 1-5 and the overall_score is a decimal calculated as the weighted average. For each significant segment of the text, provide targeted feedback including comments, thought-provoking questions, and specific suggestions for improvement. {framework_application_guidance}
 
