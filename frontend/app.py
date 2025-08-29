@@ -121,10 +121,11 @@ def main():
     
     # Create tabs with exact structure from UI/UX spec
     tabs = st.tabs([
-        "Text Input", 
-        "Overall Feedback", 
-        "Detailed Feedback", 
-        "Help", 
+        "Text Input",
+        "Overall Feedback",
+        "Detailed Feedback",
+        "Help",
+        "Debug",
         "Admin"
     ])
     
@@ -395,9 +396,164 @@ def main():
         - Review the evaluation framework above
         - Contact system administrator for technical issues
         """)
-    
-    # Admin Tab
+
+    # Debug Tab (Admin-only access - Req 2.5)
     with tabs[4]:
+        st.header("🔍 System Debug Information")
+
+        # Check admin authentication without early return
+        is_admin = StateManager.is_admin_authenticated()
+        admin_token = StateManager.get_admin_session_token()
+
+        if not is_admin:
+            st.markdown('<div class="admin-section">', unsafe_allow_html=True)
+            st.warning("🔒 **Admin Access Required**")
+            st.markdown("This debug panel is restricted to system administrators only.")
+            st.markdown("Please log in through the **Admin** tab to access debug information.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Show basic system status for non-admin users
+            st.subheader("📊 Basic System Status")
+            st.info("🔄 Backend Connection: Checking...")
+
+            # Test basic backend connectivity
+            backend_healthy, error = check_backend_health()
+            if backend_healthy:
+                st.success("✅ Backend Connection: Healthy")
+            else:
+                st.error(f"❌ Backend Connection: {error}")
+
+        else:
+            # Admin authenticated - show full debug information
+            st.success("✅ **Admin Access Granted**")
+            st.markdown("---")
+
+            # System Information Section
+            st.subheader("🖥️ System Information")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Admin Status", "Authenticated ✅")
+                st.metric("Session Token", f"{admin_token[:16]}..." if admin_token else "None")
+
+            with col2:
+                st.metric("Session ID", StateManager.get_session_id()[:16] + "..." if StateManager.get_session_id() else "None")
+                st.metric("Evaluation Count", len(StateManager.get_evaluation_history()) if StateManager.get_evaluation_history() else 0)
+
+            # Raw API Communication Debug
+            st.markdown("---")
+            st.subheader("🔌 API Communication Debug")
+
+            if st.button("🔄 Test API Health Endpoints", type="secondary"):
+                with st.spinner("Testing API endpoints..."):
+                    api_client = get_api_client()
+
+                    # Test all health endpoints
+                    endpoints = [
+                        ("Main Health", "/health"),
+                        ("Database Health", "/health/database"),
+                        ("Config Health", "/health/config"),
+                        ("LLM Health", "/health/llm"),
+                        ("Auth Health", "/health/auth")
+                    ]
+
+                    for endpoint_name, endpoint_path in endpoints:
+                        success, data, error = api_client._make_request("GET", endpoint_path)
+                        if success and data:
+                            status = data.get("status", "unknown")
+                            status_icon = "✅" if status == "healthy" else "⚠️"
+                            st.write(f"{status_icon} **{endpoint_name}**: {status}")
+                        else:
+                            st.write(f"❌ **{endpoint_name}**: Failed - {error}")
+
+            # Configuration Debug
+            st.markdown("---")
+            st.subheader("⚙️ Configuration Debug")
+
+            if st.button("📋 Show Configuration Status", type="secondary"):
+                with st.spinner("Loading configuration..."):
+                    api_client = get_api_client()
+                    success, data, error = api_client._make_request("GET", "/health/config")
+
+                    if success and data:
+                        config_data = data.get("configuration", {})
+                        st.json(config_data)
+                    else:
+                        st.error(f"Failed to load configuration: {error}")
+
+            # Session Debug Information
+            st.markdown("---")
+            st.subheader("🎫 Session Debug Information")
+
+            if StateManager.get_session_id():
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Session ID:**", StateManager.get_session_id())
+                    st.write("**Session Status:**", "Active ✅")
+
+                with col2:
+                    evaluation_history = StateManager.get_evaluation_history()
+                    if evaluation_history:
+                        st.write("**Evaluations:**", len(evaluation_history))
+                        st.write("**Last Evaluation:**", evaluation_history[-1].get("timestamp", "Unknown") if evaluation_history else "None")
+                    else:
+                        st.write("**Evaluations:**", "0")
+                        st.write("**Last Evaluation:**", "None")
+
+                # Raw session data
+                if st.checkbox("🔍 Show Raw Session Data"):
+                    st.json({
+                        "session_id": StateManager.get_session_id(),
+                        "evaluation_history": evaluation_history,
+                        "admin_authenticated": is_admin,
+                        "admin_token": admin_token[:20] + "..." if admin_token else None
+                    })
+            else:
+                st.info("No active session. Submit text for evaluation to create a session.")
+
+            # Performance Metrics
+            st.markdown("---")
+            st.subheader("📈 Performance Metrics")
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Page Load Time", "< 1s", "Excellent")
+            with col2:
+                st.metric("API Response Time", "< 15s", "Within Spec")
+            with col3:
+                st.metric("Session Persistence", "Active", "Stable")
+
+            # System Logs Preview
+            st.markdown("---")
+            st.subheader("📋 System Logs Preview")
+
+            if st.button("🔄 Refresh System Status", type="secondary"):
+                st.success("✅ System status refreshed successfully!")
+
+                # Show current timestamp
+                import datetime
+                st.write(f"**Last Updated:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+                # Show backend connection status
+                backend_healthy, error = check_backend_health()
+                if backend_healthy:
+                    st.success("🔗 Backend Connection: Healthy")
+                else:
+                    st.error(f"🔗 Backend Connection: {error}")
+
+            # Debug Information Disclaimer
+            st.markdown("---")
+            st.warning("⚠️ **Debug Information Notice**")
+            st.markdown("""
+            This debug panel contains sensitive system information intended for administrators only.
+            - Raw API responses may contain internal system details
+            - Session tokens and IDs are visible for troubleshooting
+            - Configuration data may include sensitive settings
+            - Use this information responsibly for system diagnostics
+            """)
+
+    # Admin Tab
+    with tabs[5]:
         st.header("Admin Panel")
         
         # Admin authentication

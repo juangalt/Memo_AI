@@ -101,6 +101,19 @@ class StateManager:
     def clear_admin_session_token():
         """Clear admin session token"""
         st.session_state.admin_session_token = None
+
+    @staticmethod
+    def get_evaluation_history() -> Optional[list]:
+        """Get evaluation history (returns current evaluation as list for compatibility)"""
+        if st.session_state.evaluation_results:
+            # Return current evaluation as a list with timestamp
+            return [{
+                'timestamp': st.session_state.last_evaluation_time or datetime.now().isoformat(),
+                'results': st.session_state.evaluation_results,
+                'evaluation_id': f'eval_{st.session_state.evaluation_count}',
+                'status': 'completed'
+            }]
+        return None
     
     @staticmethod
     def get_session_info() -> Dict[str, Any]:
