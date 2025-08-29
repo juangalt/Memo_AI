@@ -24,9 +24,14 @@ from services import (
     get_auth_service,
     authenticate_admin_user,
     validate_admin_session,
+    authenticate_user,
+    validate_user_session,
     get_config_manager,
     read_config_file,
-    write_config_file
+    write_config_file,
+    create_user,
+    list_users,
+    delete_user
 )
 
 # Configure logging
@@ -444,6 +449,307 @@ async def admin_logout(request: Request):
             }
         )
 
+@app.post("/api/v1/admin/users/create")
+async def create_user_endpoint(request: Request):
+    """Create new user account (admin-only)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Session token is required",
+                        "field": "session_token",
+                        "details": "Please provide session token in X-Session-Token header"
+                    }]
+                }
+            )
+        
+        # Validate admin session
+        valid, session_data, error = validate_admin_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        # Parse request body
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+        
+        # Validate input
+        if not username or not password:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Username and password are required",
+                        "field": "credentials",
+                        "details": "Please provide both username and password"
+                    }]
+                }
+            )
+        
+        # Create user
+        success, user_id, error = create_user(username, password)
+        
+        if success:
+            return {
+                "data": {
+                    "user_id": user_id,
+                    "username": username,
+                    "message": "User created successfully"
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "USER_CREATION_ERROR",
+                        "message": "User creation failed",
+                        "field": "credentials",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"User creation failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "User creation processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during user creation"
+                }]
+            }
+        )
+
+@app.get("/api/v1/admin/users")
+async def list_users_endpoint(request: Request):
+    """List all users (admin-only)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Session token is required",
+                        "field": "session_token",
+                        "details": "Please provide session token in X-Session-Token header"
+                    }]
+                }
+            )
+        
+        # Validate admin session
+        valid, session_data, error = validate_admin_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        # Get users list
+        users = list_users()
+        
+        return {
+            "data": {
+                "users": users,
+                "total_users": len(users)
+            },
+            "meta": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": "placeholder"
+            },
+            "errors": []
+        }
+        
+    except Exception as e:
+        logger.error(f"User listing failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "User listing processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during user listing"
+                }]
+            }
+        )
+
+@app.delete("/api/v1/admin/users/{username}")
+async def delete_user_endpoint(username: str, request: Request):
+    """Delete user account (admin-only)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Session token is required",
+                        "field": "session_token",
+                        "details": "Please provide session token in X-Session-Token header"
+                    }]
+                }
+            )
+        
+        # Validate admin session
+        valid, session_data, error = validate_admin_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        # Delete user
+        success = delete_user(username)
+        
+        if success:
+            return {
+                "data": {
+                    "username": username,
+                    "message": "User deleted successfully"
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "USER_NOT_FOUND",
+                        "message": "User not found",
+                        "field": "username",
+                        "details": f"User '{username}' does not exist"
+                    }]
+                }
+            )
+        
+    except Exception as e:
+        logger.error(f"User deletion failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "User deletion processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during user deletion"
+                }]
+            }
+        )
+
 @app.get("/api/v1/admin/config/{config_name}")
 async def get_config(config_name: str, request: Request):
     """Get configuration file content"""
@@ -656,31 +962,170 @@ async def update_config(config_name: str, request: Request):
             }
         )
 
-@app.post("/api/v1/sessions/create")
-async def create_session():
-    """Create a new session for user"""
+@app.post("/api/v1/auth/login")
+async def user_login(request: Request):
+    """User login endpoint (no registration available)"""
     try:
-        # Generate session ID
-        session_id = secrets.token_urlsafe(32)
+        # Parse request body
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
         
-        # Create session in database
-        session = Session.create(session_id=session_id)
+        # Validate input
+        if not username or not password:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "VALIDATION_ERROR",
+                        "message": "Username and password are required",
+                        "field": "credentials",
+                        "details": "Please provide both username and password"
+                    }]
+                }
+            )
+        
+        # Authenticate user
+        success, session_token, error = authenticate_user(username, password)
+        
+        if success:
+            return {
+                "data": {
+                    "session_token": session_token,
+                    "username": username,
+                    "is_admin": False
+                },
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": []
+            }
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication failed",
+                        "field": "credentials",
+                        "details": error
+                    }]
+                }
+            )
+            
+    except Exception as e:
+        logger.error(f"User login failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Login processing failed",
+                    "field": None,
+                    "details": "An internal error occurred during login processing"
+                }]
+            }
+        )
+
+@app.post("/api/v1/sessions/create")
+async def create_session(request: Request):
+    """Create authenticated session for user (requires login first)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication required",
+                        "field": "session_token",
+                        "details": "Please log in first to create a session"
+                    }]
+                }
+            )
+        
+        # Validate session (either admin or user)
+        valid_admin, admin_session_data, admin_error = validate_admin_session(session_token)
+        valid_user, user_session_data, user_error = validate_user_session(session_token)
+        
+        if not valid_admin and not valid_user:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": "Please log in again"
+                    }]
+                }
+            )
+        
+        # Return existing session info
+        session_data = admin_session_data if valid_admin else user_session_data
         
         return {
             "data": {
-                "session_id": session.session_id,
-                "expires_at": session.expires_at.isoformat(),
-                "created_at": session.created_at.isoformat()
+                "session_id": session_data['session_id'],
+                "user_id": session_data['user_id'],
+                "username": session_data['username'],
+                "is_admin": session_data['is_admin'],
+                "expires_at": session_data['expires_at'].isoformat(),
+                "created_at": session_data['created_at'].isoformat()
             },
             "meta": {
                 "timestamp": datetime.utcnow().isoformat(),
-                "request_id": session_id[:8]
+                "request_id": session_data['session_id'][:8]
             },
             "errors": []
         }
     except Exception as e:
         logger.error(f"Session creation failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create session")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Session creation failed",
+                    "field": None,
+                    "details": "An internal error occurred during session creation"
+                }]
+            }
+        )
 
 @app.get("/api/v1/sessions/{session_id}")
 async def get_session(session_id: str):
@@ -713,12 +1158,54 @@ async def get_session(session_id: str):
 
 @app.post("/api/v1/evaluations/submit")
 async def submit_evaluation(request: Request):
-    """Submit text for evaluation"""
+    """Submit text for evaluation (authenticated users only)"""
     try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication required",
+                        "field": "session_token",
+                        "details": "Please log in to submit evaluations"
+                    }]
+                }
+            )
+        
+        # Validate session (either admin or user)
+        valid_admin, admin_session_data, admin_error = validate_admin_session(session_token)
+        valid_user, user_session_data, user_error = validate_user_session(session_token)
+        
+        if not valid_admin and not valid_user:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": "Please log in again"
+                    }]
+                }
+            )
+        
         # Parse request body
         body = await request.json()
         text_content = body.get("text_content", "")
-        session_id = body.get("session_id", "")
         
         # Validate input
         if not text_content or len(text_content.strip()) == 0:
@@ -778,9 +1265,15 @@ async def submit_evaluation(request: Request):
                 }
             )
         
+        # Get session data for user association
+        session_data = admin_session_data if valid_admin else user_session_data
+        
         return {
             "data": {
-                "evaluation": evaluation_result
+                "evaluation": evaluation_result,
+                "user_id": session_data['user_id'],
+                "username": session_data['username'],
+                "is_admin": session_data['is_admin']
             },
             "meta": {
                 "timestamp": datetime.utcnow().isoformat(),

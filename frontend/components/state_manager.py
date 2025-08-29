@@ -34,6 +34,16 @@ class StateManager:
         
         if 'evaluation_count' not in st.session_state:
             st.session_state.evaluation_count = 0
+        
+        # User authentication state
+        if 'user_authenticated' not in st.session_state:
+            st.session_state.user_authenticated = False
+        
+        if 'user_session_token' not in st.session_state:
+            st.session_state.user_session_token = None
+        
+        if 'user_username' not in st.session_state:
+            st.session_state.user_username = None
     
     @staticmethod
     def set_session_id(session_id: str):
@@ -102,6 +112,48 @@ class StateManager:
         """Clear admin session token"""
         st.session_state.admin_session_token = None
 
+    @staticmethod
+    def set_user_authenticated(authenticated: bool):
+        """Set user authentication status"""
+        st.session_state.user_authenticated = authenticated
+    
+    @staticmethod
+    def is_user_authenticated() -> bool:
+        """Check if user is authenticated"""
+        return st.session_state.user_authenticated
+    
+    @staticmethod
+    def set_user_session_token(token: str):
+        """Set user session token"""
+        st.session_state.user_session_token = token
+    
+    @staticmethod
+    def get_user_session_token() -> Optional[str]:
+        """Get user session token"""
+        return st.session_state.get('user_session_token')
+    
+    @staticmethod
+    def clear_user_session_token():
+        """Clear user session token"""
+        st.session_state.user_session_token = None
+    
+    @staticmethod
+    def set_user_username(username: str):
+        """Set user username"""
+        st.session_state.user_username = username
+    
+    @staticmethod
+    def get_user_username() -> Optional[str]:
+        """Get user username"""
+        return st.session_state.get('user_username')
+    
+    @staticmethod
+    def clear_user_authentication():
+        """Clear all user authentication data"""
+        st.session_state.user_authenticated = False
+        st.session_state.user_session_token = None
+        st.session_state.user_username = None
+    
     @staticmethod
     def get_evaluation_history() -> Optional[list]:
         """Get evaluation history (returns current evaluation as list for compatibility)"""

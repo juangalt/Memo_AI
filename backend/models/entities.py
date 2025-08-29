@@ -81,6 +81,40 @@ class User:
             logger.error(f"User retrieval failed: {e}")
             raise
 
+    @classmethod
+    def get_all(cls) -> List['User']:
+        """Get all users"""
+        try:
+            query = "SELECT * FROM users WHERE is_active = TRUE ORDER BY created_at DESC"
+            result = db_manager.execute_query(query)
+            users = []
+            for row in result:
+                users.append(cls(
+                    id=row['id'],
+                    username=row['username'],
+                    password_hash=row['password_hash'],
+                    is_admin=bool(row['is_admin']),
+                    created_at=datetime.fromisoformat(row['created_at']),
+                    is_active=bool(row['is_active'])
+                ))
+            return users
+        except Exception as e:
+            logger.error(f"User retrieval failed: {e}")
+            raise
+
+    def deactivate(self) -> bool:
+        """Deactivate user"""
+        try:
+            query = "UPDATE users SET is_active = FALSE WHERE id = ?"
+            affected = db_manager.execute_update(query, (self.id,))
+            if affected > 0:
+                self.is_active = False
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"User deactivation failed: {e}")
+            raise
+
 class Session:
     """Session entity model"""
     
@@ -148,6 +182,32 @@ class Session:
             return False
         except Exception as e:
             logger.error(f"Session deactivation failed: {e}")
+            raise
+
+    @classmethod
+    def get_by_user_id(cls, user_id: int) -> List['Session']:
+        """Get all active sessions for a user by user ID"""
+        try:
+            query = """
+                SELECT * FROM sessions 
+                WHERE user_id = ? AND is_active = TRUE AND expires_at > ?
+                ORDER BY created_at DESC
+            """
+            result = db_manager.execute_query(query, (user_id, datetime.utcnow()))
+            sessions = []
+            for row in result:
+                sessions.append(cls(
+                    id=row['id'],
+                    session_id=row['session_id'],
+                    user_id=row['user_id'],
+                    is_admin=bool(row['is_admin']),
+                    created_at=datetime.fromisoformat(row['created_at']),
+                    expires_at=datetime.fromisoformat(row['expires_at']),
+                    is_active=bool(row['is_active'])
+                ))
+            return sessions
+        except Exception as e:
+            logger.error(f"Session retrieval failed: {e}")
             raise
 
 class Submission:

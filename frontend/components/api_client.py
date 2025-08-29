@@ -181,6 +181,33 @@ class APIClient:
             'X-Session-Token': session_token
         })
     
+    def user_login(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+        """
+        User login
+        
+        Args:
+            username: Username
+            password: Password
+            
+        Returns:
+            Tuple of (success, session_token, error_message)
+        """
+        payload = {
+            "username": username,
+            "password": password
+        }
+        
+        success, data, error = self._make_request('POST', '/api/v1/auth/login', json=payload)
+        
+        if success and data:
+            session_token = data.get('data', {}).get('session_token')
+            if session_token:
+                return True, session_token, None
+            else:
+                return False, None, "No session token in response"
+        
+        return False, None, error
+    
     def create_session(self) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Create a new session
@@ -211,23 +238,22 @@ class APIClient:
         """
         return self._make_request('GET', f'/api/v1/sessions/{session_id}')
     
-    def submit_evaluation(self, text_content: str, session_id: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+    def submit_evaluation(self, text_content: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
         """
         Submit text for evaluation
         
         Args:
             text_content: Text to evaluate
-            session_id: Session identifier
+            session_token: Session token
             
         Returns:
             Tuple of (success, evaluation_data, error_message)
         """
         payload = {
-            "text_content": text_content,
-            "session_id": session_id
+            "text_content": text_content
         }
         
-        headers = {"X-Session-ID": session_id}
+        headers = {"X-Session-Token": session_token}
         
         return self._make_request(
             'POST', 
@@ -257,6 +283,69 @@ class APIClient:
         """
         success, data, error = self.health_check()
         return success, error
+    
+    def create_user(self, username: str, password: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Create a new user (admin only)
+        
+        Args:
+            username: Username for new user
+            password: Password for new user
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, data, error_message)
+        """
+        payload = {
+            "username": username,
+            "password": password
+        }
+        
+        headers = {"X-Session-Token": session_token}
+        
+        return self._make_request(
+            'POST',
+            '/api/v1/admin/users/create',
+            json=payload,
+            headers=headers
+        )
+    
+    def list_users(self, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        List all users (admin only)
+        
+        Args:
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, data, error_message)
+        """
+        headers = {"X-Session-Token": session_token}
+        
+        return self._make_request(
+            'GET',
+            '/api/v1/admin/users',
+            headers=headers
+        )
+    
+    def delete_user(self, username: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+        """
+        Delete a user (admin only)
+        
+        Args:
+            username: Username to delete
+            session_token: Admin session token
+            
+        Returns:
+            Tuple of (success, data, error_message)
+        """
+        headers = {"X-Session-Token": session_token}
+        
+        return self._make_request(
+            'DELETE',
+            f'/api/v1/admin/users/{username}',
+            headers=headers
+        )
 
 # Global API client instance
 api_client = APIClient()
@@ -294,13 +383,71 @@ def create_session_with_retry(max_retries: int = 3, delay: float = 1.0) -> Tuple
     
     return False, None, error
 
-def submit_evaluation_with_retry(text_content: str, session_id: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[Dict], Optional[str]]:
+def user_login_with_retry(username: str, password: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    User login with retry logic
+    
+    Args:
+        username: Username
+        password: Password
+        max_retries: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+        
+    Returns:
+        Tuple of (success, session_token, error_message)
+    """
+    for attempt in range(max_retries):
+        success, session_token, error = api_client.user_login(username, password)
+        
+        if success:
+            return True, session_token, None
+        
+        if attempt < max_retries - 1:
+            logger.warning(f"User login failed (attempt {attempt + 1}/{max_retries}): {error}")
+            time.sleep(delay)
+        else:
+            logger.error(f"User login failed after {max_retries} attempts: {error}")
+    
+    return False, None, error
+
+def admin_login_with_retry(username: str, password: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Admin login with retry logic
+    
+    Args:
+        username: Admin username
+        password: Admin password
+        max_retries: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+        
+    Returns:
+        Tuple of (success, session_token, error_message)
+    """
+    for attempt in range(max_retries):
+        success, data, error = api_client.admin_login(username, password)
+        
+        if success and data:
+            session_token = data.get('data', {}).get('session_token')
+            if session_token:
+                return True, session_token, None
+            else:
+                error = "No session token in response"
+        
+        if attempt < max_retries - 1:
+            logger.warning(f"Admin login failed (attempt {attempt + 1}/{max_retries}): {error}")
+            time.sleep(delay)
+        else:
+            logger.error(f"Admin login failed after {max_retries} attempts: {error}")
+    
+    return False, None, error
+
+def submit_evaluation_with_retry(text_content: str, session_token: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[Dict], Optional[str]]:
     """
     Submit evaluation with retry logic
     
     Args:
         text_content: Text to evaluate
-        session_id: Session identifier
+        session_token: Session token
         max_retries: Maximum number of retry attempts
         delay: Delay between retries in seconds
         
@@ -308,7 +455,7 @@ def submit_evaluation_with_retry(text_content: str, session_id: str, max_retries
         Tuple of (success, evaluation_data, error_message)
     """
     for attempt in range(max_retries):
-        success, data, error = api_client.submit_evaluation(text_content, session_id)
+        success, data, error = api_client.submit_evaluation(text_content, session_token)
         
         if success:
             return True, data, None

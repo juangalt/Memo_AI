@@ -7,7 +7,7 @@ import os
 import bcrypt
 import secrets
 import logging
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 from datetime import datetime, timedelta
 import yaml
 import hashlib
@@ -276,6 +276,211 @@ class AuthService:
                 "last_check": datetime.utcnow().isoformat()
             }
 
+    def authenticate_user(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+        """
+        Authenticate regular user (non-admin)
+        
+        Args:
+            username: User username
+            password: User password
+            
+        Returns:
+            Tuple of (success, session_token, error_message)
+        """
+        try:
+            # Check brute force protection
+            if self._is_brute_force_attempt(username):
+                logger.warning(f"Brute force attempt detected for user: {username}")
+                return False, None, "Account temporarily locked due to too many failed attempts"
+            
+            # Import User model here to avoid circular imports
+            from models.entities import User
+            
+            # Get user from database
+            user = User.get_by_username(username)
+            if not user:
+                self._record_login_attempt(username, False)
+                return False, None, "Invalid credentials"
+            
+            if not user.is_active:
+                return False, None, "Account is deactivated"
+            
+            # Verify password
+            if not self._verify_password(password, user.password_hash):
+                self._record_login_attempt(username, False)
+                return False, None, "Invalid credentials"
+            
+            # Generate session token
+            session_token = self._generate_session_token()
+            
+            # Create session in database
+            from models.entities import Session
+            session = Session.create(session_id=session_token, user_id=user.id, is_admin=False)
+            
+            # Record successful login
+            self._record_login_attempt(username, True)
+            
+            logger.info(f"User authentication successful for user: {username}")
+            return True, session_token, None
+            
+        except Exception as e:
+            logger.error(f"User authentication failed: {e}")
+            return False, None, f"Authentication error: {str(e)}"
+
+    def create_user(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+        """
+        Create new user account (admin-only function)
+        
+        Args:
+            username: Username for new user
+            password: Password for new user
+            
+        Returns:
+            Tuple of (success, user_id, error_message)
+        """
+        try:
+            # Import User model here to avoid circular imports
+            from models.entities import User
+            
+            # Validate input
+            if not username or len(username.strip()) < 3:
+                return False, None, "Username must be at least 3 characters long"
+            
+            # Password length validation temporarily disabled
+            # if not password or len(password) < 8:
+            #     return False, None, "Password must be at least 8 characters long"
+            
+            # Check if user already exists
+            existing_user = User.get_by_username(username)
+            if existing_user:
+                return False, None, f"Username '{username}' already exists"
+            
+            # Hash password
+            password_hash = self._hash_password(password)
+            
+            # Create user
+            user = User.create(username=username, password_hash=password_hash, is_admin=False)
+            
+            logger.info(f"User created successfully: {username}")
+            return True, str(user.id), None
+            
+        except Exception as e:
+            logger.error(f"User creation failed: {e}")
+            return False, None, f"User creation error: {str(e)}"
+
+    def validate_user_session(self, session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+        """
+        Validate user session (non-admin)
+        
+        Args:
+            session_token: Session token to validate
+            
+        Returns:
+            Tuple of (valid, session_data, error_message)
+        """
+        try:
+            # Import Session model here to avoid circular imports
+            from models.entities import Session
+            
+            # Get session from database
+            session = Session.get_by_session_id(session_token)
+            if not session:
+                return False, None, "Invalid session token"
+            
+            if not session.is_active:
+                return False, None, "Session is inactive"
+            
+            # Check if session has expired
+            if datetime.utcnow() > session.expires_at:
+                # Deactivate expired session
+                session.deactivate()
+                return False, None, "Session expired"
+            
+            # Get user information
+            from models.entities import User
+            user = User.get_by_id(session.user_id) if session.user_id else None
+            
+            session_data = {
+                'session_id': session.session_id,
+                'user_id': session.user_id,
+                'username': user.username if user else None,
+                'is_admin': session.is_admin,
+                'created_at': session.created_at,
+                'expires_at': session.expires_at,
+                'is_active': session.is_active
+            }
+            
+            return True, session_data, None
+            
+        except Exception as e:
+            logger.error(f"User session validation failed: {e}")
+            return False, None, f"Session validation error: {str(e)}"
+
+    def list_users(self) -> List[Dict[str, Any]]:
+        """
+        List all users (admin-only function)
+        
+        Returns:
+            List of user information (without passwords)
+        """
+        try:
+            # Import User model here to avoid circular imports
+            from models.entities import User
+            
+            # Get all users from database
+            users = User.get_all()
+            
+            user_list = []
+            for user in users:
+                user_list.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'is_admin': user.is_admin,
+                    'is_active': user.is_active,
+                    'created_at': user.created_at.isoformat()
+                })
+            
+            return user_list
+            
+        except Exception as e:
+            logger.error(f"Failed to list users: {e}")
+            return []
+
+    def delete_user(self, username: str) -> bool:
+        """
+        Delete user account (admin-only function)
+        
+        Args:
+            username: Username to delete
+            
+        Returns:
+            True if deletion successful
+        """
+        try:
+            # Import User model here to avoid circular imports
+            from models.entities import User, Session
+            
+            # Get user
+            user = User.get_by_username(username)
+            if not user:
+                logger.warning(f"Attempted to delete non-existent user: {username}")
+                return False
+            
+            # Deactivate all user sessions
+            sessions = Session.get_by_user_id(user.id)
+            for session in sessions:
+                session.deactivate()
+            
+            # Deactivate user
+            user.deactivate()
+            
+            logger.info(f"User deleted successfully: {username}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"User deletion failed: {e}")
+            return False
+
 # Global auth service instance
 auth_service = None
 
@@ -312,3 +517,67 @@ def validate_admin_session(session_token: str) -> Tuple[bool, Optional[Dict[str,
     """
     service = get_auth_service()
     return service.validate_session(session_token)
+
+def authenticate_user(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Authenticate regular user (non-admin)
+    
+    Args:
+        username: User username
+        password: User password
+        
+    Returns:
+        Tuple of (success, session_token, error_message)
+    """
+    service = get_auth_service()
+    return service.authenticate_user(username, password)
+
+def validate_user_session(session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """
+    Validate user session (non-admin)
+    
+    Args:
+        session_token: Session token to validate
+        
+    Returns:
+        Tuple of (valid, session_data, error_message)
+    """
+    service = get_auth_service()
+    return service.validate_user_session(session_token)
+
+def create_user(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Create new user account (admin-only function)
+    
+    Args:
+        username: Username for new user
+        password: Password for new user
+        
+    Returns:
+        Tuple of (success, user_id, error_message)
+    """
+    service = get_auth_service()
+    return service.create_user(username, password)
+
+def list_users() -> List[Dict[str, Any]]:
+    """
+    List all users (admin-only function)
+    
+    Returns:
+        List of user information (without passwords)
+    """
+    service = get_auth_service()
+    return service.list_users()
+
+def delete_user(username: str) -> bool:
+    """
+    Delete user account (admin-only function)
+    
+    Args:
+        username: Username to delete
+        
+    Returns:
+        True if deletion successful
+    """
+    service = get_auth_service()
+    return service.delete_user(username)

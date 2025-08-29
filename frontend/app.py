@@ -12,7 +12,9 @@ from components.api_client import (
     get_api_client, 
     test_backend_connection, 
     create_session_with_retry, 
-    submit_evaluation_with_retry
+    submit_evaluation_with_retry,
+    user_login_with_retry,
+    admin_login_with_retry
 )
 from components.state_manager import StateManager
 
@@ -77,6 +79,68 @@ st.markdown("""
 # Initialize session state
 StateManager.initialize_session_state()
 
+def show_authentication_ui():
+    """Show authentication UI for user login"""
+    st.markdown("## 🔐 Authentication Required")
+    st.markdown("Please log in to use the Memo AI Coach system.")
+    
+    # Create two columns for login form
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        with st.form("user_login_form"):
+            st.markdown("### User Login")
+            username = st.text_input("Username", placeholder="Enter your username")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            
+            login_button = st.form_submit_button("🔑 Login", type="primary", use_container_width=True)
+            
+            if login_button:
+                if not username or not password:
+                    st.error("❌ Please enter both username and password")
+                    return
+                
+                with st.spinner("🔐 Logging in..."):
+                    success, session_token, error = user_login_with_retry(username, password)
+                    
+                    if success:
+                        StateManager.set_user_authenticated(True)
+                        StateManager.set_user_session_token(session_token)
+                        StateManager.set_user_username(username)
+                        st.success(f"✅ Welcome, {username}!")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Login failed: {error}")
+    
+    # Add note about admin access
+    st.markdown("---")
+    st.markdown("**Note**: User accounts must be created by an administrator. Please contact your system administrator if you need access.")
+    
+    # Add admin login option
+    with st.expander("🔧 Admin Login"):
+        with st.form("admin_login_form"):
+            st.markdown("### Admin Login")
+            admin_username = st.text_input("Admin Username", placeholder="admin")
+            admin_password = st.text_input("Admin Password", type="password", placeholder="Enter admin password")
+            
+            admin_login_button = st.form_submit_button("🔧 Admin Login", type="primary", use_container_width=True)
+            
+            if admin_login_button:
+                if not admin_username or not admin_password:
+                    st.error("❌ Please enter both username and password")
+                    return
+                
+                with st.spinner("🔐 Logging in as admin..."):
+                    success, session_token, error = admin_login_with_retry(admin_username, admin_password)
+                    
+                    if success:
+                        StateManager.set_admin_authenticated(True)
+                        StateManager.set_admin_session_token(session_token)
+                        st.success("✅ Admin login successful!")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Admin login failed: {error}")
+
 def create_session():
     """Create a new session with the backend"""
     success, session_id, error = create_session_with_retry()
@@ -88,15 +152,16 @@ def create_session():
 
 def submit_text_for_evaluation(text_content: str) -> Dict[str, Any]:
     """Submit text for evaluation"""
-    session_id = StateManager.get_session_id()
-    if not session_id:
-        session_id = create_session()
+    # Get session token from user or admin authentication
+    session_token = StateManager.get_user_session_token()
+    if not session_token:
+        session_token = StateManager.get_admin_session_token()
     
-    if not session_id:
-        st.error("Failed to create session")
+    if not session_token:
+        st.error("No valid session token found. Please log in again.")
         return None
     
-    success, data, error = submit_evaluation_with_retry(text_content, session_id)
+    success, data, error = submit_evaluation_with_retry(text_content, session_token)
     if not success:
         st.error(f"Evaluation failed: {error}")
         return None
@@ -119,6 +184,33 @@ def main():
         st.error(f"⚠️ Backend service is not available: {error}")
         st.stop()
     
+    # Check authentication status
+    user_authenticated = StateManager.is_user_authenticated()
+    admin_authenticated = StateManager.is_admin_authenticated()
+    
+    # Show authentication UI if not authenticated
+    if not user_authenticated and not admin_authenticated:
+        show_authentication_ui()
+        return
+    
+    # Show logout button
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col3:
+        if st.button("🚪 Logout", type="secondary", key="main_logout"):
+            if user_authenticated:
+                StateManager.clear_user_authentication()
+            if admin_authenticated:
+                StateManager.set_admin_authenticated(False)
+                StateManager.clear_admin_session_token()
+            st.rerun()
+    
+    with col2:
+        if user_authenticated:
+            username = StateManager.get_user_username()
+            st.markdown(f"**User:** {username}")
+        elif admin_authenticated:
+            st.markdown("**Admin**")
+    
     # Create tabs with exact structure from UI/UX spec
     tabs = st.tabs([
         "Text Input",
@@ -134,12 +226,18 @@ def main():
         st.header("Submit Text for Evaluation")
         st.markdown("Enter your text below for comprehensive AI-powered evaluation and feedback.")
         
-        # Session status indicator
-        session_id = StateManager.get_session_id()
-        if session_id:
-            st.success(f"✅ Session active: {session_id[:8]}...")
+        # Authentication status indicator
+        user_authenticated = StateManager.is_user_authenticated()
+        admin_authenticated = StateManager.is_admin_authenticated()
+        
+        if user_authenticated:
+            username = StateManager.get_user_username()
+            st.success(f"✅ Logged in as user: {username}")
+        elif admin_authenticated:
+            st.success("✅ Logged in as administrator")
         else:
-            st.info("🔄 No active session - will create one when you submit text")
+            st.error("❌ Not authenticated - please log in")
+            return
         
         # Text input area with auto-focus and character counter
         text_content = st.text_area(
@@ -171,7 +269,8 @@ def main():
                 "🚀 Submit for Evaluation", 
                 type="primary",
                 use_container_width=True,
-                help="Click to submit your text for AI-powered evaluation"
+                help="Click to submit your text for AI-powered evaluation",
+                key="submit_evaluation"
             )
         
         if submit_button:
@@ -306,7 +405,9 @@ def main():
             if segment_feedback:
                 st.markdown("### 📝 Segment-by-Segment Analysis")
                 for i, segment in enumerate(segment_feedback):
-                    with st.expander(f"📄 Segment {i+1}: {segment.get('segment', '')[:50]}...", expanded=True):
+                    segment_text = segment.get('segment', '')
+                    segment_preview = segment_text[:50] + "..." if isinstance(segment_text, str) and len(segment_text) > 50 else segment_text
+                    with st.expander(f"📄 Segment {i+1}: {segment_preview}", expanded=True):
                         st.markdown('<div class="segment-card">', unsafe_allow_html=True)
                         
                         # Original text
@@ -434,17 +535,17 @@ def main():
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Admin Status", "Authenticated ✅")
-                st.metric("Session Token", f"{admin_token[:16]}..." if admin_token else "None")
+                st.metric("Session Token", f"{admin_token[:16]}..." if admin_token and isinstance(admin_token, str) else "None")
 
             with col2:
-                st.metric("Session ID", StateManager.get_session_id()[:16] + "..." if StateManager.get_session_id() else "None")
+                st.metric("Session ID", StateManager.get_session_id()[:16] + "..." if StateManager.get_session_id() and isinstance(StateManager.get_session_id(), str) else "None")
                 st.metric("Evaluation Count", len(StateManager.get_evaluation_history()) if StateManager.get_evaluation_history() else 0)
 
             # Raw API Communication Debug
             st.markdown("---")
             st.subheader("🔌 API Communication Debug")
 
-            if st.button("🔄 Test API Health Endpoints", type="secondary"):
+            if st.button("🔄 Test API Health Endpoints", type="secondary", key="test_api_health"):
                 with st.spinner("Testing API endpoints..."):
                     api_client = get_api_client()
 
@@ -470,7 +571,7 @@ def main():
             st.markdown("---")
             st.subheader("⚙️ Configuration Debug")
 
-            if st.button("📋 Show Configuration Status", type="secondary"):
+            if st.button("📋 Show Configuration Status", type="secondary", key="show_config_status"):
                 with st.spinner("Loading configuration..."):
                     api_client = get_api_client()
                     success, data, error = api_client._make_request("GET", "/health/config")
@@ -506,7 +607,7 @@ def main():
                         "session_id": StateManager.get_session_id(),
                         "evaluation_history": evaluation_history,
                         "admin_authenticated": is_admin,
-                        "admin_token": admin_token[:20] + "..." if admin_token else None
+                        "admin_token": admin_token[:20] + "..." if admin_token and isinstance(admin_token, str) else None
                     })
             else:
                 st.info("No active session. Submit text for evaluation to create a session.")
@@ -527,7 +628,7 @@ def main():
             st.markdown("---")
             st.subheader("📋 System Logs Preview")
 
-            if st.button("🔄 Refresh System Status", type="secondary"):
+            if st.button("🔄 Refresh System Status", type="secondary", key="refresh_system_status"):
                 st.success("✅ System status refreshed successfully!")
 
                 # Show current timestamp
@@ -567,7 +668,7 @@ def main():
             with col2:
                 admin_password = st.text_input("Admin Password", type="password", help="Enter admin password")
             
-            if st.button("🔑 Login", type="primary"):
+            if st.button("🔑 Login", type="primary", key="admin_login_button"):
                 if admin_username and admin_password:
                     api_client = get_api_client()
                     success, data, error = api_client.admin_login(admin_username, admin_password)
@@ -648,7 +749,7 @@ def main():
             config_files = ["rubric", "prompt", "llm", "auth"]
             selected_config = st.selectbox("Select Configuration File", config_files, help="Choose which configuration file to edit")
             
-            if st.button("📖 Load Configuration"):
+            if st.button("📖 Load Configuration", key="load_config"):
                 session_token = StateManager.get_admin_session_token()
                 if session_token:
                     api_client = get_api_client()
@@ -676,7 +777,7 @@ def main():
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("💾 Save Configuration"):
+                    if st.button("💾 Save Configuration", key="save_config"):
                         session_token = StateManager.get_admin_session_token()
                         if session_token:
                             api_client = get_api_client()
@@ -691,7 +792,7 @@ def main():
                             st.error("❌ No admin session token")
                 
                 with col2:
-                    if st.button("🔄 Reload Configuration"):
+                    if st.button("🔄 Reload Configuration", key="reload_config"):
                         session_token = StateManager.get_admin_session_token()
                         if session_token:
                             api_client = get_api_client()
@@ -709,42 +810,112 @@ def main():
             else:
                 st.info("Click 'Load Configuration' to edit configuration files")
             
+            # User Management
+            st.subheader("👥 User Management")
+            
+            # Create new user
+            st.markdown("**Create New User**")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                new_username = st.text_input("Username", key="new_user_username", help="Enter username for new user (min 3 characters)")
+            with col2:
+                new_password = st.text_input("Password", type="password", key="new_user_password", help="Enter password for new user")
+            with col3:
+                if st.button("➕ Create User", key="create_user_button"):
+                    if new_username and new_password:
+                        # Validate input before sending to API
+                        if len(new_username.strip()) < 3:
+                            st.error("❌ Username must be at least 3 characters long")
+                            return
+                        
+                        # Password length validation temporarily disabled
+                        # if len(new_password) < 8:
+                        #     st.error("❌ Password must be at least 8 characters long")
+                        #     return
+                        
+                        session_token = StateManager.get_admin_session_token()
+                        if session_token:
+                            api_client = get_api_client()
+                            success, data, error = api_client.create_user(new_username, new_password, session_token)
+                            
+                            if success:
+                                st.success(f"✅ User '{new_username}' created successfully")
+                                # Clear the form
+                                st.session_state.new_user_username = ""
+                                st.session_state.new_user_password = ""
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to create user: {error}")
+                        else:
+                            st.error("❌ No admin session token")
+                    else:
+                        st.error("❌ Please enter both username and password")
+            
+            # List and manage existing users
+            st.markdown("**Manage Existing Users**")
+            if st.button("📋 Refresh User List", key="refresh_users_button"):
+                session_token = StateManager.get_admin_session_token()
+                if session_token:
+                    api_client = get_api_client()
+                    success, data, error = api_client.list_users(session_token)
+                    
+                    if success and data:
+                        users = data.get('data', {}).get('users', [])
+                        if users:
+                            st.session_state.admin_users_list = users
+                            st.success(f"✅ Found {len(users)} users")
+                        else:
+                            st.session_state.admin_users_list = []
+                            st.info("ℹ️ No users found")
+                    else:
+                        st.error(f"❌ Failed to load users: {error}")
+                else:
+                    st.error("❌ No admin session token")
+            
+            # Display users list
+            if 'admin_users_list' in st.session_state and st.session_state.admin_users_list:
+                st.markdown("**Current Users:**")
+                for user in st.session_state.admin_users_list:
+                    col1, col2, col3 = st.columns([3, 1, 1])
+                    with col1:
+                        st.write(f"👤 **{user.get('username', 'Unknown')}**")
+                    with col2:
+                        st.write(f"Active: {'✅' if user.get('is_active', False) else '❌'}")
+                    with col3:
+                        if st.button(f"🗑️ Delete", key=f"delete_user_{user.get('username', 'unknown')}"):
+                            session_token = StateManager.get_admin_session_token()
+                            if session_token:
+                                api_client = get_api_client()
+                                success, data, error = api_client.delete_user(user.get('username', ''), session_token)
+                                
+                                if success:
+                                    st.success(f"✅ User '{user.get('username', '')}' deleted successfully")
+                                    # Refresh the user list
+                                    st.session_state.admin_users_list = None
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Failed to delete user: {error}")
+                            else:
+                                st.error("❌ No admin session token")
+            
             # Session management
             st.subheader("🔗 Session Management")
             session_id = StateManager.get_session_id()
             if session_id:
                 st.info(f"Current Session: {session_id}")
-                if st.button("🔄 Refresh Session"):
+                if st.button("🔄 Refresh Session", key="refresh_session"):
                     new_session_id = create_session()
                     if new_session_id:
                         st.success("Session refreshed")
             else:
                 st.info("No active session")
-                if st.button("🆕 Create Session"):
+                if st.button("🆕 Create Session", key="create_session"):
                     new_session_id = create_session()
                     if new_session_id:
                         st.success("Session created")
             
-            # Logout option
-            st.markdown("---")
-            if st.button("🚪 Logout"):
-                session_token = StateManager.get_admin_session_token()
-                if session_token:
-                    api_client = get_api_client()
-                    success, data, error = api_client.admin_logout(session_token)
-                    
-                    if success:
-                        StateManager.set_admin_authenticated(False)
-                        StateManager.clear_admin_session_token()
-                        st.success("✅ Logged out successfully")
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Logout failed: {error}")
-                else:
-                    StateManager.set_admin_authenticated(False)
-                    StateManager.clear_admin_session_token()
-                    st.success("✅ Logged out successfully")
-                    st.rerun()
+            # Note: Logout is available in the main header above
+            st.info("💡 Use the logout button in the main header to log out")
 
 if __name__ == "__main__":
     main()
