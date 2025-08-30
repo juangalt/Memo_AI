@@ -91,6 +91,35 @@ services:
       retries: 3
       start_period: 40s
 
+  vue-frontend:
+    build: ./vue-frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vue-frontend.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.vue-frontend.priority=200"
+      - "traefik.http.routers.vue-frontend.entrypoints=websecure"
+      - "traefik.http.routers.vue-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vue-frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
+      - "traefik.http.services.vue-frontend.loadbalancer.server.port=80"
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      - PHASE_TRACKING_ENABLED=true
+    depends_on:
+      - backend
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./vue_implementation_changelog.md:/app/changelog.md:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   data:
   logs:
