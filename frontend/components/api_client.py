@@ -118,43 +118,45 @@ class APIClient:
         """
         return self._make_request('GET', '/health/auth')
     
-    def admin_login(self, username: str, password: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+    def login(self, username: str, password: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
         """
-        Admin login
+        Unified login for all users
         
         Args:
-            username: Admin username
-            password: Admin password
+            username: Username
+            password: Password
             
         Returns:
             Tuple of (success, login_data, error_message)
         """
-        return self._make_request('POST', '/api/v1/admin/login', json={
-            'username': username,
-            'password': password
-        })
+        payload = {
+            "username": username,
+            "password": password
+        }
+        
+        return self._make_request('POST', '/api/v1/auth/login', json=payload)
     
-    def admin_logout(self, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
+    def logout(self, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
         """
-        Admin logout
+        Unified logout for all users
         
         Args:
-            session_token: Admin session token
+            session_token: Session token
             
         Returns:
             Tuple of (success, logout_data, error_message)
         """
-        return self._make_request('POST', '/api/v1/admin/logout', headers={
+        return self._make_request('POST', '/api/v1/auth/logout', headers={
             'X-Session-Token': session_token
         })
     
     def get_config(self, config_name: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
         """
-        Get configuration file content
+        Get configuration file content (admin only)
         
         Args:
             config_name: Name of configuration file
-            session_token: Admin session token
+            session_token: Session token
             
         Returns:
             Tuple of (success, config_data, error_message)
@@ -165,12 +167,12 @@ class APIClient:
     
     def update_config(self, config_name: str, content: str, session_token: str) -> Tuple[bool, Optional[Dict], Optional[str]]:
         """
-        Update configuration file content
+        Update configuration file content (admin only)
         
         Args:
             config_name: Name of configuration file
             content: New configuration content
-            session_token: Admin session token
+            session_token: Session token
             
         Returns:
             Tuple of (success, update_data, error_message)
@@ -180,33 +182,6 @@ class APIClient:
         }, headers={
             'X-Session-Token': session_token
         })
-    
-    def user_login(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
-        """
-        User login
-        
-        Args:
-            username: Username
-            password: Password
-            
-        Returns:
-            Tuple of (success, session_token, error_message)
-        """
-        payload = {
-            "username": username,
-            "password": password
-        }
-        
-        success, data, error = self._make_request('POST', '/api/v1/auth/login', json=payload)
-        
-        if success and data:
-            session_token = data.get('data', {}).get('session_token')
-            if session_token:
-                return True, session_token, None
-            else:
-                return False, None, "No session token in response"
-        
-        return False, None, error
     
     def create_session(self) -> Tuple[bool, Optional[str], Optional[str]]:
         """
@@ -383,9 +358,9 @@ def create_session_with_retry(max_retries: int = 3, delay: float = 1.0) -> Tuple
     
     return False, None, error
 
-def user_login_with_retry(username: str, password: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[str], Optional[str]]:
+def login_with_retry(username: str, password: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[Dict], Optional[str]]:
     """
-    User login with retry logic
+    Unified login with retry logic
     
     Args:
         username: Username
@@ -394,50 +369,19 @@ def user_login_with_retry(username: str, password: str, max_retries: int = 3, de
         delay: Delay between retries in seconds
         
     Returns:
-        Tuple of (success, session_token, error_message)
+        Tuple of (success, login_data, error_message)
     """
     for attempt in range(max_retries):
-        success, session_token, error = api_client.user_login(username, password)
-        
-        if success:
-            return True, session_token, None
-        
-        if attempt < max_retries - 1:
-            logger.warning(f"User login failed (attempt {attempt + 1}/{max_retries}): {error}")
-            time.sleep(delay)
-        else:
-            logger.error(f"User login failed after {max_retries} attempts: {error}")
-    
-    return False, None, error
-
-def admin_login_with_retry(username: str, password: str, max_retries: int = 3, delay: float = 1.0) -> Tuple[bool, Optional[str], Optional[str]]:
-    """
-    Admin login with retry logic
-    
-    Args:
-        username: Admin username
-        password: Admin password
-        max_retries: Maximum number of retry attempts
-        delay: Delay between retries in seconds
-        
-    Returns:
-        Tuple of (success, session_token, error_message)
-    """
-    for attempt in range(max_retries):
-        success, data, error = api_client.admin_login(username, password)
+        success, data, error = api_client.login(username, password)
         
         if success and data:
-            session_token = data.get('data', {}).get('session_token')
-            if session_token:
-                return True, session_token, None
-            else:
-                error = "No session token in response"
+            return True, data, None
         
         if attempt < max_retries - 1:
-            logger.warning(f"Admin login failed (attempt {attempt + 1}/{max_retries}): {error}")
+            logger.warning(f"Login failed (attempt {attempt + 1}/{max_retries}): {error}")
             time.sleep(delay)
         else:
-            logger.error(f"Admin login failed after {max_retries} attempts: {error}")
+            logger.error(f"Login failed after {max_retries} attempts: {error}")
     
     return False, None, error
 

@@ -64,7 +64,7 @@ class User:
     def get_by_username(cls, username: str) -> Optional['User']:
         """Get user by username"""
         try:
-            query = "SELECT * FROM users WHERE username = ? AND is_active = TRUE"
+            query = "SELECT * FROM users WHERE username = ?"
             result = db_manager.execute_query(query, (username,))
             if result:
                 row = result[0]
@@ -105,7 +105,7 @@ class User:
     def deactivate(self) -> bool:
         """Deactivate user"""
         try:
-            query = "UPDATE users SET is_active = FALSE WHERE id = ?"
+            query = "DELETE FROM users WHERE id = ?"
             affected = db_manager.execute_update(query, (self.id,))
             if affected > 0:
                 self.is_active = False
@@ -194,6 +194,32 @@ class Session:
                 ORDER BY created_at DESC
             """
             result = db_manager.execute_query(query, (user_id, datetime.utcnow()))
+            sessions = []
+            for row in result:
+                sessions.append(cls(
+                    id=row['id'],
+                    session_id=row['session_id'],
+                    user_id=row['user_id'],
+                    is_admin=bool(row['is_admin']),
+                    created_at=datetime.fromisoformat(row['created_at']),
+                    expires_at=datetime.fromisoformat(row['expires_at']),
+                    is_active=bool(row['is_active'])
+                ))
+            return sessions
+        except Exception as e:
+            logger.error(f"Session retrieval failed: {e}")
+            raise
+            
+    @classmethod
+    def get_active_sessions(cls) -> List['Session']:
+        """Get all active sessions"""
+        try:
+            query = """
+                SELECT * FROM sessions 
+                WHERE is_active = TRUE AND expires_at > ?
+                ORDER BY created_at DESC
+            """
+            result = db_manager.execute_query(query, (datetime.utcnow(),))
             sessions = []
             for row in result:
                 sessions.append(cls(

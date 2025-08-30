@@ -184,85 +184,89 @@ class CriticalSystemTesterLocal:
         """Test session creation and management"""
         print("\n=== Testing Session Management ===")
         
-        # Create session
+        # Login first
+        login_payload = json.dumps({
+            "username": "admin",
+            "password": "admin123"
+        })
         success, output, error = self.run_docker_command(
-            "docker compose exec backend curl -s -X POST http://localhost:8000/api/v1/sessions/create"
+            f"docker compose exec backend curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{login_payload}'"
         )
         
         if success and output.strip():
             try:
                 data = json.loads(output)
-                session_id = data.get("data", {}).get("session_id")
-                if session_id:
-                    self.session_id = session_id
+                session_token = data.get("data", {}).get("session_token")
+                if not session_token:
                     self.log_test(
-                        "Session Creation",
-                        "PASS",
-                        f"Session created successfully: {session_id[:10]}...",
-                        {"session_id": session_id[:10] + "..."}
+                        "Session Management",
+                        "FAIL",
+                        "No session token in login response",
+                        {"response": data}
                     )
-                    
-                    # Test session retrieval
-                    success, output, error = self.run_docker_command(
-                        f"docker compose exec backend curl -s http://localhost:8000/api/v1/sessions/{session_id}"
-                    )
-                    
-                    if success and output.strip():
-                        try:
-                            session_data = json.loads(output)
-                            if session_data.get("data"):
-                                self.log_test(
-                                    "Session Retrieval",
-                                    "PASS",
-                                    "Session can be retrieved successfully",
-                                    {"session_id": session_id[:10] + "..."}
-                                )
-                                return True
-                            else:
-                                self.log_test(
-                                    "Session Retrieval",
-                                    "FAIL",
-                                    "No session data in response",
-                                    {"session_id": session_id[:10] + "...", "response": session_data}
-                                )
-                                return False
-                        except json.JSONDecodeError:
+                    return False
+                
+                self.session_id = session_token
+                self.log_test(
+                    "Session Creation",
+                    "PASS",
+                    f"Session created successfully: {session_token[:10]}...",
+                    {"session_token": session_token[:10] + "..."}
+                )
+                
+                # Test session validation
+                success, output, error = self.run_docker_command(
+                    f"docker compose exec backend curl -s -X GET http://localhost:8000/api/v1/auth/validate -H 'X-Session-Token: {session_token}'"
+                )
+                
+                if success and output.strip():
+                    try:
+                        session_data = json.loads(output)
+                        if session_data.get("data"):
                             self.log_test(
-                                "Session Retrieval",
+                                "Session Validation",
+                                "PASS",
+                                "Session can be validated successfully",
+                                {"session_token": session_token[:10] + "..."}
+                            )
+                            return True
+                        else:
+                            self.log_test(
+                                "Session Validation",
                                 "FAIL",
-                                "Session retrieval returned invalid JSON",
-                                {"session_id": session_id[:10] + "...", "output": output[:100]}
+                                "No session data in response",
+                                {"session_token": session_token[:10] + "...", "response": session_data}
                             )
                             return False
-                    else:
+                    except json.JSONDecodeError:
                         self.log_test(
-                            "Session Retrieval",
+                            "Session Validation",
                             "FAIL",
-                            f"Session retrieval failed: {error}",
-                            {"session_id": session_id[:10] + "...", "error": error}
+                            "Session validation returned invalid JSON",
+                            {"session_token": session_token[:10] + "...", "output": output[:100]}
                         )
                         return False
                 else:
                     self.log_test(
-                        "Session Creation",
+                        "Session Validation",
                         "FAIL",
-                        "No session ID in response",
-                        {"response": data}
+                        f"Session validation failed: {error}",
+                        {"session_token": session_token[:10] + "...", "error": error}
                     )
                     return False
             except json.JSONDecodeError:
                 self.log_test(
-                    "Session Creation",
+                    "Session Management",
                     "FAIL",
-                    "Session creation returned invalid JSON",
+                    "Login response is not valid JSON",
                     {"output": output[:100]}
                 )
                 return False
         else:
             self.log_test(
-                "Session Creation",
+                "Session Management",
                 "FAIL",
-                f"Session creation failed: {error}",
+                f"Login failed: {error}",
                 {"error": error}
             )
             return False
@@ -279,89 +283,118 @@ class CriticalSystemTesterLocal:
             )
             return False
         
-        # Submit text for evaluation
-        payload = json.dumps({
-            "text_content": self.test_text,
-            "session_id": self.session_id
+        # Login first
+        login_payload = json.dumps({
+            "username": "admin",
+            "password": "admin123"
         })
-        
-        start_time = time.time()
         success, output, error = self.run_docker_command(
-            f"docker compose exec backend curl -s -X POST http://localhost:8000/api/v1/evaluations/submit -H 'Content-Type: application/json' -d '{payload}'"
+            f"docker compose exec backend curl -s -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{login_payload}'"
         )
-        end_time = time.time()
         
-        processing_time = end_time - start_time
+        if not success or not output.strip():
+            self.log_test(
+                "Text Evaluation",
+                "FAIL",
+                f"Login failed: {error}",
+                {"error": error}
+            )
+            return False
         
-        if success and output.strip():
-            try:
-                data = json.loads(output)
-                evaluation_data = data.get("data", {}).get("evaluation", {})
-                
-                if evaluation_data:
-                    # Check for required evaluation fields
-                    required_fields = ["overall_score", "strengths", "opportunities", "rubric_scores"]
-                    missing_fields = [field for field in required_fields if field not in evaluation_data]
-                    
-                    if not missing_fields:
-                        self.log_test(
-                            "Text Evaluation Submission",
-                            "PASS",
-                            f"Evaluation completed successfully in {processing_time:.2f}s",
-                            {
-                                "processing_time": processing_time,
-                                "overall_score": evaluation_data.get("overall_score"),
-                                "model_used": evaluation_data.get("model_used")
-                            }
-                        )
-                        
-                        # Check performance benchmark
-                        if processing_time < 15:
-                            self.log_test(
-                                "Evaluation Performance",
-                                "PASS",
-                                f"Processing time {processing_time:.2f}s meets benchmark (< 15s)",
-                                {"processing_time": processing_time}
-                            )
-                        else:
-                            self.log_test(
-                                "Evaluation Performance",
-                                "WARN",
-                                f"Processing time {processing_time:.2f}s exceeds benchmark (15s)",
-                                {"processing_time": processing_time}
-                            )
-                        
-                        return True
-                    else:
-                        self.log_test(
-                            "Text Evaluation Data",
-                            "FAIL",
-                            f"Missing required evaluation fields: {missing_fields}",
-                            {"missing_fields": missing_fields}
-                        )
-                        return False
-                else:
-                    self.log_test(
-                        "Text Evaluation Data",
-                        "FAIL",
-                        "No evaluation data in response",
-                        {"response": data}
-                    )
-                    return False
-            except json.JSONDecodeError:
+        try:
+            data = json.loads(output)
+            session_token = data.get("data", {}).get("session_token")
+            if not session_token:
                 self.log_test(
                     "Text Evaluation",
                     "FAIL",
-                    "Evaluation returned invalid JSON",
-                    {"output": output[:100]}
+                    "No session token in login response",
+                    {"response": data}
                 )
                 return False
-        else:
+            
+            # Submit text for evaluation
+            payload = json.dumps({
+                "text_content": self.test_text
+            })
+            
+            start_time = time.time()
+            success, output, error = self.run_docker_command(
+                f"docker compose exec backend curl -s -X POST http://localhost:8000/api/v1/evaluations/submit -H 'Content-Type: application/json' -H 'X-Session-Token: {session_token}' -d '{payload}'"
+            )
+            end_time = time.time()
+            
+            processing_time = end_time - start_time
+            
+            if not success or not output.strip():
+                self.log_test(
+                    "Text Evaluation",
+                    "FAIL",
+                    f"Evaluation submission failed: {error}",
+                    {"error": error}
+                )
+                return False
+            
+            data = json.loads(output)
+            evaluation_data = data.get("data", {}).get("evaluation", {})
+            
+            if not evaluation_data:
+                self.log_test(
+                    "Text Evaluation Data",
+                    "FAIL",
+                    "No evaluation data in response",
+                    {"response": data}
+                )
+                return False
+            
+            # Check for required evaluation fields
+            required_fields = ["overall_score", "strengths", "opportunities", "rubric_scores"]
+            missing_fields = [field for field in required_fields if field not in evaluation_data]
+            
+            if missing_fields:
+                self.log_test(
+                    "Text Evaluation Data",
+                    "FAIL",
+                    f"Missing required evaluation fields: {missing_fields}",
+                    {"missing_fields": missing_fields}
+                )
+                return False
+            
             self.log_test(
                 "Text Evaluation Submission",
+                "PASS",
+                f"Evaluation completed successfully in {processing_time:.2f}s",
+                {
+                    "processing_time": processing_time,
+                    "overall_score": evaluation_data.get("overall_score"),
+                    "model_used": evaluation_data.get("model_used")
+                }
+            )
+            
+            # Check performance benchmark
+            if processing_time < 15:
+                self.log_test(
+                    "Evaluation Performance",
+                    "PASS",
+                    f"Processing time {processing_time:.2f}s meets benchmark (< 15s)",
+                    {"processing_time": processing_time}
+                )
+            else:
+                self.log_test(
+                    "Evaluation Performance",
+                    "WARN",
+                    f"Processing time {processing_time:.2f}s exceeds benchmark (15s)",
+                    {"processing_time": processing_time}
+                )
+            
+            return True
+            
+        except json.JSONDecodeError:
+            self.log_test(
+                "Text Evaluation",
                 "FAIL",
-                f"Evaluation submission failed: {error}",
-                {"error": error}
+                "Response is not valid JSON",
+                {"output": output[:100]}
             )
             return False
     
@@ -509,11 +542,21 @@ class CriticalSystemTesterLocal:
             {
                 "name": "Invalid Evaluation Payload",
                 "command": "docker compose exec backend curl -s -w 'STATUS:%{http_code}' -X POST http://localhost:8000/api/v1/evaluations/submit -H 'Content-Type: application/json' -d '{\"invalid\": \"payload\"}'",
-                "expected_status": "400"
+                "expected_status": "401"
             },
             {
                 "name": "Missing Text Content",
                 "command": "docker compose exec backend curl -s -w 'STATUS:%{http_code}' -X POST http://localhost:8000/api/v1/evaluations/submit -H 'Content-Type: application/json' -d '{\"session_id\": \"test\"}'",
+                "expected_status": "401"
+            },
+            {
+                "name": "Invalid Login Credentials",
+                "command": "docker compose exec backend curl -s -w 'STATUS:%{http_code}' -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\": \"invalid\", \"password\": \"invalid\"}'",
+                "expected_status": "401"
+            },
+            {
+                "name": "Missing Login Credentials",
+                "command": "docker compose exec backend curl -s -w 'STATUS:%{http_code}' -X POST http://localhost:8000/api/v1/auth/login -H 'Content-Type: application/json' -d '{}'",
                 "expected_status": "400"
             }
         ]

@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    """Service for admin authentication and session management"""
+    """Service for unified user and admin authentication"""
     
     def __init__(self, config_path: str = None):
         """Initialize auth service with automatic path detection"""
@@ -31,7 +31,6 @@ class AuthService:
         
         self.config_path = config_path
         self.auth_config = None
-        self.admin_sessions = {}  # In-memory session storage for development
         self.login_attempts = {}  # Track login attempts for brute force protection
         
         # Load authentication configuration
@@ -114,175 +113,13 @@ class AuthService:
         except Exception as e:
             logger.error(f"Failed to record login attempt: {e}")
     
-    def authenticate_admin(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    def authenticate(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
         """
-        Authenticate admin user
+        Unified authentication for both users and admins
         
         Args:
-            username: Admin username
-            password: Admin password
-            
-        Returns:
-            Tuple of (success, session_token, error_message)
-        """
-        try:
-            # Check brute force protection
-            if self._is_brute_force_attempt(username):
-                logger.warning(f"Brute force attempt detected for user: {username}")
-                return False, None, "Account temporarily locked due to too many failed attempts"
-            
-            # Get admin credentials from environment or config
-            expected_username = "admin"
-            expected_password = os.getenv("ADMIN_PASSWORD", "admin123")
-            
-            # Verify credentials
-            if username == expected_username and password == expected_password:
-                # Generate session token
-                session_token = self._generate_session_token()
-                
-                # Create session
-                session_data = {
-                    'username': username,
-                    'is_admin': True,
-                    'created_at': datetime.utcnow(),
-                    'expires_at': datetime.utcnow() + timedelta(hours=1),
-                    'permissions': ['system_configuration', 'user_management', 'debug_access', 'backup_management', 'log_access']
-                }
-                
-                self.admin_sessions[session_token] = session_data
-                
-                # Record successful login
-                self._record_login_attempt(username, True)
-                
-                logger.info(f"Admin authentication successful for user: {username}")
-                return True, session_token, None
-            else:
-                # Record failed login
-                self._record_login_attempt(username, False)
-                
-                logger.warning(f"Admin authentication failed for user: {username}")
-                return False, None, "Invalid credentials"
-                
-        except Exception as e:
-            logger.error(f"Admin authentication failed: {e}")
-            return False, None, f"Authentication error: {str(e)}"
-    
-    def validate_session(self, session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
-        """
-        Validate admin session
-        
-        Args:
-            session_token: Session token to validate
-            
-        Returns:
-            Tuple of (valid, session_data, error_message)
-        """
-        try:
-            if session_token not in self.admin_sessions:
-                return False, None, "Invalid session token"
-            
-            session_data = self.admin_sessions[session_token]
-            
-            # Check if session has expired
-            if datetime.utcnow() > session_data['expires_at']:
-                # Remove expired session
-                del self.admin_sessions[session_token]
-                return False, None, "Session expired"
-            
-            # Extend session if needed
-            if (session_data['expires_at'] - datetime.utcnow()).total_seconds() < 300:  # 5 minutes
-                session_data['expires_at'] = datetime.utcnow() + timedelta(hours=1)
-                self.admin_sessions[session_token] = session_data
-            
-            return True, session_data, None
-            
-        except Exception as e:
-            logger.error(f"Session validation failed: {e}")
-            return False, None, f"Session validation error: {str(e)}"
-    
-    def logout_admin(self, session_token: str) -> bool:
-        """
-        Logout admin user
-        
-        Args:
-            session_token: Session token to invalidate
-            
-        Returns:
-            True if logout successful
-        """
-        try:
-            if session_token in self.admin_sessions:
-                del self.admin_sessions[session_token]
-                logger.info("Admin session terminated")
-                return True
-            return False
-            
-        except Exception as e:
-            logger.error(f"Admin logout failed: {e}")
-            return False
-    
-    def get_active_sessions(self) -> Dict[str, Any]:
-        """
-        Get information about active admin sessions
-        
-        Returns:
-            Dictionary with session information
-        """
-        try:
-            active_sessions = {}
-            now = datetime.utcnow()
-            
-            for token, session_data in self.admin_sessions.items():
-                if session_data['expires_at'] > now:
-                    active_sessions[token[:8] + "..."] = {
-                        'username': session_data['username'],
-                        'created_at': session_data['created_at'].isoformat(),
-                        'expires_at': session_data['expires_at'].isoformat(),
-                        'permissions': session_data['permissions']
-                    }
-            
-            return {
-                'total_sessions': len(active_sessions),
-                'sessions': active_sessions
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get active sessions: {e}")
-            return {'total_sessions': 0, 'sessions': {}}
-    
-    def health_check(self) -> Dict[str, Any]:
-        """
-        Check authentication service health
-        
-        Returns:
-            Health status information
-        """
-        try:
-            return {
-                "status": "healthy",
-                "service": "authentication",
-                "config_loaded": self.auth_config is not None,
-                "active_sessions": len(self.admin_sessions),
-                "brute_force_protection": True,
-                "last_check": datetime.utcnow().isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Authentication health check failed: {e}")
-            return {
-                "status": "unhealthy",
-                "service": "authentication",
-                "error": str(e),
-                "last_check": datetime.utcnow().isoformat()
-            }
-
-    def authenticate_user(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
-        """
-        Authenticate regular user (non-admin)
-        
-        Args:
-            username: User username
-            password: User password
+            username: Username
+            password: Password
             
         Returns:
             Tuple of (success, session_token, error_message)
@@ -315,19 +152,198 @@ class AuthService:
             
             # Create session in database
             from models.entities import Session
-            session = Session.create(session_id=session_token, user_id=user.id, is_admin=False)
+            session = Session.create(
+                session_id=session_token,
+                user_id=user.id,
+                is_admin=user.is_admin
+            )
             
             # Record successful login
             self._record_login_attempt(username, True)
             
-            logger.info(f"User authentication successful for user: {username}")
+            logger.info(f"Authentication successful for user: {username} (admin: {user.is_admin})")
             return True, session_token, None
             
         except Exception as e:
-            logger.error(f"User authentication failed: {e}")
+            logger.error(f"Authentication failed: {e}")
             return False, None, f"Authentication error: {str(e)}"
+    
+    def validate_session(self, session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+        """
+        Validate session for any user type
+        
+        Args:
+            session_token: Session token to validate
+            
+        Returns:
+            Tuple of (valid, session_data, error_message)
+        """
+        try:
+            # Import Session model here to avoid circular imports
+            from models.entities import Session
+            
+            # Get session from database
+            session = Session.get_by_session_id(session_token)
+            if not session:
+                return False, None, "Invalid session token"
+            
+            if not session.is_active:
+                return False, None, "Session is inactive"
+            
+            # Check if session has expired
+            if datetime.utcnow() > session.expires_at:
+                # Deactivate expired session
+                session.deactivate()
+                return False, None, "Session expired"
+            
+            # Get user information
+            from models.entities import User
+            user = User.get_by_id(session.user_id) if session.user_id else None
+            if not user or not user.is_active:
+                session.deactivate()
+                return False, None, "User account is inactive"
+            
+            session_data = {
+                'session_id': session.session_id,
+                'user_id': session.user_id,
+                'username': user.username,
+                'is_admin': session.is_admin,
+                'created_at': session.created_at,
+                'expires_at': session.expires_at,
+                'is_active': session.is_active,
+                'permissions': [
+                    'system_configuration',
+                    'user_management',
+                    'debug_access',
+                    'backup_management',
+                    'log_access'
+                ] if session.is_admin else []
+            }
+            
+            return True, session_data, None
+            
+        except Exception as e:
+            logger.error(f"Session validation failed: {e}")
+            return False, None, f"Session validation error: {str(e)}"
+    
+    def logout(self, session_token: str) -> bool:
+        """
+        Logout any user type
+        
+        Args:
+            session_token: Session token to invalidate
+            
+        Returns:
+            True if logout successful
+        """
+        try:
+            # Import Session model here to avoid circular imports
+            from models.entities import Session
+            
+            # Get session from database
+            session = Session.get_by_session_id(session_token)
+            if session and session.is_active:
+                session.deactivate()
+                logger.info(f"Session terminated: {session_token[:8]}...")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"Logout failed: {e}")
+            return False
+    
+    def get_active_sessions(self) -> Dict[str, Any]:
+        """
+        Get information about all active sessions
+        
+        Returns:
+            Dictionary with session information
+        """
+        try:
+            # Import Session model here to avoid circular imports
+            from models.entities import Session, User
+            
+            # Get all active sessions
+            active_sessions = {}
+            now = datetime.utcnow()
+            
+            sessions = Session.get_active_sessions()
+            for session in sessions:
+                if session.expires_at > now:
+                    user = User.get_by_id(session.user_id) if session.user_id else None
+                    if user and user.is_active:
+                        active_sessions[session.session_id[:8] + "..."] = {
+                            'username': user.username,
+                            'is_admin': session.is_admin,
+                            'created_at': session.created_at.isoformat(),
+                            'expires_at': session.expires_at.isoformat(),
+                            'permissions': [
+                                'system_configuration',
+                                'user_management',
+                                'debug_access',
+                                'backup_management',
+                                'log_access'
+                            ] if session.is_admin else []
+                        }
+            
+            return {
+                'total_sessions': len(active_sessions),
+                'sessions': active_sessions
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get active sessions: {e}")
+            return {'total_sessions': 0, 'sessions': {}}
+    
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Check authentication service health
+        
+        Returns:
+            Health status information
+        """
+        try:
+            # Check if auth config is loaded
+            if not self.auth_config:
+                return {
+                    "status": "unhealthy",
+                    "error": "Authentication configuration not loaded"
+                }
+            
+            # Check if required config sections exist
+            required_sections = ["session_management", "authentication_methods"]
+            missing_sections = [section for section in required_sections if section not in self.auth_config]
+            if missing_sections:
+                return {
+                    "status": "unhealthy",
+                    "error": f"Missing required configuration sections: {missing_sections}"
+                }
+            
+            # Get active sessions count
+            from models.entities import Session
+            active_sessions = len(Session.get_active_sessions())
+            
+            return {
+                "status": "healthy",
+                "service": "authentication",
+                "config_loaded": True,
+                "active_sessions": active_sessions,
+                "brute_force_protection": True,
+                "session_expiry_hours": self.auth_config["session_management"].get("session_expiry_hours", 24),
+                "session_token_length": self.auth_config["session_management"].get("session_token_length", 32),
+                "last_check": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Auth health check failed: {e}")
+            return {
+                "status": "unhealthy",
+                "service": "authentication",
+                "error": str(e),
+                "last_check": datetime.utcnow().isoformat()
+            }
 
-    def create_user(self, username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    def create_user(self, username: str, password: str, is_admin: bool = False) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Create new user account (admin-only function)
         
@@ -359,62 +375,14 @@ class AuthService:
             password_hash = self._hash_password(password)
             
             # Create user
-            user = User.create(username=username, password_hash=password_hash, is_admin=False)
+            user = User.create(username=username, password_hash=password_hash, is_admin=is_admin)
             
-            logger.info(f"User created successfully: {username}")
+            logger.info(f"User created successfully: {username} (admin: {is_admin})")
             return True, str(user.id), None
             
         except Exception as e:
             logger.error(f"User creation failed: {e}")
             return False, None, f"User creation error: {str(e)}"
-
-    def validate_user_session(self, session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
-        """
-        Validate user session (non-admin)
-        
-        Args:
-            session_token: Session token to validate
-            
-        Returns:
-            Tuple of (valid, session_data, error_message)
-        """
-        try:
-            # Import Session model here to avoid circular imports
-            from models.entities import Session
-            
-            # Get session from database
-            session = Session.get_by_session_id(session_token)
-            if not session:
-                return False, None, "Invalid session token"
-            
-            if not session.is_active:
-                return False, None, "Session is inactive"
-            
-            # Check if session has expired
-            if datetime.utcnow() > session.expires_at:
-                # Deactivate expired session
-                session.deactivate()
-                return False, None, "Session expired"
-            
-            # Get user information
-            from models.entities import User
-            user = User.get_by_id(session.user_id) if session.user_id else None
-            
-            session_data = {
-                'session_id': session.session_id,
-                'user_id': session.user_id,
-                'username': user.username if user else None,
-                'is_admin': session.is_admin,
-                'created_at': session.created_at,
-                'expires_at': session.expires_at,
-                'is_active': session.is_active
-            }
-            
-            return True, session_data, None
-            
-        except Exception as e:
-            logger.error(f"User session validation failed: {e}")
-            return False, None, f"Session validation error: {str(e)}"
 
     def list_users(self) -> List[Dict[str, Any]]:
         """
@@ -484,30 +452,38 @@ class AuthService:
 # Global auth service instance
 auth_service = None
 
-def get_auth_service() -> AuthService:
-    """Get the global authentication service instance"""
-    global auth_service
-    if auth_service is None:
-        auth_service = AuthService()
-    return auth_service
-
-def authenticate_admin_user(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+def get_auth_service(config_path: str = None) -> AuthService:
     """
-    Authenticate admin user
+    Get the global authentication service instance
     
     Args:
-        username: Admin username
-        password: Admin password
+        config_path: Optional path to config directory
+    """
+    global auth_service
+    if auth_service is None:
+        auth_service = AuthService(config_path)
+    elif config_path is not None:
+        # Create new instance with custom config
+        return AuthService(config_path)
+    return auth_service
+
+def authenticate(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Authenticate any user type
+    
+    Args:
+        username: Username
+        password: Password
         
     Returns:
         Tuple of (success, session_token, error_message)
     """
     service = get_auth_service()
-    return service.authenticate_admin(username, password)
+    return service.authenticate(username, password)
 
-def validate_admin_session(session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+def validate_session(session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
     """
-    Validate admin session
+    Validate any user session
     
     Args:
         session_token: Session token to validate
@@ -518,46 +494,33 @@ def validate_admin_session(session_token: str) -> Tuple[bool, Optional[Dict[str,
     service = get_auth_service()
     return service.validate_session(session_token)
 
-def authenticate_user(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
+def logout(session_token: str) -> bool:
     """
-    Authenticate regular user (non-admin)
+    Logout any user type
     
     Args:
-        username: User username
-        password: User password
+        session_token: Session token to invalidate
         
     Returns:
-        Tuple of (success, session_token, error_message)
+        True if logout successful
     """
     service = get_auth_service()
-    return service.authenticate_user(username, password)
+    return service.logout(session_token)
 
-def validate_user_session(session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+def create_user(username: str, password: str, is_admin: bool = False) -> Tuple[bool, Optional[str], Optional[str]]:
     """
-    Validate user session (non-admin)
-    
-    Args:
-        session_token: Session token to validate
-        
-    Returns:
-        Tuple of (valid, session_data, error_message)
-    """
-    service = get_auth_service()
-    return service.validate_user_session(session_token)
-
-def create_user(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
-    """
-    Create new user account (admin-only function)
+    Create new user account
     
     Args:
         username: Username for new user
         password: Password for new user
+        is_admin: Whether the user should have admin privileges
         
     Returns:
         Tuple of (success, user_id, error_message)
     """
     service = get_auth_service()
-    return service.create_user(username, password)
+    return service.create_user(username, password, is_admin)
 
 def list_users() -> List[Dict[str, Any]]:
     """

@@ -101,7 +101,9 @@ def init_database():
         # Create indexes for performance
         logger.info("Creating performance indexes...")
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username, is_active)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_admin ON users(is_admin, is_active)')  # Index for admin lookup
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_user_active ON sessions(user_id, is_active, expires_at)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_admin ON sessions(is_admin, is_active)')  # Index for admin sessions
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_submissions_session_date ON submissions(session_id, created_at)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_evaluations_submission ON evaluations(submission_id, created_at)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(session_id, is_active, expires_at)')
@@ -121,15 +123,45 @@ def init_database():
         
         # Create default admin user if not exists
         logger.info("Creating default admin user...")
-        admin_password = os.getenv('ADMIN_PASSWORD', 'admin')
-        if admin_password:
+        admin_password = os.getenv('ADMIN_PASSWORD')
+        if not admin_password:
+            logger.warning("ADMIN_PASSWORD not set, using default password. THIS IS NOT SECURE!")
+            admin_password = 'admin123'  # Default password with better complexity
+        
+        try:
             import bcrypt
-            password_hash = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+            # Use higher salt rounds for better security
+            salt_rounds = 12
+            password_hash = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt(rounds=salt_rounds))
             
-            cursor.execute('''
-                INSERT OR IGNORE INTO users (username, password_hash, is_admin, is_active)
-                VALUES (?, ?, ?, ?)
-            ''', ('admin', password_hash.decode('utf-8'), True, True))
+            # Check if admin user exists
+            cursor.execute('SELECT id FROM users WHERE username = ?', ('admin',))
+            admin_exists = cursor.fetchone()
+            
+            if not admin_exists:
+                logger.info("Creating new admin user...")
+                cursor.execute('''
+                    INSERT INTO users (username, password_hash, is_admin, is_active)
+                    VALUES (?, ?, ?, ?)
+                ''', ('admin', password_hash.decode('utf-8'), True, True))
+            else:
+                # Update admin password if ADMIN_PASSWORD is explicitly set
+                if os.getenv('ADMIN_PASSWORD'):
+                    logger.info("Updating admin password...")
+                    cursor.execute('''
+                        UPDATE users 
+                        SET password_hash = ?, is_admin = TRUE, is_active = TRUE
+                        WHERE username = ?
+                    ''', (password_hash.decode('utf-8'), 'admin'))
+        except Exception as e:
+            logger.error(f"Failed to create/update admin user: {e}")
+            raise
+        
+        # Add migration record for auth changes
+        cursor.execute('''
+            INSERT OR IGNORE INTO schema_migrations (version, description)
+            VALUES (?, ?)
+        ''', ('002_auth_unified', 'Unified authentication system with admin flag'))
         
         conn.commit()
         conn.close()
@@ -156,6 +188,22 @@ def verify_database():
                 logger.error(f"Table {table} not found")
                 return False
         
+        # Check if required indexes exist
+        required_indexes = [
+            'idx_users_username',
+            'idx_users_admin',
+            'idx_sessions_user_active',
+            'idx_sessions_admin',
+            'idx_submissions_session_date',
+            'idx_evaluations_submission',
+            'idx_sessions_active'
+        ]
+        for idx in required_indexes:
+            cursor.execute(f"SELECT name FROM sqlite_master WHERE type='index' AND name='{idx}'")
+            if not cursor.fetchone():
+                logger.error(f"Required index {idx} not found")
+                return False
+        
         # Check WAL mode
         cursor.execute("PRAGMA journal_mode")
         journal_mode = cursor.fetchone()[0]
@@ -168,6 +216,31 @@ def verify_database():
         if integrity_check != 'ok':
             logger.error(f"Database integrity check failed: {integrity_check}")
             return False
+            
+        # Check admin user exists and is properly configured
+        cursor.execute('''
+            SELECT username, is_admin, is_active 
+            FROM users 
+            WHERE username = 'admin'
+        ''')
+        admin_user = cursor.fetchone()
+        if not admin_user:
+            logger.error("Admin user not found")
+            return False
+        elif not admin_user[1]:  # is_admin flag
+            logger.error("Admin user exists but is_admin flag is not set")
+            return False
+        elif not admin_user[2]:  # is_active flag
+            logger.error("Admin user exists but is not active")
+            return False
+            
+        # Check schema migration version
+        cursor.execute('''
+            SELECT version FROM schema_migrations 
+            WHERE version = '002_auth_unified'
+        ''')
+        if not cursor.fetchone():
+            logger.warning("Schema migration '002_auth_unified' not found")
         
         conn.close()
         logger.info("Database verification completed successfully")

@@ -22,10 +22,9 @@ from services import (
     get_llm_service, 
     evaluate_text_with_llm,
     get_auth_service,
-    authenticate_admin_user,
-    validate_admin_session,
-    authenticate_user,
-    validate_user_session,
+    authenticate,
+    validate_session,
+    logout,
     get_config_manager,
     read_config_file,
     write_config_file,
@@ -274,67 +273,12 @@ async def auth_health_check():
 
 @app.post("/api/v1/admin/login")
 async def admin_login(request: Request):
-    """Admin login endpoint"""
+    """Legacy admin login endpoint - redirects to unified auth"""
     try:
         body = await request.json()
-        username = body.get("username", "")
-        password = body.get("password", "")
-        
-        # Validate input
-        if not username or not password:
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "data": None,
-                    "meta": {
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "request_id": "placeholder"
-                    },
-                    "errors": [{
-                        "code": "VALIDATION_ERROR",
-                        "message": "Username and password are required",
-                        "field": "credentials",
-                        "details": "Please provide both username and password"
-                    }]
-                }
-            )
-        
-        # Authenticate admin
-        success, session_token, error = authenticate_admin_user(username, password)
-        
-        if success:
-            return {
-                "data": {
-                    "session_token": session_token,
-                    "username": username,
-                    "is_admin": True
-                },
-                "meta": {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "request_id": "placeholder"
-                },
-                "errors": []
-            }
-        else:
-            return JSONResponse(
-                status_code=401,
-                content={
-                    "data": None,
-                    "meta": {
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "request_id": "placeholder"
-                    },
-                    "errors": [{
-                        "code": "AUTHENTICATION_ERROR",
-                        "message": "Authentication failed",
-                        "field": "credentials",
-                        "details": error
-                    }]
-                }
-            )
-            
+        return await auth_login(request)
     except Exception as e:
-        logger.error(f"Admin login failed: {e}")
+        logger.error(f"Admin login redirect failed: {e}")
         return JSONResponse(
             status_code=500,
             content={
@@ -352,9 +296,9 @@ async def admin_login(request: Request):
             }
         )
 
-@app.post("/api/v1/admin/logout")
-async def admin_logout(request: Request):
-    """Admin logout endpoint"""
+@app.post("/api/v1/auth/logout")
+async def auth_logout(request: Request):
+    """Unified logout endpoint for all users"""
     try:
         # Get session token from header
         session_token = request.headers.get("X-Session-Token", "")
@@ -378,11 +322,11 @@ async def admin_logout(request: Request):
             )
         
         # Validate session and logout
-        valid, session_data, error = validate_admin_session(session_token)
+        valid, session_data, error = validate_session(session_token)
         
         if valid:
             auth_service = get_auth_service()
-            logout_success = auth_service.logout_admin(session_token)
+            logout_success = auth_service.logout(session_token)
             
             if logout_success:
                 return {
@@ -431,7 +375,7 @@ async def admin_logout(request: Request):
             )
             
     except Exception as e:
-        logger.error(f"Admin logout failed: {e}")
+        logger.error(f"Logout failed: {e}")
         return JSONResponse(
             status_code=500,
             content={
@@ -474,8 +418,8 @@ async def create_user_endpoint(request: Request):
                 }
             )
         
-        # Validate admin session
-        valid, session_data, error = validate_admin_session(session_token)
+        # Validate session and check admin access
+        valid, session_data, error = validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -488,9 +432,27 @@ async def create_user_endpoint(request: Request):
                     },
                     "errors": [{
                         "code": "AUTHENTICATION_ERROR",
-                        "message": "Admin access required",
+                        "message": "Invalid session",
                         "field": "session_token",
                         "details": error
+                    }]
+                }
+            )
+            
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "PERMISSION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": "This endpoint requires administrator privileges"
                     }]
                 }
             )
@@ -597,8 +559,8 @@ async def list_users_endpoint(request: Request):
                 }
             )
         
-        # Validate admin session
-        valid, session_data, error = validate_admin_session(session_token)
+        # Validate session and check admin access
+        valid, session_data, error = validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -611,9 +573,27 @@ async def list_users_endpoint(request: Request):
                     },
                     "errors": [{
                         "code": "AUTHENTICATION_ERROR",
-                        "message": "Admin access required",
+                        "message": "Invalid session",
                         "field": "session_token",
                         "details": error
+                    }]
+                }
+            )
+            
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "PERMISSION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": "This endpoint requires administrator privileges"
                     }]
                 }
             )
@@ -677,8 +657,8 @@ async def delete_user_endpoint(username: str, request: Request):
                 }
             )
         
-        # Validate admin session
-        valid, session_data, error = validate_admin_session(session_token)
+        # Validate session and check admin access
+        valid, session_data, error = validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -691,9 +671,27 @@ async def delete_user_endpoint(username: str, request: Request):
                     },
                     "errors": [{
                         "code": "AUTHENTICATION_ERROR",
-                        "message": "Admin access required",
+                        "message": "Invalid session",
                         "field": "session_token",
                         "details": error
+                    }]
+                }
+            )
+            
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "PERMISSION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": "This endpoint requires administrator privileges"
                     }]
                 }
             )
@@ -774,7 +772,7 @@ async def get_config(config_name: str, request: Request):
                 }
             )
         
-        valid, session_data, error = validate_admin_session(session_token)
+        valid, session_data, error = validate_session(session_token)
         if not valid:
             return JSONResponse(
                 status_code=401,
@@ -869,7 +867,7 @@ async def update_config(config_name: str, request: Request):
                 }
             )
         
-        valid, session_data, error = validate_admin_session(session_token)
+        valid, session_data, error = validate_session(session_token)
         if not valid:
             return JSONResponse(
                 status_code=401,
@@ -962,9 +960,91 @@ async def update_config(config_name: str, request: Request):
             }
         )
 
+@app.get("/api/v1/auth/validate")
+async def auth_validate(request: Request):
+    """Validate session token and return user info"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Session token is required",
+                        "field": "session_token",
+                        "details": "Please provide session token in X-Session-Token header"
+                    }]
+                }
+            )
+        
+        # Validate session
+        valid, session_data, error = validate_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+        
+        return {
+            "data": {
+                "session_id": session_data['session_id'],
+                "user_id": session_data['user_id'],
+                "username": session_data['username'],
+                "is_admin": session_data['is_admin'],
+                "permissions": session_data['permissions'],
+                "expires_at": session_data['expires_at'].isoformat(),
+                "created_at": session_data['created_at'].isoformat()
+            },
+            "meta": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": session_data['session_id'][:8]
+            },
+            "errors": []
+        }
+        
+    except Exception as e:
+        logger.error(f"Session validation failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Session validation failed",
+                    "field": None,
+                    "details": "An internal error occurred during session validation"
+                }]
+            }
+        )
+
 @app.post("/api/v1/auth/login")
-async def user_login(request: Request):
-    """User login endpoint (no registration available)"""
+async def auth_login(request: Request):
+    """Unified login endpoint for all users"""
     try:
         # Parse request body
         body = await request.json()
@@ -990,22 +1070,43 @@ async def user_login(request: Request):
                 }
             )
         
-        # Authenticate user
-        success, session_token, error = authenticate_user(username, password)
+        # Authenticate user with unified auth
+        success, session_token, error = authenticate(username, password)
         
         if success:
-            return {
-                "data": {
-                    "session_token": session_token,
-                    "username": username,
-                    "is_admin": False
-                },
-                "meta": {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "request_id": "placeholder"
-                },
-                "errors": []
-            }
+            # Get user info to return admin status
+            valid, session_data, _ = validate_session(session_token)
+            if valid:
+                return {
+                    "data": {
+                        "session_token": session_token,
+                        "username": session_data.get('username'),
+                        "is_admin": session_data.get('is_admin', False),
+                        "user_id": session_data.get('user_id')
+                    },
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": []
+                }
+            else:
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "data": None,
+                        "meta": {
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "request_id": "placeholder"
+                        },
+                        "errors": [{
+                            "code": "SESSION_ERROR",
+                            "message": "Failed to validate new session",
+                            "field": None,
+                            "details": "Session validation failed after successful authentication"
+                        }]
+                    }
+                )
         else:
             return JSONResponse(
                 status_code=401,
@@ -1025,7 +1126,7 @@ async def user_login(request: Request):
             )
             
     except Exception as e:
-        logger.error(f"User login failed: {e}")
+        logger.error(f"Authentication failed: {e}")
         return JSONResponse(
             status_code=500,
             content={
@@ -1068,11 +1169,10 @@ async def create_session(request: Request):
                 }
             )
         
-        # Validate session (either admin or user)
-        valid_admin, admin_session_data, admin_error = validate_admin_session(session_token)
-        valid_user, user_session_data, user_error = validate_user_session(session_token)
+        # Validate session with unified auth
+        valid, session_data, error = validate_session(session_token)
         
-        if not valid_admin and not valid_user:
+        if not valid:
             return JSONResponse(
                 status_code=401,
                 content={
@@ -1085,14 +1185,12 @@ async def create_session(request: Request):
                         "code": "AUTHENTICATION_ERROR",
                         "message": "Invalid session",
                         "field": "session_token",
-                        "details": "Please log in again"
+                        "details": error or "Please log in again"
                     }]
                 }
             )
         
-        # Return existing session info
-        session_data = admin_session_data if valid_admin else user_session_data
-        
+        # Return session info
         return {
             "data": {
                 "session_id": session_data['session_id'],
@@ -1181,11 +1279,10 @@ async def submit_evaluation(request: Request):
                 }
             )
         
-        # Validate session (either admin or user)
-        valid_admin, admin_session_data, admin_error = validate_admin_session(session_token)
-        valid_user, user_session_data, user_error = validate_user_session(session_token)
+        # Validate session
+        valid, session_data, error = validate_session(session_token)
         
-        if not valid_admin and not valid_user:
+        if not valid:
             return JSONResponse(
                 status_code=401,
                 content={
@@ -1198,7 +1295,7 @@ async def submit_evaluation(request: Request):
                         "code": "AUTHENTICATION_ERROR",
                         "message": "Invalid session",
                         "field": "session_token",
-                        "details": "Please log in again"
+                        "details": error or "Please log in again"
                     }]
                 }
             )
@@ -1265,8 +1362,7 @@ async def submit_evaluation(request: Request):
                 }
             )
         
-        # Get session data for user association
-        session_data = admin_session_data if valid_admin else user_session_data
+        # Session data already contains user association
         
         return {
             "data": {

@@ -13,8 +13,7 @@ from components.api_client import (
     test_backend_connection, 
     create_session_with_retry, 
     submit_evaluation_with_retry,
-    user_login_with_retry,
-    admin_login_with_retry
+    login_with_retry
 )
 from components.state_manager import StateManager
 
@@ -80,7 +79,7 @@ st.markdown("""
 StateManager.initialize_session_state()
 
 def show_authentication_ui():
-    """Show authentication UI for user login"""
+    """Show unified authentication UI for all users"""
     st.markdown("## 🔐 Authentication Required")
     st.markdown("Please log in to use the Memo AI Coach system.")
     
@@ -88,8 +87,8 @@ def show_authentication_ui():
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        with st.form("user_login_form"):
-            st.markdown("### User Login")
+        with st.form("login_form"):
+            st.markdown("### Login")
             username = st.text_input("Username", placeholder="Enter your username")
             password = st.text_input("Password", type="password", placeholder="Enter your password")
             
@@ -101,12 +100,21 @@ def show_authentication_ui():
                     return
                 
                 with st.spinner("🔐 Logging in..."):
-                    success, session_token, error = user_login_with_retry(username, password)
+                    success, data, error = login_with_retry(username, password)
                     
-                    if success:
-                        StateManager.set_user_authenticated(True)
-                        StateManager.set_user_session_token(session_token)
-                        StateManager.set_user_username(username)
+                    if success and data:
+                        user_data = data.get('data', {})
+                        session_token = user_data.get('session_token')
+                        is_admin = user_data.get('is_admin', False)
+                        
+                        if is_admin:
+                            StateManager.set_admin_authenticated(True)
+                            StateManager.set_admin_session_token(session_token)
+                        else:
+                            StateManager.set_user_authenticated(True)
+                            StateManager.set_user_session_token(session_token)
+                            StateManager.set_user_username(username)
+                        
                         st.success(f"✅ Welcome, {username}!")
                         st.rerun()
                     else:
@@ -115,31 +123,6 @@ def show_authentication_ui():
     # Add note about admin access
     st.markdown("---")
     st.markdown("**Note**: User accounts must be created by an administrator. Please contact your system administrator if you need access.")
-    
-    # Add admin login option
-    with st.expander("🔧 Admin Login"):
-        with st.form("admin_login_form"):
-            st.markdown("### Admin Login")
-            admin_username = st.text_input("Admin Username", placeholder="admin")
-            admin_password = st.text_input("Admin Password", type="password", placeholder="Enter admin password")
-            
-            admin_login_button = st.form_submit_button("🔧 Admin Login", type="primary", use_container_width=True)
-            
-            if admin_login_button:
-                if not admin_username or not admin_password:
-                    st.error("❌ Please enter both username and password")
-                    return
-                
-                with st.spinner("🔐 Logging in as admin..."):
-                    success, session_token, error = admin_login_with_retry(admin_username, admin_password)
-                    
-                    if success:
-                        StateManager.set_admin_authenticated(True)
-                        StateManager.set_admin_session_token(session_token)
-                        st.success("✅ Admin login successful!")
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Admin login failed: {error}")
 
 def create_session():
     """Create a new session with the backend"""
@@ -657,36 +640,9 @@ def main():
     with tabs[5]:
         st.header("Admin Panel")
         
-        # Admin authentication
         if not StateManager.is_admin_authenticated():
-            st.markdown('<div class="admin-section">', unsafe_allow_html=True)
-            st.subheader("🔐 Admin Authentication")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                admin_username = st.text_input("Admin Username", help="Enter admin username")
-            with col2:
-                admin_password = st.text_input("Admin Password", type="password", help="Enter admin password")
-            
-            if st.button("🔑 Login", type="primary", key="admin_login_button"):
-                if admin_username and admin_password:
-                    api_client = get_api_client()
-                    success, data, error = api_client.admin_login(admin_username, admin_password)
-                    
-                    if success and data:
-                        session_token = data.get('data', {}).get('session_token')
-                        if session_token:
-                            StateManager.set_admin_authenticated(True)
-                            StateManager.set_admin_session_token(session_token)
-                            st.success("✅ Admin access granted")
-                            st.rerun()
-                        else:
-                            st.error("❌ No session token received")
-                    else:
-                        st.error(f"❌ Login failed: {error}")
-                else:
-                    st.error("❌ Please enter both username and password")
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.warning("⚠️ Admin access required. Please log in with an admin account.")
+            return
         
         if StateManager.is_admin_authenticated():
             st.success("✅ Admin access granted")
@@ -840,9 +796,6 @@ def main():
                             
                             if success:
                                 st.success(f"✅ User '{new_username}' created successfully")
-                                # Clear the form
-                                st.session_state.new_user_username = ""
-                                st.session_state.new_user_password = ""
                                 # Refresh the user list to show the new user
                                 try:
                                     success, data, error = api_client.list_users(session_token)
@@ -851,6 +804,8 @@ def main():
                                         st.session_state.admin_users_list = users
                                 except Exception as e:
                                     st.warning(f"⚠️ User created but failed to refresh list: {e}")
+                                # Clear the form by rerunning the app
+                                st.rerun()
                             else:
                                 st.error(f"❌ Failed to create user: {error}")
                         else:
@@ -874,6 +829,11 @@ def main():
                         else:
                             st.session_state.admin_users_list = []
                             st.info("ℹ️ No users found")
+                    elif error and "Admin access required" in error:
+                        st.error("❌ Admin access required")
+                        StateManager.set_admin_authenticated(False)
+                        StateManager.clear_admin_session_token()
+                        st.rerun()
                     else:
                         st.error(f"❌ Failed to load users: {error}")
                 else:
