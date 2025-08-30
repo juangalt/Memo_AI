@@ -49,34 +49,6 @@ services:
       - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dashboard.service=api@internal"
 
-  frontend:
-    build: ./frontend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
-      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
-    environment:
-      - BACKEND_URL=http://backend:8000
-      - APP_ENV=${APP_ENV:-production}
-      - DEBUG_MODE=${DEBUG_MODE:-false}
-    depends_on:
-      - backend
-    volumes:
-      # Configuration files - read-only for security
-      - ./config:/app/config:ro
-      # Logs directory - read-write for application logging
-      - ./logs:/app/logs
-    user: "1000:1000"  # Match container user UID/GID
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   backend:
     build: ./backend
