@@ -55,7 +55,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.priority=200"
+      - "traefik.http.routers.backend.priority=300"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
       - "traefik.http.routers.backend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
@@ -95,14 +95,14 @@ services:
     build: ./vue-frontend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vue-frontend.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.vue-frontend.rule=Host(`${DOMAIN:-localhost}`) && !PathPrefix(`/api`)"
       - "traefik.http.routers.vue-frontend.priority=200"
       - "traefik.http.routers.vue-frontend.entrypoints=websecure"
       - "traefik.http.routers.vue-frontend.tls.certresolver=letsencrypt"
       - "traefik.http.routers.vue-frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
       - "traefik.http.services.vue-frontend.loadbalancer.server.port=80"
     environment:
-      - BACKEND_URL=http://backend:8000
+      - VITE_BACKEND_URL=http://backend:8000
       - APP_ENV=${APP_ENV:-production}
       - DEBUG_MODE=${DEBUG_MODE:-false}
       - PHASE_TRACKING_ENABLED=true
