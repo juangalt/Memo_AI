@@ -17,7 +17,7 @@
 - **This includes adding, removing, or changing content in any documentation files**
 - **The `docs/` directory contains the authoritative project specifications**
 - **Only make changes to `docs/` files when the user explicitly requests it**
-- **All other directories (backend/, frontend/, config/, etc.) can be modified as needed**
+- **All other directories (backend/, vue-frontend/, config/, etc.) can be modified as needed**
 - **Violation of this rule will result in incorrect project implementation**
 
 ---
@@ -166,6 +166,7 @@ docs/
 ├── AGENTS.md                          # This file - AI agent guidelines
 ├── 01_Project_Overview.md             # High-level project overview
 ├── 02_Architecture_Documentation.md   # Detailed system architecture
+├── 02b_Authentication_Specifications.md # Authentication implementation details
 ├── 03_Installation_Guide.md           # Complete installation procedures
 ├── 04_Configuration_Guide.md          # Configuration management
 ├── 05_API_Documentation.md            # Complete API reference

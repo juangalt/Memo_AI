@@ -77,20 +77,14 @@ api_configuration:
 ```
 
 ### 3.4 auth.yaml
-Defines authentication and security parameters.
-- `session_management`: timeout, token length, cookie settings.
-- `authentication_methods`: admin login and brute force protection.
-- `security_settings`: CSRF, rate limiting, input validation, data protection.
-- `admin_credentials`: default admin and role permissions.
-- `session_storage`: database settings and connection pooling.
-- `audit_logging` and `security_monitoring` for compliance.
-When the admin updates configuration through the UI, `config_manager.py` writes the new YAML file atomically and preserves the previous version in `config/backups/<timestamp>_<filename>`.
+Configures authentication and security parameters. See `docs/02b_Authentication_Specifications.md` for complete authentication configuration details and examples.
 
 ## 4.0 Validation
 Run `python3 backend/validate_config.py` to ensure all configs exist and satisfy required fields.
 Failure details are logged and exit code signals success.
 
 ## 5.0 References
+- `docs/02b_Authentication_Specifications.md` - Complete authentication configuration details
 - `config/*.yaml`
 - `backend/services/config_service.py`
 - `backend/services/config_manager.py`

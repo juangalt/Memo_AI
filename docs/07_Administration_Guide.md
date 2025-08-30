@@ -8,32 +8,18 @@
 
 ---
 
-## 1.0 Authentication System
-### 1.1 User Categories
-The system implements a two-tier authentication system:
+## 1.0 Access Requirements
+Administrators must authenticate with valid admin credentials to access administrative functions. The system supports two user categories:
 
-- **Regular Users**: Can submit memos for evaluation, view feedback, and access basic application functions.
-- **Administrators**: Have all regular user privileges plus access to configuration management, system monitoring, debug tools, user management, and administrative functions.
+- **Regular Users**: Basic application access for memo evaluation
+- **Administrators**: Full system access including configuration management and user administration
 
-### 1.2 Authentication Process
-- **Homepage Login**: All users must authenticate through the centralized login page before accessing any application functions.
-- **Credential Validation**: Username and password are validated against system configuration in `auth.yaml` or `.env`.
-- **Session Creation**: Upon successful authentication, backend returns a `session_token` used in `X-Session-Token` header for subsequent requests.
-- **Role Assignment**: User role (regular user or administrator) is determined during authentication and enforced throughout the session.
-- **Session Management**: Tokens expire according to `auth.yaml` configuration with automatic logout and re-authentication prompts.
-
-### 1.3 Admin Authentication Details
-Steps for administrator access:
-1. Open the application and navigate to the homepage login interface.
-2. Provide administrator username and password then press **Login**.
-3. The frontend stores the returned `session_token` in memory only; it is never written to disk.
-4. Upon successful authentication, administrators gain access to all application tabs including Admin and Debug.
-5. Upon expiration the interface will prompt for re-authentication.
+See `docs/02b_Authentication_Specifications.md` for complete authentication details and security requirements.
 
 ---
 
 ## 2.0 Admin Dashboard
-The Admin tab provides (administrators only):
+The Admin page provides (administrators only):
 - **Health Monitoring**: calls `/health` endpoint and displays service statuses including database, configuration, auth and LLM.
 - **Configuration Management**: select `rubric`, `prompt`, `llm`, or `auth`, load current content, edit YAML, save or reload.
 - **User Management**: add, edit, delete, and manage user accounts and roles.
@@ -45,8 +31,8 @@ Each configuration update triggers:
 2. Atomic write of new file with backup stored under `config/backups/`.
 3. In-memory reload so changes take effect immediately without container restart.
 
-## 3.0 Debug Tab
-The Debug tab provides system diagnostics and development tools (administrators only):
+## 3.0 Debug Page
+The Debug page provides system diagnostics and development tools (administrators only):
 - **System Diagnostics**: View system health, database status, and service connectivity.
 - **API Testing**: Test backend endpoints and view request/response data.
 - **Configuration Validation**: Verify YAML configuration files and settings.
@@ -54,17 +40,14 @@ The Debug tab provides system diagnostics and development tools (administrators 
 - **Development Tools**: Access debugging utilities and development aids.
 
 ## 4.0 Security Notes
-- All configuration files are backed up before overwrite (`config_manager.py`).
-- Brute force protection and session rotation are enforced by `auth_service.py` and `auth.yaml` settings.
-- Admin tokens expire and are auto-extended when nearing expiration.
-- Use strong, unique passwords and rotate regularly via configuration updates.
-- Access to the Admin and Debug tabs should be restricted through network controls in production.
-- Review audit logs periodically for unauthorized access attempts.
-- **Universal Authentication**: All application functions require valid user authentication.
-- **Role-Based Access**: Regular users cannot access administrative functions, debug tools, or user management.
+- All configuration changes are backed up automatically before modification.
+- Use strong passwords and rotate them regularly through the admin interface.
+- Restrict access to administrative functions through network controls in production.
+- Review system logs periodically for security monitoring.
+- Role-based access controls prevent unauthorized administrative access.
 
 ## 5.0 Audit Logging
-`auth.yaml` enables audit logging for events like login, logout, user management, and configuration changes. Logs are written to `logs/` within host and mounted into containers. Each log entry includes timestamp, username, role, action and outcome.
+The system maintains comprehensive audit logs for administrative actions and security events. Logs are stored in the `logs/` directory and include timestamps, user information, and action details. See `docs/02b_Authentication_Specifications.md` for audit logging configuration.
 
 ## 6.0 User Management
 ### 6.1 Adding Users
@@ -92,12 +75,12 @@ The Debug tab provides system diagnostics and development tools (administrators 
 - **User Statistics**: View user activity metrics and session information.
 
 ### 6.5 Role Management
-- **Role Assignment**: User roles are assigned during authentication based on credentials.
-- **Permission Enforcement**: Role permissions are enforced at both frontend and backend levels.
-- **Regular Users**: Cannot access administrative functions, debug tools, or user management.
-- **Administrators**: Have full access to all application features including user management.
+User roles determine access levels throughout the application. Role assignments and permissions are managed through the admin interface and enforced at both frontend and backend levels. See `docs/02b_Authentication_Specifications.md` for complete role management details.
 
 ## 7.0 References
+- `docs/02b_Authentication_Specifications.md` - Complete authentication and role management details
+- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
 - `backend/services/auth_service.py`
 - `backend/services/config_manager.py`
-- `frontend/app.py` (Admin and Debug tabs)
+- `vue-frontend/views/Admin.vue` - Vue.js admin interface
+- `vue-frontend/views/Debug.vue` - Vue.js debug interface

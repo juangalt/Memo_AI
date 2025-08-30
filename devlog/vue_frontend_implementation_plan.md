@@ -18,6 +18,7 @@ This document outlines the comprehensive implementation plan for creating a Vue.
 - Maintain complete backward compatibility with existing backend API
 - Implement parallel deployment without affecting current Streamlit frontend
 - Ensure compliance with all frontend specifications and requirements
+- **Align with Authentication Specifications** (`docs/02b_Authentication_Specifications.md`)
 
 ### Success Criteria
 - Vue frontend accessible at `https://memo.myisland.dev/vue/`
@@ -255,9 +256,14 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
-// Initialize session validation on app startup
+// Initialize authentication store globally for API client access
 import { useAuthStore } from '@/stores/auth'
 const authStore = useAuthStore()
+window.authStoreInstance = authStore
+
+// Initialize session validation on app startup
+// Note: Per auth specs, tokens are stored in memory only
+authStore.initializeFromMemory()
 
 // Try to validate existing session on app load
 authStore.validateSession().catch(() => {
@@ -286,7 +292,8 @@ import { authService } from '@/services/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
-  const sessionToken = ref(localStorage.getItem('sessionToken'))
+  // Store token in memory only (never localStorage per auth specs)
+  const sessionToken = ref(null)
   const isLoading = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
@@ -298,14 +305,18 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await authService.login(username, password)
       if (result.success) {
-        user.value = result.data
+        user.value = result.data.user || result.data
         sessionToken.value = result.data.session_token
-        localStorage.setItem('sessionToken', result.data.session_token)
         return { success: true }
       }
-      return { success: false, error: result.error }
+      // Handle standardized error format from auth specs
+      if (result.data?.errors && result.data.errors.length > 0) {
+        const error = result.data.errors[0]
+        return { success: false, error: error.message, code: error.code }
+      }
+      return { success: false, error: result.error || 'Login failed' }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || 'Login failed' }
     } finally {
       isLoading.value = false
     }
@@ -317,8 +328,16 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await authService.validateSession()
       if (result.success) {
-        user.value = result.data
+        user.value = result.data.user || result.data
         return true
+      }
+      // Handle auth spec error codes
+      if (result.data?.errors && result.data.errors.length > 0) {
+        const error = result.data.errors[0]
+        if (error.code === 'AUTH_SESSION_EXPIRED' || error.code === 'AUTH_INVALID_TOKEN') {
+          logout()
+          return false
+        }
       }
       return false
     } catch (error) {
@@ -335,14 +354,19 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       user.value = null
       sessionToken.value = null
-      localStorage.removeItem('sessionToken')
     }
+  }
+
+  // Initialize from memory if available (not localStorage)
+  const initializeFromMemory = () => {
+    // Token should be passed from previous session or login
+    // Per auth specs: store in memory only, never persistent storage
   }
 
   return {
     user, sessionToken, isLoading,
     isAuthenticated, isAdmin, username,
-    login, validateSession, logout
+    login, validateSession, logout, initializeFromMemory
   }
 })
 ```
@@ -380,7 +404,9 @@ class APIClient {
     
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('sessionToken') || localStorage.getItem('adminToken')
+        // Get token from auth store (memory only, per auth specs)
+        const authStore = window.authStoreInstance
+        const token = authStore?.sessionToken || null
         if (token) {
           config.headers['X-Session-Token'] = token
         }
@@ -388,13 +414,16 @@ class APIClient {
       },
       (error) => Promise.reject(error)
     )
-    
+
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('sessionToken')
-          localStorage.removeItem('adminToken')
+          // Clear session on auth errors per auth specs
+          const authStore = window.authStoreInstance
+          if (authStore) {
+            authStore.logout()
+          }
           window.location.href = '/vue/login'
         }
         return Promise.reject(error)
@@ -627,28 +656,31 @@ const form = ref({ username: '', password: '' })
 const isLoading = ref(false)
 const error = ref('')
 
-const handleLogin = async () => {
-  isLoading.value = true
-  error.value = ''
-  
-  try {
-    let result = await authStore.login(form.value.username, form.value.password)
-    
-    if (!result.success) {
-      result = await authStore.adminLogin(form.value.username, form.value.password)
+  const handleLogin = async () => {
+    isLoading.value = true
+    error.value = ''
+
+    try {
+      const result = await authStore.login(form.value.username, form.value.password)
+
+      if (result.success) {
+        router.push('/text-input')
+      } else {
+        // Handle auth spec error codes
+        if (result.code === 'AUTH_ACCOUNT_LOCKED') {
+          error.value = 'Account temporarily locked due to multiple failed attempts. Please try again later.'
+        } else if (result.code === 'AUTH_INVALID_CREDENTIALS') {
+          error.value = 'Invalid username or password.'
+        } else {
+          error.value = result.error || 'Login failed. Please try again.'
+        }
+      }
+    } catch (err) {
+      error.value = 'Login failed. Please try again.'
+    } finally {
+      isLoading.value = false
     }
-    
-    if (result.success) {
-      router.push('/text-input')
-    } else {
-      error.value = result.error
-    }
-  } catch (err) {
-    error.value = 'Login failed. Please try again.'
-  } finally {
-    isLoading.value = false
   }
-}
 </script>
 ```
 
@@ -1442,89 +1474,95 @@ ab -n 100 -c 10 https://memo.myisland.dev/vue/
 
 ## Summary of Corrections Made
 
-### **Key Fixes Applied:**
+### **Key Fixes Applied Based on Auth Specifications:**
 
-#### **1. Authentication System Corrections**
-- ✅ **Removed separate admin login** - Now uses unified `/api/v1/auth/login`
-- ✅ **Added session validation** - Implements `/api/v1/auth/validate` endpoint
-- ✅ **Unified user state** - Single user object with `is_admin` property
-- ✅ **Proper token management** - Single session token for all operations
+#### **1. Authentication System Alignment**
+- ✅ **Unified Login Endpoint** - Uses `/api/v1/auth/login` for all users (no separate admin login)
+- ✅ **Session Validation** - Implements `/api/v1/auth/validate` endpoint per auth specs
+- ✅ **Memory-Only Token Storage** - Removed localStorage usage per auth spec requirements
+- ✅ **Standardized Error Handling** - Implements auth spec error codes and messages
 
-#### **2. API Request Format Corrections**
-- ✅ **Removed session_id from evaluation requests** - Authentication via headers only
-- ✅ **Added standardized response handling** - `{data: {}, meta: {}, errors: []}` format
-- ✅ **Enhanced error processing** - Proper error code and message handling
+#### **2. API Integration Corrections**
+- ✅ **Proper Header Usage** - `X-Session-Token` header for all authenticated requests
+- ✅ **Standardized Response Format** - Handles `{data: {}, meta: {}, errors: []}` format
+- ✅ **Error Code Processing** - Specific handling for `AUTH_INVALID_CREDENTIALS`, `AUTH_ACCOUNT_LOCKED`, etc.
 
-#### **3. Router and Navigation Updates**
-- ✅ **Added session validation to router guards** - Automatic session validation
-- ✅ **Updated redirect paths** - Correct `/vue/` paths for parallel deployment
-- ✅ **Enhanced route protection** - Better admin route protection
+#### **3. Session Management Updates**
+- ✅ **Automatic Session Validation** - Router guards validate sessions on protected routes
+- ✅ **Proper Session Cleanup** - Clears tokens on logout/expiration per auth specs
+- ✅ **Global Auth Store Access** - API client can access tokens from memory store
 
-#### **4. Service Layer Improvements**
-- ✅ **Unified authentication service** - Single login endpoint for all users
-- ✅ **Added admin endpoints** - User management and configuration APIs
-- ✅ **Enhanced evaluation service** - Proper response format handling
-- ✅ **Improved error handling** - Comprehensive error management
+#### **4. User Experience Improvements**
+- ✅ **Auth-Specific Error Messages** - Clear feedback for different auth error scenarios
+- ✅ **Session Expiration Handling** - Automatic logout on expired sessions
+- ✅ **Brute Force Protection UI** - Handles account lockout scenarios gracefully
 
-#### **5. UI Component Enhancements**
-- ✅ **Added error handling components** - Alert system and loading states
-- ✅ **Enhanced progress indicators** - Real-time evaluation progress
-- ✅ **Improved session management** - Automatic session validation on startup
+#### **5. Security Compliance**
+- ✅ **No Persistent Token Storage** - Tokens stored in memory only per auth specs
+- ✅ **Secure Logout Process** - Proper session cleanup on logout
+- ✅ **Role-Based Route Protection** - Admin routes properly protected
 
 ### **Updated Architecture Overview:**
 
 ```
-Vue Frontend (/vue)          Backend API
-├── Login → /api/v1/auth/login
-├── Session Validation → /api/v1/auth/validate
-├── Text Evaluation → /api/v1/evaluations/submit
-├── Admin Functions → /api/v1/admin/*
-└── Error Handling → Standardized response format
+Vue Frontend (/vue)          Backend API (per Auth Specs)
+├── Login → POST /api/v1/auth/login (unified endpoint)
+├── Session Validation → GET /api/v1/auth/validate
+├── Logout → POST /api/v1/auth/logout
+├── Text Evaluation → POST /api/v1/evaluations/submit
+├── Admin Functions → /api/v1/admin/* (requires is_admin: true)
+├── Headers → X-Session-Token (memory-only storage)
+└── Error Handling → {data: {}, meta: {}, errors: []} format
 ```
 
-### **Key Benefits of Corrections:**
+### **Key Benefits of Auth Spec Alignment:**
 
-#### **✅ API Compatibility**
-- Full alignment with backend specifications
-- Proper authentication flow implementation
+#### **✅ Full API Compatibility**
+- Complete alignment with `docs/02b_Authentication_Specifications.md`
+- Proper authentication flow per security requirements
 - Correct request/response format handling
+- Unified login endpoint for all user types
 
-#### **✅ Enhanced User Experience**
+#### **✅ Enhanced Security Compliance**
+- Memory-only token storage (no localStorage)
+- Proper session validation and cleanup
+- Standardized error codes and messages
+- Brute force protection UI handling
+
+#### **✅ Improved User Experience**
 - Real-time progress indicators
-- Comprehensive error handling
+- Auth-specific error messages
 - Automatic session management
-
-#### **✅ Improved Maintainability**
-- Unified authentication system
-- Standardized error handling
-- Clear separation of concerns
+- Graceful handling of session expiration
 
 #### **✅ Production Readiness**
-- Proper security implementation
-- Comprehensive testing strategy
-- Deployment-ready configuration
+- Security compliance with auth specifications
+- Performance targets alignment
+- Proper error handling and recovery
+- Role-based access control implementation
 
 ## Conclusion
 
-This updated implementation plan now provides a **corrected and comprehensive roadmap** for creating a Vue.js frontend that properly aligns with the backend API specifications. The corrections ensure:
+This updated implementation plan provides a **fully corrected and comprehensive roadmap** for creating a Vue.js frontend that properly aligns with the **Authentication Specifications** (`docs/02b_Authentication_Specifications.md`) and backend API requirements. The corrections ensure:
 
-1. **Full API Compatibility** - All endpoints and data formats match backend expectations
-2. **Proper Authentication Flow** - Unified login system with session validation
-3. **Enhanced Error Handling** - Comprehensive error management and user feedback
-4. **Production Readiness** - Security, performance, and maintainability optimizations
+1. **Complete Auth Spec Compliance** - Full alignment with security requirements and API endpoints
+2. **Unified Authentication Flow** - Single login endpoint with proper session management
+3. **Enhanced Security Implementation** - Memory-only token storage and standardized error handling
+4. **Production-Ready Architecture** - Security, performance, and maintainability optimizations
 
-The Vue frontend will now provide a modern, responsive interface that maintains complete compatibility with the existing backend while offering enhanced user experience and maintainability.
+The Vue frontend will provide a modern, responsive interface that maintains complete compatibility with the existing backend while offering enhanced user experience and full compliance with authentication specifications.
 
 **Next Steps**:
-1. ✅ **Review completed** - All major corrections applied
-2. **Begin Phase 1 implementation** - Start with corrected project setup
-3. **Follow updated plan** - Use corrected specifications throughout
-4. **Test thoroughly** - Validate against backend API requirements
+1. ✅ **Auth Spec Alignment Completed** - All corrections applied per `docs/02b_Authentication_Specifications.md`
+2. **Begin Phase 1 Implementation** - Start with corrected project setup and unified authentication
+3. **Follow Updated Plan** - Use corrected specifications throughout development
+4. **Test Against Auth Specs** - Validate all authentication flows and security requirements
 
 ---
 
 **Document History**:
 - **v1.0**: Initial implementation plan created
 - **v1.1**: Major corrections applied based on backend API review
-- **Status**: Ready for implementation with corrections
+- **v1.2**: Updated to align with `docs/02b_Authentication_Specifications.md`
+- **Status**: Ready for implementation with auth spec compliance
 - **Next Review**: After Phase 3 completion (authentication and API integration)

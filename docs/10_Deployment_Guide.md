@@ -40,7 +40,7 @@ The script:
 ## 4.0 Container Services
 - **traefik**: HTTPS termination, rate limiting and security headers.
 - **backend**: FastAPI API at port 8000.
-- **frontend**: Streamlit UI at port 8501.
+- **vue-frontend**: Vue.js UI served via nginx at port 80.
 - All services run behind Traefik; only ports 80/443 are exposed externally.
 
 ## 5.0 Volume Mapping
@@ -54,7 +54,7 @@ Backups of configuration files are written under `config/backups/` and persist a
 ## 6.0 Health Verification
 - `docker compose ps` shows running services.
 - `curl http://localhost:8000/health` backend status.
-- `curl http://localhost:8501/_stcore/health` frontend status.
+- `curl http://localhost:80` Vue frontend status.
 - Traefik dashboard (optional) available at `:8080` if enabled in `.env`.
 
 ## 7.0 SSL

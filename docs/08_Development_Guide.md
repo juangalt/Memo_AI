@@ -18,11 +18,11 @@ Derived from project AGENTS guidelines:
 
 ## 2.0 Repository Structure
 ```
-backend/    FastAPI service
-frontend/   Streamlit interface
-config/     YAML configuration files
-tests/      Test suites
-docs/       Comprehensive project documentation
+backend/       FastAPI service
+vue-frontend/  Vue.js reactive interface
+config/        YAML configuration files
+tests/         Test suites
+docs/          Comprehensive project documentation
 ```
 
 ## 3.0 Backend Development
@@ -34,11 +34,13 @@ docs/       Comprehensive project documentation
 - Add new endpoints by extending `backend/main.py` and documenting them in `docs/05_API_Documentation.md`.
 
 ## 4.0 Frontend Development
-- Entry point: `frontend/app.py`.
-- `components/api_client.py` wraps REST calls with retry logic.
-- `components/state_manager.py` manages Streamlit session state and validation.
-- Follow existing tab structure to add new UI features.
-- Components should be added under `frontend/components/` with clear, commented functions.
+- Entry point: `vue-frontend/src/main.js`.
+- `vue-frontend/src/services/api.js` provides HTTP client with automatic authentication headers.
+- `vue-frontend/src/stores/auth.js` manages authentication state using Pinia.
+- `vue-frontend/src/router/index.js` handles route-based navigation and access control.
+- Follow Vue 3 Composition API patterns for reactive components.
+- Views should be added under `vue-frontend/src/views/` with corresponding routes.
+- Components should be added under `vue-frontend/src/components/` with clear, commented functions.
 
 ## 5.0 Configuration & Secrets
 - Never commit API keys or passwords. Use environment variables or `.env`.

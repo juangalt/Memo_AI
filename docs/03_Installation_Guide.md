@@ -47,9 +47,9 @@ This creates `data/memoai.db` with WAL mode and default admin user.
 The script can be run repeatedly; it will ensure schema migrations and default data are present without damaging existing records.
 
 ## 5.0 Running the Application
-### 5.1 Development (local Python)
+### 5.1 Development (local setup)
 - Start backend: `uvicorn backend.main:app --reload`
-- Start frontend: `streamlit run frontend/app.py`
+- Start Vue frontend: `cd vue-frontend && npm run dev`
 Environment variables from `.env` should be exported before launching services:
 ```bash
 export $(grep -v '^#' .env | xargs)
@@ -67,12 +67,14 @@ docker compose logs -f backend
 
 ## 6.0 Verification
 - Backend health: `curl http://localhost:8000/health`
-- Frontend health: `curl http://localhost:8501/_stcore/health`
+- Vue frontend health: `curl http://localhost:3000` (development) or check browser access
 - Database check: ensure `data/memoai.db` exists and contains tables `sessions`, `submissions`, `evaluations`.
-- Configuration check: from Admin tab verify YAML content loads without errors.
+- Configuration check: from Admin view verify YAML content loads without errors.
 
 ---
 
 ## 7.0 References
+- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
 - `deploy-production.sh`
+- `vue-frontend/package.json` - Vue.js dependencies
 - `backend/init_db.py`

@@ -17,7 +17,7 @@
 - Review configuration backups and remove outdated versions to conserve storage.
 
 ## 2.0 Configuration Changes
-- Use Admin tab or admin API to update YAML configurations.
+- Use Admin page or admin API to update YAML configurations.
 - Each change creates a timestamped backup under `config/backups/`.
 - After updates, verify using `backend/validate_config.py` and `/health` endpoints.
 - Document any configuration change in internal change log or ticketing system for traceability.

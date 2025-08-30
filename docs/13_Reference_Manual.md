@@ -21,11 +21,14 @@
 - `backend/validate_config.py` – configuration validation utility.
 - `backend/utils/logger.py` – shared logging setup for consistent format.
 
-### Frontend
-- `frontend/app.py` – Streamlit UI with tabs for text input, results, help and admin features.
-- `frontend/components/api_client.py` – HTTP client with retry logic.
-- `frontend/components/state_manager.py` – session state management and validation.
-- `frontend/components/config_editor.py` – YAML editor component used in Admin tab.
+### Frontend (Vue.js)
+- `vue-frontend/src/main.js` – Vue.js application entry point with router and store setup.
+- `vue-frontend/src/services/api.js` – Axios HTTP client with automatic authentication headers.
+- `vue-frontend/src/stores/auth.js` – Pinia store for authentication state management.
+- `vue-frontend/src/stores/evaluation.js` – Pinia store for evaluation state management.
+- `vue-frontend/src/router/index.js` – Vue Router configuration with route guards.
+- `vue-frontend/src/views/` – Vue components for each application view (Login, TextInput, etc.).
+- `vue-frontend/src/components/` – Reusable Vue components (Layout, ProgressBar, etc.).
 
 ## 2.0 Data Models
 | Table | Purpose | Key Fields |

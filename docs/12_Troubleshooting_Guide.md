@@ -23,7 +23,7 @@
 - **Resolution**: Verify credentials in `auth.yaml` and `.env`. Check brute force settings; repeated attempts may lock account temporarily.
 
 ### 1.4 Configuration Update Fails
-- **Symptom**: Admin tab returns "Configuration update failed".
+- **Symptom**: Admin page returns "Configuration update failed".
 - **Resolution**: YAML syntax invalid. Use validator or run `backend/validate_config.py`. Restore previous version from `config/backups/`.
 
 ### 1.5 LLM API Errors
@@ -48,7 +48,7 @@
 
 ## 2.0 Logs and Diagnostics
 - Backend logs: `logs/backend.log` (if configured) or container logs.
-- Frontend logs: `logs/frontend.log`.
+- Vue frontend logs: `docker compose logs vue-frontend` (nginx access/error logs).
 - Traefik logs: container logs via `docker compose logs traefik`.
 - Use `docker inspect <container>` to view environment variables and configuration when debugging.
 

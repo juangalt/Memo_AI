@@ -81,15 +81,7 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 | POST | `/api/v1/admin/login` | Admin login with username/password |
 | POST | `/api/v1/admin/logout` | Logout current admin session |
 
-**Login Request:**
-```json
-{"username": "admin", "password": "secret"}
-```
-**Login Success:**
-```json
-{"data": {"session_token": "...", "username": "admin", "is_admin": true}}
-```
-Session token must be supplied in header `X-Session-Token` for protected admin endpoints. Tokens expire according to `auth.yaml` configuration and require re-login when expired.
+Authentication endpoints require proper credentials and return session tokens. See `docs/02b_Authentication_Specifications.md` for complete authentication details.
 
 ### 2.5 Configuration Management (Admin)
 | Method | Path | Description |
@@ -119,10 +111,10 @@ All errors share the structure:
 ```
 
 ## 4.0 Authentication
-- Session creation is anonymous.
-- Admin endpoints require valid session token via `X-Session-Token` header.
-- Tokens are validated against an in-memory store and include last activity timestamps for renewal.
+All protected endpoints require authentication via `X-Session-Token` header. See `docs/02b_Authentication_Specifications.md` for complete authentication requirements and token management.
 
 ## 5.0 References
+- `docs/02b_Authentication_Specifications.md` - Complete authentication details
+- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
 - `backend/main.py`
-- `frontend/components/api_client.py`
+- `vue-frontend/services/api.js` - Vue.js API client implementation

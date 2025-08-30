@@ -40,15 +40,12 @@ Memo AI Coach is an instructional text evaluation system that provides AI-genera
 
 ## 2.0 Key Features
 - FastAPI backend with RESTful API and authentication middleware.
-- Streamlit frontend with tabbed interface requiring user authentication.
+- Vue.js frontend with modern reactive interface requiring user authentication.
 - SQLite database with WAL mode for 100+ concurrent users.
 - YAML-based configuration for rubric, prompts, LLM and authentication.
 - Claude LLM integration with mock mode for development.
-- **Universal Authentication** – all users must authenticate through homepage login.
-- **Role-Based Access Control** – regular users and administrators with different permission sets.
-- **User Management** – administrators can create, edit, delete, and manage user accounts and roles.
-- **Debug Tab** – system diagnostics and development tools for administrators.
-- Admin authentication and configuration editor.
+- **Secure Authentication** – session-based authentication with role-based access control.
+- Admin interface for configuration and system management.
 - Comprehensive testing and deployment scripts.
 - Detailed documentation replacing legacy `devspecs/` files and `devlog/changelog.md` as the primary source of truth.
 
@@ -58,7 +55,7 @@ Memo AI Coach is an instructional text evaluation system that provides AI-genera
 | Layer | Technology |
 |------|------------|
 | Backend | Python, FastAPI |
-| Frontend | Python, Streamlit |
+| Frontend | JavaScript, Vue.js 3, TypeScript |
 | Database | SQLite |
 | LLM | Anthropic Claude API |
 | Deployment | Docker, docker-compose, Traefik |
@@ -70,18 +67,13 @@ The stack was selected to align with project principles of simplicity, transpare
 ---
 
 ## 4.0 System Overview
-1. **Authentication**: Users authenticate through centralized homepage login interface.
-2. **Role Assignment**: System assigns appropriate permissions based on user credentials.
-3. Users submit text through the Streamlit UI with authenticated session.
-4. Frontend sends text to backend `/api/v1/evaluations/submit` with authentication headers.
-5. Backend validates user session and permissions before processing.
-6. Backend loads YAML configs and sends prompt to Claude API.
-7. Evaluation results are stored and returned to frontend.
-8. Admins manage configs, users, and sessions via dedicated endpoints and UI with elevated privileges.
-9. Configuration edits are validated, backed up and immediately applied.
-10. Health endpoints provide operational status for monitoring tools.
-11. Debug tab provides system diagnostics and development tools for administrators.
-12. User management allows administrators to create, edit, delete, and manage user accounts and roles.
+1. **Authentication**: Users authenticate through secure login with role-based access control.
+2. Users submit text through the authenticated Vue.js interface.
+3. Frontend communicates with backend APIs using session tokens.
+4. Backend processes evaluations and returns structured feedback.
+5. Administrators manage system configuration and user accounts.
+6. Configuration changes are validated and backed up automatically.
+7. Health endpoints provide system monitoring capabilities.
 
 ---
 
@@ -110,5 +102,7 @@ The stack was selected to align with project principles of simplicity, transpare
 
 ## 9.0 References
 - `docs/02_Architecture_Documentation.md`
+- `docs/02b_Authentication_Specifications.md` - Complete authentication specifications
 - `docs/05_API_Documentation.md`
+- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
 - `devlog/changelog.md`
