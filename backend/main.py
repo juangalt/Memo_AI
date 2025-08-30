@@ -271,30 +271,6 @@ async def auth_health_check():
             }
         )
 
-@app.post("/api/v1/admin/login")
-async def admin_login(request: Request):
-    """Legacy admin login endpoint - redirects to unified auth"""
-    try:
-        body = await request.json()
-        return await auth_login(request)
-    except Exception as e:
-        logger.error(f"Admin login redirect failed: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={
-                "data": None,
-                "meta": {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "request_id": "placeholder"
-                },
-                "errors": [{
-                    "code": "INTERNAL_ERROR",
-                    "message": "Login processing failed",
-                    "field": None,
-                    "details": "An internal error occurred during login processing"
-                }]
-            }
-        )
 
 @app.post("/api/v1/auth/logout")
 async def auth_logout(request: Request):

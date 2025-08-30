@@ -11,21 +11,73 @@
 
 ## Executive Summary
 
-This document outlines the comprehensive implementation plan for creating a Vue.js frontend that will coexist with the existing Streamlit frontend at `memo.myisland.dev`. The Vue frontend will be accessible at `/vue` path while the current Streamlit frontend remains at the root path.
+This document outlines the comprehensive implementation plan for creating a Vue.js frontend that will become the primary interface for Memo AI Coach at `memo.myisland.dev`. The Vue frontend will replace the existing Streamlit frontend with enhanced features and phase completion tracking.
 
 ### Key Objectives
 - Create a modern, responsive Vue.js frontend with full feature parity
 - Maintain complete backward compatibility with existing backend API
-- Implement parallel deployment without affecting current Streamlit frontend
+- **Deploy Vue frontend as the primary interface at `memo.myisland.dev`**
 - Ensure compliance with all frontend specifications and requirements
-- **Align with Authentication Specifications** (`docs/02b_Authentication_Specifications.md`)
+- **Align with Updated Authentication Specifications** (`docs/02b_Authentication_Specifications.md`)
+**✅ Authentication System Updated**: Unified login endpoint (`/api/v1/auth/login`) for all users
+**✅ Legacy Admin Endpoint Removed**: No separate `/api/v1/admin/login` endpoint
+**✅ Primary Deployment**: Vue frontend at root domain with phase completion tracking
 
 ### Success Criteria
-- Vue frontend accessible at `https://memo.myisland.dev/vue/`
+- **Vue frontend accessible at `https://memo.myisland.dev/` (primary domain)**
+- **Phase completion tracking displayed on homepage**
 - All existing functionality replicated and working
 - Performance targets met (<1s UI loads, <15s LLM responses)
 - Security requirements satisfied
 - Responsive design for mobile and desktop
+- **Seamless transition from Streamlit to Vue interface**
+
+---
+
+## 📋 Implementation Guidelines
+
+### **🔍 Human Testing Requirements**
+Every implementation step **MUST** include browser-based human testing that can be performed on the VPS deployment. Each test section should include:
+
+1. **Clear step-by-step instructions** for manual testing
+2. **VPS deployment URLs** (e.g., `https://memo.myisland.dev/`)
+3. **Browser developer tools usage** (console, network tab, etc.)
+4. **Expected results** with ✅ checkmarks for easy verification
+5. **Error scenarios** to test edge cases
+
+### **📝 Documentation Requirements**
+**ALL CHANGES MUST BE DOCUMENTED** in `vue_implementation_changelog.md` with:
+
+- **Latest changes at the top** (reverse chronological order)
+- **Date format**: `[2024-MM-DD]`
+- **Status indicators**: ✅ for completed, 🔄 for in-progress, ❌ for issues
+- **Detailed descriptions** of what was implemented and tested
+- **Browser testing results** when applicable
+
+### **🧪 Testing Pattern for Each Step**
+```markdown
+**Human Testing** (Browser):
+1. ✅ **Action**: Description of what to do in browser
+2. ✅ **Verification**: What to check for success
+3. ✅ **Edge cases**: Test error scenarios
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step X.Y Complete: Feature Name
+- Implemented feature description
+- Tested functionality in browser
+- Verified integration with backend API
+- Status: ✅ Feature implemented and tested
+```
+```
+
+### **🌐 Browser Testing Focus Areas**
+- **Authentication flow**: Login, logout, session persistence
+- **API communication**: Network requests, error handling
+- **UI responsiveness**: Mobile/desktop compatibility
+- **Route protection**: Access control and redirects
+- **Error scenarios**: Network failures, invalid inputs
+- **Performance**: Page load times, responsiveness
 
 ---
 
@@ -43,11 +95,27 @@ npm install axios @headlessui/vue @heroicons/vue marked date-fns
 npm install -D tailwindcss autoprefixer postcss @tailwindcss/forms
 ```
 
-**Test**: 
+**Test**:
 ```bash
 cd vue-frontend
 npm run dev
 # Should start development server on localhost:5173
+```
+
+**Human Testing** (Browser):
+1. ✅ **Open browser** to `http://localhost:5173` (or `https://memo.myisland.dev/` when deployed)
+2. ✅ **Verify Vue app loads** - Should see Vue logo and "Hello Vue" text
+3. ✅ **Check console** - No JavaScript errors should appear
+4. ✅ **Verify responsive design** - Resize browser window, layout should adapt
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 1.1 Complete: Vue Project Setup
+- Created vue-frontend directory structure
+- Installed Vue 3 with TypeScript, Router, Pinia, ESLint, Prettier
+- Added required dependencies: axios, UI libraries, date-fns
+- Verified basic app loads in browser
+- Status: ✅ Project structure established
 ```
 
 ### Step 1.2: Configure Build System
@@ -84,6 +152,23 @@ npm run build
 # Should create dist/ directory with built files
 ```
 
+**Human Testing** (Browser):
+1. ✅ **Run build command** and verify `dist/` directory is created
+2. ✅ **Serve built files** locally: `npm install -g serve && serve dist -p 5000`
+3. ✅ **Open browser** to `http://localhost:5000` (or `https://memo.myisland.dev/` when deployed)
+4. ✅ **Verify production build works** - App should load without dev server
+5. ✅ **Test API proxy** - Check browser network tab for API calls going to correct endpoints
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 1.2 Complete: Build System Configured
+- Configured Vite build system with production settings
+- Set up API proxy for development (/api → http://localhost:8000)
+- Verified production build creates dist/ directory
+- Tested production build serves correctly in browser
+- Status: ✅ Build system configured and tested
+```
+
 ### Step 1.3: Create Docker Configuration
 **Goal**: Set up Docker container for Vue frontend deployment
 
@@ -112,21 +197,40 @@ docker run -p 8080:80 memo-ai-vue-frontend
 # Should serve Vue app on localhost:8080
 ```
 
+**Human Testing** (Browser):
+1. ✅ **Build Docker image** and verify it completes successfully
+2. ✅ **Run container** with port mapping: `docker run -p 8080:80 memo-ai-vue-frontend`
+3. ✅ **Open browser** to `http://localhost:8080` (or `https://memo.myisland.dev/` when deployed)
+4. ✅ **Verify containerized app works** - Should load same as local dev server
+5. ✅ **Check container logs** - `docker logs <container_id>` for any errors
+6. ✅ **Test static file serving** - Refresh page, verify no issues
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 1.3 Complete: Docker Configuration Created
+- Created multi-stage Dockerfile for Vue frontend
+- Configured nginx for static file serving
+- Built and tested Docker image locally
+- Verified containerized app works in browser
+- Status: ✅ Docker configuration complete and tested
+```
+
 ---
 
 ## Phase 2: Docker Compose Integration
 
 ### Step 2.1: Update Docker Compose Configuration
-**Goal**: Add Vue frontend service to existing docker-compose.yml
+**Goal**: Make Vue frontend the primary service at root domain with phase tracking
 
 **Actions**:
 ```yaml
-# Add to docker-compose.yml
+# Update docker-compose.yml - Replace Streamlit with Vue as primary frontend
 vue-frontend:
   build: ./vue-frontend
   labels:
     - "traefik.enable=true"
-    - "traefik.http.routers.vue-frontend.rule=Host(`memo.myisland.dev`) && PathPrefix(`/vue`)"
+    - "traefik.http.routers.vue-frontend.rule=Host(`memo.myisland.dev`)"
+    - "traefik.http.routers.vue-frontend.priority=200"
     - "traefik.http.routers.vue-frontend.entrypoints=websecure"
     - "traefik.http.routers.vue-frontend.tls.certresolver=letsencrypt"
     - "traefik.http.routers.vue-frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
@@ -135,11 +239,13 @@ vue-frontend:
     - BACKEND_URL=http://backend:8000
     - APP_ENV=${APP_ENV:-production}
     - DEBUG_MODE=${DEBUG_MODE:-false}
+    - PHASE_TRACKING_ENABLED=true
   depends_on:
     - backend
   volumes:
     - ./config:/app/config:ro
     - ./logs:/app/logs
+    - ./vue_implementation_changelog.md:/app/changelog.md:ro
   user: "1000:1000"
   restart: unless-stopped
   healthcheck:
@@ -154,27 +260,232 @@ vue-frontend:
 ```bash
 docker compose up -d vue-frontend
 docker compose ps
-# Should show vue-frontend service running
+# Should show vue-frontend service running at root domain
 ```
 
-### Step 2.2: Update Traefik Routing
-**Goal**: Configure Traefik to route `/vue` path to Vue frontend
+**Human Testing** (Browser):
+1. ✅ **Start Vue frontend service**: `docker compose up -d vue-frontend`
+2. ✅ **Check service status**: `docker compose ps` - should show "Up" status
+3. ✅ **Access primary domain**: Open browser to `https://memo.myisland.dev/` (VPS deployment)
+4. ✅ **Verify phase tracking**: Check homepage displays current implementation phases
+5. ✅ **Test routing**: Confirm Vue frontend loads directly at root domain
+6. ✅ **Check Traefik dashboard**: Access `https://memo.myisland.dev/dashboard` to verify routing
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 2.1 Complete: Docker Compose Integration
+- Configured Vue frontend as primary service at root domain
+- Set up phase tracking with changelog integration
+- Mounted vue_implementation_changelog.md for homepage display
+- Verified primary domain routing works correctly in browser
+- Status: ✅ Vue frontend deployed as primary interface
+```
+
+### Step 2.2: Create Phase Tracking Component
+**Goal**: Implement homepage component that displays implementation progress
 
 **Actions**:
-```yaml
-# Update existing frontend service labels
-frontend:
-  labels:
-    - "traefik.http.routers.frontend.rule=Host(`memo.myisland.dev`) && PathPrefix(`/`) && !PathPrefix(`/vue`)"
-    - "traefik.http.routers.frontend.priority=100"
+```vue
+<!-- src/views/Home.vue -->
+<template>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="text-center">
+          <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            📝 Memo AI Coach
+          </h1>
+          <p class="text-lg text-gray-600">
+            Vue Frontend Implementation Progress
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Phase Progress -->
+    <main class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">
+          🚀 Implementation Phases
+        </h2>
+
+        <!-- Phase Progress Cards -->
+        <div class="space-y-4" v-if="phases.length > 0">
+          <div
+            v-for="phase in phases"
+            :key="phase.id"
+            class="border rounded-lg p-4"
+            :class="phase.status === 'completed' ? 'border-green-200 bg-green-50' :
+                     phase.status === 'in-progress' ? 'border-blue-200 bg-blue-50' :
+                     'border-gray-200 bg-gray-50'"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <span class="text-2xl">{{ phase.emoji }}</span>
+                <div>
+                  <h3 class="font-semibold text-gray-900">{{ phase.title }}</h3>
+                  <p class="text-sm text-gray-600">{{ phase.description }}</p>
+                </div>
+              </div>
+              <span
+                class="px-3 py-1 rounded-full text-sm font-medium"
+                :class="phase.status === 'completed' ? 'bg-green-100 text-green-800' :
+                         phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                         'bg-gray-100 text-gray-800'"
+              >
+                {{ phase.statusText }}
+              </span>
+            </div>
+
+            <!-- Progress bar for in-progress phases -->
+            <div v-if="phase.status === 'in-progress' && phase.progress" class="mt-3">
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: phase.progress + '%' }"
+                ></div>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">{{ phase.progress }}% complete</p>
+            </div>
+
+            <!-- Completion date -->
+            <div v-if="phase.completedDate" class="mt-2 text-xs text-gray-500">
+              ✅ Completed on {{ formatDate(phase.completedDate) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Get Started Button -->
+        <div class="mt-8 text-center" v-if="hasIncompletePhases">
+          <router-link
+            to="/login"
+            class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            🔑 Login to Access Features
+          </router-link>
+          <p class="text-sm text-gray-600 mt-2">
+            Some features may not be available until implementation is complete
+          </p>
+        </div>
+
+        <!-- All Complete Message -->
+        <div v-else class="mt-8 text-center">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-green-800 mb-2">
+              🎉 Implementation Complete!
+            </h3>
+            <p class="text-green-700">
+              All phases have been successfully implemented. The Vue frontend is now fully operational.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+// Phase data structure
+const phases = ref([
+  {
+    id: 'phase1',
+    title: 'Phase 1: Project Setup',
+    description: 'Vue project structure, build system, and Docker configuration',
+    emoji: '🏗️',
+    status: 'completed',
+    statusText: 'Completed',
+    completedDate: '2024-01-15',
+    progress: null
+  },
+  {
+    id: 'phase2',
+    title: 'Phase 2: Infrastructure',
+    description: 'Docker Compose integration and production deployment',
+    emoji: '🐳',
+    status: 'completed',
+    statusText: 'Completed',
+    completedDate: '2024-01-16',
+    progress: null
+  },
+  {
+    id: 'phase3',
+    title: 'Phase 3: Core Application',
+    description: 'Vue Router, authentication store, and app structure',
+    emoji: '⚛️',
+    status: 'in-progress',
+    statusText: 'In Progress',
+    completedDate: null,
+    progress: 75
+  },
+  {
+    id: 'phase4',
+    title: 'Phase 4: API Integration',
+    description: 'API client service and backend communication',
+    emoji: '🔌',
+    status: 'pending',
+    statusText: 'Pending',
+    completedDate: null,
+    progress: null
+  },
+  {
+    id: 'phase5',
+    title: 'Phase 5: UI Components',
+    description: 'Core UI components and responsive design',
+    emoji: '🎨',
+    status: 'pending',
+    statusText: 'Pending',
+    completedDate: null,
+    progress: null
+  }
+])
+
+const hasIncompletePhases = computed(() =>
+  phases.value.some(phase => phase.status !== 'completed')
+)
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Load phase status from changelog file (mounted to container)
+onMounted(async () => {
+  try {
+    // This would load from the mounted changelog file
+    // For now, using static data - will be updated dynamically
+    console.log('Phase tracking initialized')
+  } catch (error) {
+    console.error('Failed to load phase status:', error)
+  }
+})
+</script>
 ```
 
 **Test**:
 ```bash
-docker compose up -d
-# Verify both frontends accessible:
-# - https://memo.myisland.dev/ (Streamlit)
-# - https://memo.myisland.dev/vue (Vue)
+# Test homepage component renders
+npm run dev
+# Homepage should display phase tracking cards
+```
+
+**Human Testing** (Browser):
+1. ✅ **Open homepage**: Navigate to `https://memo.myisland.dev/` (VPS deployment)
+2. ✅ **Verify phase display**: Check that all implementation phases are shown with status
+3. ✅ **Test progress bars**: Confirm in-progress phases show progress indicators
+4. ✅ **Check completion dates**: Verify completed phases show completion dates
+5. ✅ **Test login button**: Click login button and verify navigation to login page
+6. ✅ **Verify responsive design**: Test on mobile and desktop viewports
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 2.2 Complete: Phase Tracking Component
+- Created homepage component with phase progress display
+- Implemented status tracking (completed, in-progress, pending)
+- Added progress bars for active phases
+- Integrated login navigation for accessing features
+- Status: ✅ Phase tracking homepage implemented
 ```
 
 ---
@@ -182,7 +493,7 @@ docker compose up -d
 ## Phase 3: Core Application Structure
 
 ### Step 3.1: Set Up Vue Router
-**Goal**: Configure routing to match existing tab structure
+**Goal**: Configure routing for primary domain with homepage and protected routes
 
 **Actions**:
 ```javascript
@@ -191,7 +502,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
-  { path: '/', redirect: '/login' },
+  { path: '/', name: 'Home', component: () => import('@/views/Home.vue') },
   { path: '/login', name: 'Login', component: () => import('@/views/Login.vue') },
   { path: '/text-input', name: 'TextInput', component: () => import('@/views/TextInput.vue'), meta: { requiresAuth: true } },
   { path: '/overall-feedback', name: 'OverallFeedback', component: () => import('@/views/OverallFeedback.vue'), meta: { requiresAuth: true } },
@@ -201,7 +512,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory('/vue/'),
+  history: createWebHistory('/'),
   routes
 })
 
@@ -234,8 +545,26 @@ export default router
 **Test**:
 ```bash
 npm run dev
-# Navigate to http://localhost:3000/vue/
-# Should redirect to login page
+# Navigate to http://localhost:3000/
+# Should display homepage with phase tracking
+```
+
+**Human Testing** (Browser):
+1. ✅ **Start dev server**: `npm run dev`
+2. ✅ **Navigate to base URL**: Open browser to `http://localhost:3000/` (or `https://memo.myisland.dev/` when deployed)
+3. ✅ **Verify homepage**: Should display phase tracking cards and progress
+4. ✅ **Test route protection**: Try accessing `/text-input` directly - should redirect to login
+5. ✅ **Check browser URL**: Verify URL changes correctly during navigation
+6. ✅ **Test browser back/forward**: Use browser navigation buttons to test routing
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 3.1 Complete: Vue Router Configured
+- Set up Vue Router with tab-based navigation structure
+- Configured route guards for authentication and admin access
+- Implemented automatic redirects and session validation
+- Tested route protection and navigation flow in browser
+- Status: ✅ Vue Router configured and tested
 ```
 
 ### Step 3.1.1: Create App Entry Point with Session Initialization
@@ -278,6 +607,24 @@ app.mount('#app')
 ```bash
 # Start the app with existing session token
 # Should automatically validate session and redirect appropriately
+```
+
+**Human Testing** (Browser):
+1. ✅ **Start the application**: Open browser to `https://memo.myisland.dev/` (VPS deployment)
+2. ✅ **Check initial load**: App should load and attempt session validation
+3. ✅ **Monitor network tab**: Verify API call to `/api/v1/auth/validate` on startup
+4. ✅ **Test without session**: Clear browser data and reload - should redirect to login
+5. ✅ **Test with valid session**: Login first, then reload page - should stay logged in
+6. ✅ **Check console logs**: Verify session validation messages appear in console
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 3.1.1 Complete: App Entry Point Configured
+- Set up Vue app with Pinia store initialization
+- Implemented automatic session validation on startup
+- Configured global auth store access for API client
+- Tested session initialization and validation flow in browser
+- Status: ✅ App entry point configured and tested
 ```
 
 ### Step 3.2: Create Authentication Store
@@ -379,6 +726,24 @@ const auth = useAuthStore()
 console.log(auth.isAuthenticated) // Should be false initially
 ```
 
+**Human Testing** (Browser):
+1. ✅ **Open browser console**: Navigate to `https://memo.myisland.dev/`
+2. ✅ **Test initial state**: Check `auth.isAuthenticated` should be `false`
+3. ✅ **Test login flow**: Enter valid credentials and verify login success
+4. ✅ **Check session persistence**: Refresh page and verify user stays logged in
+5. ✅ **Test logout**: Click logout and verify user is redirected to login
+6. ✅ **Test error handling**: Try invalid credentials and check error messages
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 3.2 Complete: Authentication Store Created
+- Implemented Pinia authentication store with unified login endpoint
+- Set up memory-only token storage per auth specs
+- Configured standardized error handling for auth spec error codes
+- Tested authentication flow and session management in browser
+- Status: ✅ Authentication store implemented and tested
+```
+
 ---
 
 ## Phase 4: API Service Layer
@@ -460,6 +825,24 @@ export const apiClient = new APIClient()
 # Test API client:
 import { apiClient } from '@/services/api'
 apiClient.get('/health').then(console.log)
+```
+
+**Human Testing** (Browser):
+1. ✅ **Open browser console**: Navigate to `https://memo.myisland.dev/`
+2. ✅ **Test health endpoint**: Run `apiClient.get('/health').then(console.log)` in console
+3. ✅ **Verify API calls**: Check network tab for requests to `https://memo.myisland.dev/api/health`
+4. ✅ **Test authentication headers**: Login first, then check that `X-Session-Token` header is sent
+5. ✅ **Test error handling**: Try invalid endpoint and verify error response
+6. ✅ **Monitor CORS**: Ensure no CORS errors in console
+
+**Document Changes**: Update `vue_implementation_changelog.md` with:
+```
+## [2024-XX-XX] Step 4.1 Complete: API Client Service Created
+- Implemented Axios-based API client with unified authentication
+- Set up automatic X-Session-Token header injection
+- Configured standardized error handling and response processing
+- Tested API communication and authentication headers in browser
+- Status: ✅ API client service implemented and tested
 ```
 
 ### Step 4.2: Create Authentication Service
@@ -1348,12 +1731,12 @@ docker compose up -d vue-frontend
 
 # Verify deployment
 docker compose ps
-curl -f https://memo.myisland.dev/vue/health
+curl -f https://memo.myisland.dev/health
 ```
 
 **Test**:
 ```bash
-# Access https://memo.myisland.dev/vue/
+# Access https://memo.myisland.dev/
 # Verify Vue frontend loads
 # Test authentication flow
 # Verify all functionality works
@@ -1389,7 +1772,7 @@ npm run test:e2e
 **Tests**:
 ```bash
 # Load testing
-ab -n 100 -c 10 https://memo.myisland.dev/vue/
+ab -n 100 -c 10 https://memo.myisland.dev/
 
 # Performance monitoring
 # Verify <1 second UI loads
@@ -1474,13 +1857,14 @@ ab -n 100 -c 10 https://memo.myisland.dev/vue/
 
 ## Summary of Corrections Made
 
-### **Key Fixes Applied Based on Auth Specifications:**
+### **Key Fixes Applied Based on Updated Auth Specifications:**
 
 #### **1. Authentication System Alignment**
-- ✅ **Unified Login Endpoint** - Uses `/api/v1/auth/login` for all users (no separate admin login)
+- ✅ **Unified Login Endpoint** - Uses `/api/v1/auth/login` for all users (legacy `/api/v1/admin/login` removed)
 - ✅ **Session Validation** - Implements `/api/v1/auth/validate` endpoint per auth specs
 - ✅ **Memory-Only Token Storage** - Removed localStorage usage per auth spec requirements
 - ✅ **Standardized Error Handling** - Implements auth spec error codes and messages
+- ✅ **Legacy Admin Endpoint Removal** - Completely removed separate admin login endpoint from specifications
 
 #### **2. API Integration Corrections**
 - ✅ **Proper Header Usage** - `X-Session-Token` header for all authenticated requests
@@ -1543,14 +1927,16 @@ Vue Frontend (/vue)          Backend API (per Auth Specs)
 
 ## Conclusion
 
-This updated implementation plan provides a **fully corrected and comprehensive roadmap** for creating a Vue.js frontend that properly aligns with the **Authentication Specifications** (`docs/02b_Authentication_Specifications.md`) and backend API requirements. The corrections ensure:
+This updated implementation plan provides a **fully corrected and comprehensive roadmap** for deploying a Vue.js frontend as the **primary interface** at `memo.myisland.dev` that properly aligns with the **updated Authentication Specifications** (`docs/02b_Authentication_Specifications.md`) and current backend API requirements. The corrections ensure:
 
-1. **Complete Auth Spec Compliance** - Full alignment with security requirements and API endpoints
-2. **Unified Authentication Flow** - Single login endpoint with proper session management
-3. **Enhanced Security Implementation** - Memory-only token storage and standardized error handling
-4. **Production-Ready Architecture** - Security, performance, and maintainability optimizations
+1. **Primary Domain Deployment** - Vue frontend deployed at root domain with phase completion tracking
+2. **Complete Auth Spec Compliance** - Full alignment with current security requirements and unified API endpoints
+3. **Unified Authentication Flow** - Single login endpoint (`/api/v1/auth/login`) for all users, legacy admin endpoint removed
+4. **Enhanced Security Implementation** - Memory-only token storage and standardized error handling
+5. **Phase Tracking Homepage** - Real-time progress display of implementation status
+6. **Production-Ready Architecture** - Security, performance, and maintainability optimizations
 
-The Vue frontend will provide a modern, responsive interface that maintains complete compatibility with the existing backend while offering enhanced user experience and full compliance with authentication specifications.
+The Vue frontend will provide a modern, responsive interface that maintains complete compatibility with the existing backend while offering enhanced user experience, phase tracking, and full compliance with the updated authentication specifications.
 
 **Next Steps**:
 1. ✅ **Auth Spec Alignment Completed** - All corrections applied per `docs/02b_Authentication_Specifications.md`
@@ -1560,9 +1946,49 @@ The Vue frontend will provide a modern, responsive interface that maintains comp
 
 ---
 
+## 🎯 **CRITICAL REMINDERS FOR IMPLEMENTATION**
+
+### **📋 Documentation Discipline**
+- **EVERY STEP** must include both automated tests AND human browser testing
+- **ALL CHANGES** must be documented in `vue_implementation_changelog.md`
+- **LATEST CHANGES AT TOP** - Maintain reverse chronological order
+- **VPS-FRIENDLY TESTS** - Ensure all human tests work on `https://memo.myisland.dev/` (primary domain)
+- **PHASE TRACKING** - Update homepage phase status as implementation progresses
+
+### **🔍 Human Testing Standards**
+Each step must have browser-based testing covering:
+- ✅ **Functional verification** - Does the feature work as expected?
+- ✅ **Integration testing** - Does it work with the backend API?
+- ✅ **Error handling** - How does it handle failures gracefully?
+- ✅ **User experience** - Is the interface intuitive and responsive?
+- ✅ **Security compliance** - Does it follow authentication specifications?
+
+### **📝 Changelog Format Template**
+```markdown
+## [2024-MM-DD] Step X.Y Complete: Feature Name
+- Implemented specific functionality with technical details
+- Tested feature in browser at https://memo.myisland.dev/
+- Verified integration with backend API endpoints
+- Confirmed compliance with authentication specifications
+- Status: ✅ Feature implemented and tested
+```
+
+### **🚨 Quality Gates**
+**DO NOT PROCEED** to next step until:
+1. ✅ Code is committed to repository
+2. ✅ Automated tests pass
+3. ✅ Human testing completed in browser
+4. ✅ Documentation updated in changelog
+5. ✅ No console errors or network failures
+
+---
+
 **Document History**:
 - **v1.0**: Initial implementation plan created
 - **v1.1**: Major corrections applied based on backend API review
 - **v1.2**: Updated to align with `docs/02b_Authentication_Specifications.md`
-- **Status**: Ready for implementation with auth spec compliance
+- **v1.3**: Updated to reflect legacy admin endpoint removal and unified authentication system
+- **v1.4**: Added comprehensive human testing requirements and documentation standards
+- **v1.5**: Updated for primary domain deployment at `memo.myisland.dev/` with phase tracking homepage
+- **Status**: Ready for primary domain implementation with phase tracking
 - **Next Review**: After Phase 3 completion (authentication and API integration)

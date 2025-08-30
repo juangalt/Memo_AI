@@ -28,7 +28,7 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 ### 2.2 Session Management
 | Method | Path | Description |
 |-------|------|-------------|
-| POST | `/api/v1/sessions/create` | Generate anonymous session |
+| POST | `/api/v1/sessions/create` | Create authenticated session (requires login first) |
 | GET | `/api/v1/sessions/{session_id}` | Retrieve session details |
 | DELETE | `/api/v1/sessions/{session_id}` | End a session and remove related data |
 
@@ -75,15 +75,56 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 }
 ```
 
-### 2.4 Admin Authentication
+### 2.4 Authentication
 | Method | Path | Description |
 |-------|------|-------------|
-| POST | `/api/v1/admin/login` | Admin login with username/password |
-| POST | `/api/v1/admin/logout` | Logout current admin session |
+| POST | `/api/v1/auth/login` | Unified login for all users (admins and regular users) |
+| POST | `/api/v1/auth/logout` | Unified logout for all users |
+| GET | `/api/v1/auth/validate` | Validate session token and get user info |
 
-Authentication endpoints require proper credentials and return session tokens. See `docs/02b_Authentication_Specifications.md` for complete authentication details.
+**Login Request Body:**
+```json
+{
+  "username": "admin",
+  "password": "secret"
+}
+```
 
-### 2.5 Configuration Management (Admin)
+**Login Success Response:**
+```json
+{
+  "data": {
+    "session_token": "aB3dE5fG7hI9jK1lM3nO5pQ7rS9tU1vW3xY5zA2bC4dE6fG8hI0jK2lM4nO6pQ8rS0tU2vW4xY6z",
+    "username": "admin",
+    "is_admin": true,
+    "user_id": 1
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+All authentication endpoints require proper credentials and return session tokens. See `docs/02b_Authentication_Specifications.md` for complete authentication details.
+
+### 2.5 User Management (Admin)
+| Method | Path | Description |
+|-------|------|-------------|
+| POST | `/api/v1/admin/users/create` | Create new user account |
+| GET | `/api/v1/admin/users` | List all users |
+| DELETE | `/api/v1/admin/users/{username}` | Delete user account |
+
+**Create User Request Body:**
+```json
+{
+  "username": "newuser",
+  "password": "securepassword123"
+}
+```
+
+### 2.6 Configuration Management (Admin)
 | Method | Path | Description |
 |-------|------|-------------|
 | GET | `/api/v1/admin/config/{config_name}` | Read configuration file |
@@ -95,7 +136,7 @@ Authentication endpoints require proper credentials and return session tokens. S
 ```
 Success responses include updated YAML and path to the backup file created before modification.
 
-### 2.6 Health Endpoints
+### 2.7 Health Endpoints
 All health endpoints respond with HTTP 200. The `status` field is `ok` or `error` with diagnostic details.
 
 ## 3.0 Error Format

@@ -53,7 +53,7 @@ The Memo AI Coach authentication system provides secure, role-based access contr
 
 ### 2.2 Login Process
 
-#### API Endpoint: `POST /api/v1/admin/login`
+#### API Endpoint: `POST /api/v1/auth/login`
 ```json
 {
   "username": "admin",
@@ -67,8 +67,14 @@ The Memo AI Coach authentication system provides secure, role-based access contr
   "data": {
     "session_token": "aB3dE5fG7hI9jK1lM3nO5pQ7rS9tU1vW3xY5zA2bC4dE6fG8hI0jK2lM4nO6pQ8rS0tU2vW4xY6z",
     "username": "admin",
-    "is_admin": true
-  }
+    "is_admin": true,
+    "user_id": 1
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
 }
 ```
 
@@ -80,7 +86,7 @@ Request → Extract X-Session-Token → Validate in DB → Check Expiration → 
 
 ### 2.4 Logout Process
 
-#### API Endpoint: `POST /api/v1/admin/logout`
+#### API Endpoint: `POST /api/v1/auth/logout`
 - Requires `X-Session-Token` header
 - Marks session as inactive in database
 - Clears client-side token storage
@@ -206,12 +212,17 @@ X-Session-Token: aB3dE5fG7hI9jK1lM3nO5pQ7rS9tU1vW3xY5zA2bC4dE6fG8hI0jK2lM4nO6pQ8
 
 ### 5.2 Protected Endpoints
 
+#### Authentication Endpoints
+- `POST /api/v1/auth/login` - Unified login for all users (admins and regular users)
+- `POST /api/v1/auth/logout` - Unified logout for all users
+- `GET /api/v1/auth/validate` - Validate session token and get user info
+
 #### Admin Endpoints (Require `is_admin: true`)
-- `POST /api/v1/admin/login` - Authentication
-- `POST /api/v1/admin/logout` - Logout
 - `GET /api/v1/admin/config/{name}` - Read configuration
 - `PUT /api/v1/admin/config/{name}` - Update configuration
-- User management endpoints
+- `POST /api/v1/admin/users/create` - Create new user account
+- `GET /api/v1/admin/users` - List all users
+- `DELETE /api/v1/admin/users/{username}` - Delete user account
 
 #### Regular User Endpoints (Require valid session)
 - `POST /api/v1/evaluations/submit` - Submit evaluation
@@ -270,7 +281,7 @@ X-Session-Token: aB3dE5fG7hI9jK1lM3nO5pQ7rS9tU1vW3xY5zA2bC4dE6fG8hI0jK2lM4nO6pQ8
 ### 6.2 Recovery Procedures
 
 #### Emergency Admin Access
-1. Access admin login endpoint directly
+1. Access unified login endpoint: `POST /api/v1/auth/login`
 2. Use emergency admin credentials from `.env`
 3. Reset affected user sessions
 4. Review audit logs for security events
