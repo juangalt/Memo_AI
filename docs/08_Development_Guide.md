@@ -41,11 +41,21 @@ docs/          Comprehensive project documentation
 - Follow Vue 3 Composition API patterns for reactive components.
 - Views should be added under `vue-frontend/src/views/` with corresponding routes.
 - Components should be added under `vue-frontend/src/components/` with clear, commented functions.
+- **Layout Component**: Use Layout wrapper in view components when navigation is needed.
+- **Tailwind CSS**: Use v3.4.17 (stable) with proper PostCSS configuration.
+- **Authentication Flow**: Login redirects to `/text-input`, logout redirects to `/`.
+- **Admin Access**: Conditional menu items based on `isAdmin` status.
 
 ## 5.0 Configuration & Secrets
 - Never commit API keys or passwords. Use environment variables or `.env`.
 - Configuration editing should go through admin API or `config_manager.py` to ensure validation and backups.
 - When adding new configuration keys, update both `docs/04_Configuration_Guide.md` and validation logic.
+
+## 5.1 Frontend Configuration
+- **Tailwind CSS**: Use v3.4.17 (stable) for production. Avoid v4.x (beta) versions.
+- **PostCSS**: Configure with `tailwindcss` plugin (not `@tailwindcss/postcss`).
+- **Build Process**: Use `npm install` instead of `npm ci` for better dependency management.
+- **CSS Classes**: All components use Tailwind classes for consistent styling.
 
 ## 6.0 Testing
 - Tests reside in `tests/` and cover environment, integration, performance and security.

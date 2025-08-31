@@ -48,14 +48,16 @@ Relationships:
 ### 1.5 Frontend Interface Structure
 The Vue.js frontend provides a single-page application with router-based navigation and role-based access control:
 
-1. **Login** (`/login`) - Authentication interface
-2. **Text Input** (`/text-input`) – Content submission for evaluation
-3. **Overall Feedback** (`/overall-feedback`) – Evaluation results display
-4. **Detailed Feedback** (`/detailed-feedback`) – Detailed scoring and comments
-5. **Debug** (`/debug`) – System diagnostics and tools (admin only)
-6. **Admin** (`/admin`) – System management and configuration (admin only)
+1. **Home** (`/`) - Beautiful welcome page with application overview
+2. **Login** (`/login`) - Authentication interface with "Back to Home" link
+3. **Text Input** (`/text-input`) – Content submission for evaluation (authenticated)
+4. **Overall Feedback** (`/overall-feedback`) – Evaluation results display (authenticated)
+5. **Detailed Feedback** (`/detailed-feedback`) – Detailed scoring and comments (authenticated)
+6. **Help** (`/help`) – Comprehensive documentation and rubric explanation (authenticated)
+7. **Admin** (`/admin`) – System management and configuration (admin only)
+8. **Debug** (`/debug`) – System diagnostics and tools (admin only)
 
-Vue Router controls navigation and enforces authentication requirements on protected routes.
+Vue Router controls navigation and enforces authentication requirements on protected routes. The Layout component provides consistent navigation and is used in individual view components when needed.
 
 ### 1.6 Deployment Topology
 - Containers orchestrated by `docker-compose.yml` with Traefik reverse proxy.

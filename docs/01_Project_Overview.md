@@ -45,6 +45,10 @@ Memo AI Coach is an instructional text evaluation system that provides AI-genera
 - YAML-based configuration for rubric, prompts, LLM and authentication.
 - Claude LLM integration with mock mode for development.
 - **Secure Authentication** – session-based authentication with role-based access control.
+- **Beautiful Welcome Page** – Professional landing page with application overview.
+- **Help Documentation** – Comprehensive user guide and rubric explanation.
+- **Conditional Admin Access** – Admin features only visible to admin users.
+- **Responsive Design** – Mobile and desktop compatible interface.
 - Admin interface for configuration and system management.
 - Comprehensive testing and deployment scripts.
 - Detailed documentation replacing legacy `devspecs/` files and `devlog/changelog.md` as the primary source of truth.
@@ -67,13 +71,15 @@ The stack was selected to align with project principles of simplicity, transpare
 ---
 
 ## 4.0 System Overview
-1. **Authentication**: Users authenticate through secure login with role-based access control.
-2. Users submit text through the authenticated Vue.js interface.
-3. Frontend communicates with backend APIs using session tokens.
-4. Backend processes evaluations and returns structured feedback.
-5. Administrators manage system configuration and user accounts.
-6. Configuration changes are validated and backed up automatically.
-7. Health endpoints provide system monitoring capabilities.
+1. **Welcome Page**: Users land on a beautiful, professional welcome page explaining the application.
+2. **Authentication**: Users authenticate through secure login with role-based access control.
+3. **Text Submission**: Users submit text through the authenticated Vue.js interface.
+4. **API Communication**: Frontend communicates with backend APIs using session tokens.
+5. **Evaluation Processing**: Backend processes evaluations and returns structured feedback.
+6. **Help Documentation**: Users can access comprehensive help and rubric documentation.
+7. **Admin Functions**: Administrators manage system configuration and user accounts.
+8. **Configuration Management**: Configuration changes are validated and backed up automatically.
+9. **System Monitoring**: Health endpoints provide system monitoring capabilities.
 
 ---
 

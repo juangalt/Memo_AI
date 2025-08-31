@@ -232,18 +232,22 @@ router.beforeEach(async (to, from, next) => {
 Frontend components must follow specific patterns to avoid UI duplication and ensure proper authentication state management.
 
 #### Layout Component Usage
-- **Single Instance**: Use Layout component only at App.vue level
-- **No Duplication**: Avoid wrapping view components with additional Layout wrappers
+- **Layout Usage**: Use Layout component in view components when navigation is needed
+- **No Duplication**: App.vue uses RouterView only, Layout is used in individual view components
 - **Authentication State**: Layout should display authentication status and navigation
 
 #### Component Hierarchy
 ```
-App.vue (Layout wrapper)
+App.vue (RouterView only)
 ├── RouterView
     ├── Home.vue (no Layout wrapper)
     ├── Login.vue (no Layout wrapper)
-    ├── TextInput.vue (no Layout wrapper)
-    └── OverallFeedback.vue (no Layout wrapper)
+    ├── TextInput.vue (with Layout wrapper)
+    ├── OverallFeedback.vue (with Layout wrapper)
+    ├── DetailedFeedback.vue (with Layout wrapper)
+    ├── Help.vue (with Layout wrapper)
+    ├── Admin.vue (with Layout wrapper)
+    └── Debug.vue (with Layout wrapper)
 ```
 
 #### Authentication State Management

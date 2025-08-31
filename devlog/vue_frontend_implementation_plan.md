@@ -38,18 +38,13 @@ This document outlines the comprehensive implementation plan for creating a Vue.
 
 ### **🚨 CRITICAL: Layout Component Usage**
 
-**⚠️ IMPORTANT**: The Layout component is used **ONLY** at the App.vue level for authenticated routes. Individual view components should **NEVER** wrap their content in Layout to prevent menu duplication.
+**⚠️ IMPORTANT**: The Layout component is used in individual view components when needed. App.vue uses `<RouterView />` for all routes to prevent menu duplication.
 
 #### **Correct Architecture:**
 ```vue
 <!-- App.vue -->
 <template>
-  <div id="app">
-    <!-- Layout wrapper for authenticated routes -->
-    <Layout v-if="isAuthenticated" />
-    <!-- Direct router view for public routes (login, etc.) -->
-    <RouterView v-else />
-  </div>
+  <RouterView />
 </template>
 
 <!-- Layout.vue -->
@@ -57,49 +52,50 @@ This document outlines the comprehensive implementation plan for creating a Vue.
   <div class="min-h-screen bg-gray-50">
     <header>...</header>
     <main>
-      <router-view /> <!-- This renders the individual view components -->
+      <slot /> <!-- This renders the content from view components -->
     </main>
   </div>
 </template>
 
 <!-- View Components (TextInput.vue, OverallFeedback.vue, etc.) -->
 <template>
-  <div class="max-w-4xl mx-auto">
-    <!-- Content WITHOUT Layout wrapper -->
-  </div>
-</template>
-```
-
-#### **❌ INCORRECT - DO NOT DO THIS:**
-```vue
-<!-- View Components - WRONG -->
-<template>
-  <Layout> <!-- ❌ This creates nested Layout components -->
+  <Layout>
     <div class="max-w-4xl mx-auto">
-      <!-- Content -->
+      <!-- Content WITH Layout wrapper -->
     </div>
   </Layout>
 </template>
 ```
 
+#### **❌ INCORRECT - DO NOT DO THIS:**
+```vue
+<!-- App.vue - WRONG -->
+<template>
+  <div id="app">
+    <Layout v-if="isAuthenticated" />
+    <RouterView v-else />
+  </div>
+</template>
+```
+
 ### **Component Hierarchy Rules:**
 
-1. **App.vue**: Root component that handles authentication state and Layout routing
-2. **Layout.vue**: Wrapper for authenticated routes with header, navigation, and `<router-view />`
-3. **View Components**: Individual page components that render content directly (no Layout wrapper)
+1. **App.vue**: Root component that uses `<RouterView />` only (no conditional Layout logic)
+2. **Layout.vue**: Wrapper component with header, navigation, and `<slot />` for content
+3. **View Components**: Individual page components that wrap their content with Layout when navigation is needed
 4. **Child Components**: Reusable components used within view components
 
 ### **File Structure:**
 ```
 src/
-├── App.vue                    # Root component with Layout routing
+├── App.vue                    # Root component with RouterView
 ├── components/
-│   ├── Layout.vue            # Layout wrapper (used only in App.vue)
+│   ├── Layout.vue            # Layout wrapper (used in view components)
 │   ├── CharacterCounter.vue  # Reusable component
 │   └── ProgressBar.vue       # Reusable component
 ├── views/
-│   ├── TextInput.vue         # View component (no Layout wrapper)
-│   ├── OverallFeedback.vue   # View component (no Layout wrapper)
+│   ├── TextInput.vue         # View component (with Layout wrapper)
+│   ├── OverallFeedback.vue   # View component (with Layout wrapper)
 │   └── Login.vue             # Public route (no Layout wrapper)
 └── stores/
     ├── auth.ts               # Authentication store
@@ -117,9 +113,49 @@ const routes = [
     name: 'TextInput', 
     component: () => import('@/views/TextInput.vue'), 
     meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/overall-feedback', 
+    name: 'OverallFeedback', 
+    component: () => import('@/views/OverallFeedback.vue'), 
+    meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/detailed-feedback', 
+    name: 'DetailedFeedback', 
+    component: () => import('@/views/DetailedFeedback.vue'), 
+    meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/help', 
+    name: 'Help', 
+    component: () => import('@/views/Help.vue'), 
+    meta: { requiresAuth: true } 
+  },
+  { 
+    path: '/admin', 
+    name: 'Admin', 
+    component: () => import('@/views/Admin.vue'), 
+    meta: { requiresAuth: true, requiresAdmin: true } 
+  },
+  { 
+    path: '/debug', 
+    name: 'Debug', 
+    component: () => import('@/views/Debug.vue'), 
+    meta: { requiresAuth: true, requiresAdmin: true } 
   }
 ]
 ```
+
+### **Actual Route Configuration:**
+- `/` - Home page (beautiful welcome page)
+- `/login` - Authentication page with "Back to Home" link
+- `/text-input` - Text submission (authenticated)
+- `/overall-feedback` - Evaluation results (authenticated)
+- `/detailed-feedback` - Detailed scoring (authenticated)
+- `/help` - Documentation page (authenticated)
+- `/admin` - Admin panel (admin-only)
+- `/debug` - Debug tools (admin-only)
 
 ### **Store Integration Pattern:**
 ```javascript
@@ -131,6 +167,61 @@ const authStore = useAuthStore()
 const evaluationStore = useEvaluationStore()
 ```
 
+### **🚨 CRITICAL: Authentication Flow**
+
+**⚠️ IMPORTANT**: Authentication flow follows specific patterns to ensure proper user experience and security.
+
+#### **Login Flow:**
+```javascript
+// Login success redirects to main application
+if (result.success) {
+  router.push('/text-input')  // Main application page
+}
+```
+
+#### **Logout Flow:**
+```javascript
+// Logout redirects to home page
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/')  // Home page
+}
+```
+
+#### **Navigation Guard Flow:**
+```javascript
+// Router guards redirect appropriately
+router.beforeEach(async (to, from, next) => {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next('/text-input')  // Redirect to main app, not root
+  } else if (to.path === '/login' && authStore.isAuthenticated) {
+    next('/text-input')  // Authenticated users go to main app
+  } else {
+    next()
+  }
+})
+```
+
+#### **Conditional UI Elements:**
+```vue
+<!-- Admin menu items only visible to admins -->
+<router-link v-if="isAdmin" to="/admin">Admin</router-link>
+<router-link v-if="isAdmin" to="/debug">Debug</router-link>
+
+<!-- Conditional "Get Started" button -->
+<router-link :to="isAuthenticated ? '/text-input' : '/login'">
+  Get Started
+</router-link>
+```
+
+#### **Authentication States:**
+- **Not Authenticated**: Can access `/`, `/login`
+- **Authenticated User**: Can access all user routes, redirected from `/login`
+- **Admin User**: Can access all routes including `/admin`, `/debug`
+- **Session Expired**: Automatically redirected to `/login`
+
 ### **API Service Pattern:**
 ```javascript
 // Services handle API communication
@@ -139,11 +230,72 @@ import { authService } from '@/services/auth'
 import { evaluationService } from '@/services/evaluation'
 ```
 
+### **🚨 CRITICAL: Tailwind CSS Configuration**
+
+**⚠️ IMPORTANT**: Use Tailwind CSS v3.4.17 (stable) for production. Avoid Tailwind CSS v4.x (beta) which has different configuration requirements.
+
+#### **Correct Configuration:**
+```json
+// package.json
+{
+  "dependencies": {
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  }
+}
+```
+
+```javascript
+// postcss.config.js
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+```dockerfile
+# Dockerfile
+RUN npm install  # Use npm install, not npm ci
+```
+
+#### **❌ INCORRECT - DO NOT DO THIS:**
+```json
+// package.json - WRONG
+{
+  "dependencies": {
+    "tailwindcss": "^4.1.12"  // Beta version
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12"  // Wrong plugin
+  }
+}
+```
+
+```javascript
+// postcss.config.js - WRONG
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},  // Wrong plugin for v3
+  },
+}
+```
+
+**Technical Details:**
+- **Root Cause**: Tailwind CSS v4 is still in beta and has different PostCSS plugin requirements
+- **Solution**: Use stable Tailwind CSS v3.4.17 with proper PostCSS configuration
+- **Build Fix**: Use `npm install` instead of `npm ci` for better dependency management
+- **Components**: All components use clean Tailwind classes after proper configuration
+
 ### **🚨 Common Pitfalls & Prevention:**
 
 #### **1. Menu Duplication (CRITICAL)**
-- **Problem**: Wrapping view components in Layout creates nested navigation
-- **Prevention**: Never use `<Layout>` wrapper in individual view components
+- **Problem**: Using Layout in App.vue creates nested navigation
+- **Prevention**: Use Layout wrapper in individual view components, not in App.vue
 - **Detection**: Check for duplicate navigation menus in browser
 
 #### **2. Component Import Errors**
@@ -167,7 +319,7 @@ import { evaluationService } from '@/services/evaluation'
 - **Detection**: Users can access admin features without login
 
 ### **Testing Checklist for Each Component:**
-- ✅ Component renders without Layout wrapper
+- ✅ Component renders with appropriate Layout usage (public routes: no Layout, authenticated routes: with Layout)
 - ✅ No duplicate navigation menus
 - ✅ Proper store integration
 - ✅ Correct API service usage
@@ -2124,13 +2276,14 @@ const handleLogout = () => {
 ### Step 6.1: Create Text Input Component
 **Goal**: Implement text submission functionality
 
-**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used ONLY at the App.vue level for authenticated routes. Individual view components should NOT wrap their content in Layout to prevent menu duplication.
+**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used in individual view components when navigation is needed. App.vue uses RouterView only. This prevents menu duplication while providing consistent navigation.
 
 **Actions**:
 ```vue
 <!-- src/views/TextInput.vue -->
 <template>
-  <div class="max-w-4xl mx-auto">
+  <Layout>
+    <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-lg shadow-lg p-6">
       <h1 class="text-3xl font-bold text-gray-900 mb-6">
         Submit Text for Evaluation
@@ -2174,12 +2327,14 @@ const handleLogout = () => {
       <ProgressBar v-if="isSubmitting" :progress="progress" :status="status" />
     </div>
   </div>
+  </Layout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEvaluationStore } from '@/stores/evaluation'
+import Layout from '@/components/Layout.vue'
 import CharacterCounter from '@/components/CharacterCounter.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 
@@ -2349,13 +2504,14 @@ console.log(evalStore.hasEvaluation) // Should be false initially
 ### Step 7.1: Create Overall Feedback Component
 **Goal**: Display evaluation results with scores and feedback
 
-**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used ONLY at the App.vue level for authenticated routes. Individual view components should NOT wrap their content in Layout to prevent menu duplication.
+**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used in individual view components when navigation is needed. App.vue uses RouterView only. This prevents menu duplication while providing consistent navigation.
 
 **Actions**:
 ```vue
 <!-- src/views/OverallFeedback.vue -->
 <template>
-  <div class="max-w-6xl mx-auto">
+  <Layout>
+    <div class="max-w-6xl mx-auto">
     <div class="bg-white rounded-lg shadow-lg p-6">
       <h1 class="text-3xl font-bold text-gray-900 mb-6">
         Overall Feedback
@@ -2424,11 +2580,13 @@ console.log(evalStore.hasEvaluation) // Should be false initially
       </div>
     </div>
   </div>
+  </Layout>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useEvaluationStore } from '@/stores/evaluation'
+import Layout from '@/components/Layout.vue'
 import RubricScores from '@/components/RubricScores.vue'
 import { formatDate } from '@/utils/formatters'
 

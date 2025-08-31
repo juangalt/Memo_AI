@@ -83,8 +83,49 @@ Configures authentication and security parameters. See `docs/02b_Authentication_
 Run `python3 backend/validate_config.py` to ensure all configs exist and satisfy required fields.
 Failure details are logged and exit code signals success.
 
-## 5.0 References
+## 5.0 Frontend Configuration
+The Vue.js frontend has specific configuration requirements:
+
+### 5.1 Tailwind CSS Configuration
+- **Version**: Use Tailwind CSS v3.4.17 (stable) for production
+- **PostCSS**: Configure with `tailwindcss` plugin (not `@tailwindcss/postcss`)
+- **Build Process**: Use `npm install` instead of `npm ci` for better dependency management
+- **CSS Classes**: All components use Tailwind classes for consistent styling
+
+### 5.2 Package Configuration
+```json
+// package.json
+{
+  "dependencies": {
+    "tailwindcss": "^3.4.17"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0"
+  }
+}
+```
+
+### 5.3 PostCSS Configuration
+```javascript
+// postcss.config.js
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+### 5.4 Docker Configuration
+```dockerfile
+# Dockerfile
+RUN npm install  # Use npm install, not npm ci
+```
+
+## 6.0 References
 - `docs/02b_Authentication_Specifications.md` - Complete authentication configuration details
 - `config/*.yaml`
 - `backend/services/config_service.py`
 - `backend/services/config_manager.py`
+- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan

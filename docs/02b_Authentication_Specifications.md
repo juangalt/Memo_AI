@@ -338,7 +338,7 @@ UPDATE sessions SET is_active = 0 WHERE user_id = ?;
 - **Global Auth Store Access**: Router guards must access global auth store via `window.authStoreInstance`
 - **Session Validation**: Implement automatic session validation before protected route access
 - **Authentication Redirects**: Handle authentication redirects gracefully with proper error messages
-- **Session State Management**: Clear session state on logout/expiration and redirect to login
+- **Session State Management**: Clear session state on logout/expiration and redirect to home page
 - **Route Protection**: Use `meta: { requiresAuth: true, requiresAdmin: true }` for protected routes
 
 #### Router Guard Implementation Pattern
@@ -359,7 +359,7 @@ router.beforeEach(async (to, from, next) => {
 
     // Check admin permissions
     if (to.meta.requiresAdmin && !authStore.isAdmin) {
-      next('/login')
+      next('/text-input')
       return
     }
   }
@@ -369,7 +369,7 @@ router.beforeEach(async (to, from, next) => {
 ```
 
 ### 8.4 Component Architecture Guidelines
-- **Single Layout Instance**: Use Layout component only at App.vue level, never in view components
+- **Layout Usage**: Use Layout component in view components when navigation is needed
 - **Component Hierarchy**: Implement proper component hierarchy to avoid UI duplication
 - **Authentication State Display**: Layout should display authentication status and user information
 - **Navigation Structure**: Implement tab-based navigation with proper authentication state integration
@@ -377,13 +377,16 @@ router.beforeEach(async (to, from, next) => {
 
 #### Component Structure Pattern
 ```
-App.vue (Layout wrapper only)
+App.vue (RouterView only)
 ├── RouterView
     ├── Home.vue (no Layout wrapper)
     ├── Login.vue (no Layout wrapper)
-    ├── TextInput.vue (no Layout wrapper)
-    ├── OverallFeedback.vue (no Layout wrapper)
-    └── Admin.vue (no Layout wrapper)
+    ├── TextInput.vue (with Layout wrapper)
+    ├── OverallFeedback.vue (with Layout wrapper)
+    ├── DetailedFeedback.vue (with Layout wrapper)
+    ├── Help.vue (with Layout wrapper)
+    ├── Admin.vue (with Layout wrapper)
+    └── Debug.vue (with Layout wrapper)
 ```
 
 #### Authentication State Integration
