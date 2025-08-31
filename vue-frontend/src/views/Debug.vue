@@ -5,10 +5,38 @@
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
           Debug Panel
         </h1>
-
-        <div class="text-center py-12">
-          <div class="text-gray-500">
-            <p class="text-lg mb-4">🔧 Debug tools will be displayed here</p>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- System Diagnostics -->
+          <div class="bg-red-50 rounded-lg p-6 border-l-4 border-red-500">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              🔍 System Diagnostics
+            </h3>
+            <SystemDiagnostics />
+          </div>
+          
+          <!-- API Testing -->
+          <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              🔌 API Testing
+            </h3>
+            <ApiTesting />
+          </div>
+          
+          <!-- Performance Monitoring -->
+          <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              📊 Performance Monitoring
+            </h3>
+            <PerformanceMonitoring />
+          </div>
+          
+          <!-- Development Tools -->
+          <div class="bg-purple-50 rounded-lg p-6 border-l-4 border-purple-500">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              🛠️ Development Tools
+            </h3>
+            <DevelopmentTools />
           </div>
         </div>
       </div>
@@ -18,6 +46,8 @@
 
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
-
-// Debug panel component - will be implemented in Phase 8
+import SystemDiagnostics from '@/components/debug/SystemDiagnostics.vue'
+import ApiTesting from '@/components/debug/ApiTesting.vue'
+import PerformanceMonitoring from '@/components/debug/PerformanceMonitoring.vue'
+import DevelopmentTools from '@/components/debug/DevelopmentTools.vue'
 </script>
