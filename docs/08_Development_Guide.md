@@ -46,6 +46,47 @@ docs/          Comprehensive project documentation
 - **Authentication Flow**: Login redirects to `/text-input`, logout redirects to `/`.
 - **Admin Access**: Conditional menu items based on `isAdmin` status.
 
+### 4.1 Debug and Admin Component Development
+Debug and admin components follow specific patterns for consistency and maintainability:
+
+#### Component Structure
+- **Location**: Debug components in `vue-frontend/src/components/debug/`
+- **Location**: Admin components in `vue-frontend/src/components/admin/`
+- **Naming**: Use descriptive names ending with `.vue` (e.g., `ApiHealthTesting.vue`)
+- **Layout**: Consistent white background with rounded borders and proper spacing
+
+#### Common Patterns
+- **Status Indicators**: Use color-coded badges (green=healthy, red=error, blue=testing, gray=unknown)
+- **Loading States**: Show spinners during async operations with disabled buttons
+- **Error Handling**: Display errors with copy-to-clipboard functionality for debug info
+- **Tooltips**: Use hover tooltips for detailed information display
+- **Responsive Design**: Grid layouts that adapt to different screen sizes
+
+#### API Integration
+- **Standardized Responses**: All components handle `{data, meta, errors}` response format
+- **Authentication**: Include `X-Session-Token` header for all admin/debug requests
+- **Error Display**: Show detailed error information with debug context
+- **Response Preview**: Display truncated responses with full view on hover
+
+#### Debug Component Features
+- **ApiHealthTesting**: Comprehensive endpoint testing with evaluation testing integration
+- **SystemDiagnostics**: System health monitoring with real-time updates
+- **PerformanceMonitoring**: Response time tracking and system resource monitoring
+- **DevelopmentTools**: Various debugging utilities and development aids
+
+#### Admin Component Features
+- **HealthStatus**: System health overview and service status monitoring
+- **ConfigValidator**: YAML configuration file management with validation
+- **UserManagement**: User account creation, management, and role assignment
+- **SessionManagement**: Session creation, refresh, and management
+
+#### Testing Requirements
+- **Manual Testing**: All debug and admin components require manual testing
+- **Authentication Testing**: Verify proper admin access control
+- **Error Simulation**: Test error handling and display functionality
+- **Performance Testing**: Verify response time tracking and monitoring
+- **UI Testing**: Test responsive design and user interactions
+
 ## 5.0 Configuration & Secrets
 - Never commit API keys or passwords. Use environment variables or `.env`.
 - Configuration editing should go through admin API or `config_manager.py` to ensure validation and backups.

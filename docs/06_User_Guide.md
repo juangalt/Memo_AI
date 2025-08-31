@@ -69,11 +69,10 @@ Tooltips on each input explain expected format. Navigation links at the top allo
 - **Support Information**: Contact details and next steps.
 
 ### Debug Page (Administrators Only)
-- **System Diagnostics**: View system health, database status, and service connectivity.
-- **API Testing**: Test backend endpoints and view request/response data.
-
-- **Performance Monitoring**: Monitor response times and system metrics.
-- **Development Tools**: Access debugging utilities and development aids.
+- **System Diagnostics**: View system health, database status, and service connectivity with real-time monitoring.
+- **API Health Testing**: Comprehensive testing of all 12 API endpoints including health, auth, config, and evaluation endpoints with detailed error reporting and debug information.
+- **Performance Monitoring**: Monitor response times, system metrics, and resource usage with visual charts and historical data.
+- **Development Tools**: Access debugging utilities, environment information, and development aids for system troubleshooting.
 
 ## 6.0 Session Management
 - Session identifier displayed in Text Input page.

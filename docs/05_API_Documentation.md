@@ -107,6 +107,8 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 }
 ```
 
+
+
 All authentication endpoints require proper credentials and return session tokens. See `docs/02b_Authentication_Specifications.md` for complete authentication details.
 
 ### 2.5 User Management (Admin)
@@ -124,7 +126,57 @@ All authentication endpoints require proper credentials and return session token
 }
 ```
 
-### 2.6 Health Endpoints
+### 2.6 Configuration Management (Admin)
+| Method | Path | Description |
+|-------|------|-------------|
+| GET | `/api/v1/admin/config/{config_name}` | Get configuration file content |
+| PUT | `/api/v1/admin/config/{config_name}` | Update configuration file content |
+
+**Supported Configuration Files:**
+- `rubric.yaml` - Evaluation rubric and scoring criteria
+- `prompt.yaml` - LLM prompt templates and instructions
+- `llm.yaml` - LLM provider configuration and settings
+- `auth.yaml` - Authentication and security settings
+
+**Get Config Response:**
+```json
+{
+  "data": {
+    "config_name": "rubric.yaml",
+    "content": "# Configuration file content..."
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**Update Config Request Body:**
+```json
+{
+  "content": "# Updated configuration file content..."
+}
+```
+
+**Update Config Response:**
+```json
+{
+  "data": {
+    "config_name": "rubric.yaml",
+    "message": "Configuration updated successfully",
+    "backup_created": "config/backups/rubric_20240101_120000.yaml"
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+### 2.7 Health Endpoints
 All health endpoints return standardized `{data, meta, errors}` format and respond with HTTP 200 for healthy status or HTTP 503 for unhealthy status.
 
 **Main Health Endpoint (`GET /health`):**

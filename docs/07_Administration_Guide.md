@@ -26,13 +26,93 @@ The Admin page provides (administrators only):
 - **Session Management**: view current session ID, create or refresh sessions.
 - **Logout**: revoke admin session.
 
+### 2.1 Admin Components
+The Admin dashboard consists of the following components:
+
+#### HealthStatus Component
+- **System Health Overview**: Displays overall system status from `/health` endpoint
+- **Service Status**: Shows individual service health (API, Database, Config, LLM, Auth)
+- **Database Details**: Connection status, table count, journal mode, user count
+- **Real-time Updates**: Automatic refresh of health status
+- **Error Display**: Shows detailed error information for unhealthy services
+
+#### ConfigValidator Component
+- **Configuration File Management**: View and edit all 4 YAML configuration files
+- **File Selection**: Dropdown to select rubric.yaml, prompt.yaml, llm.yaml, or auth.yaml
+- **Content Display**: Syntax-highlighted YAML content display
+- **Edit Mode**: Inline editing with validation
+- **Backup Creation**: Automatic timestamped backups before changes
+- **Validation**: YAML syntax validation and error reporting
+- **Save/Cancel**: Save changes or cancel without modification
+
+#### UserManagement Component
+- **User Creation**: Create new user accounts with username, password, and role assignment
+- **User Directory**: Display all registered users with roles and account status
+- **User Actions**: Delete users with confirmation
+- **Role Management**: Assign admin or regular user privileges
+- **Account Status**: View active/inactive status for all users
+- **Bulk Operations**: Refresh user list and perform bulk actions
+
+#### SessionManagement Component
+- **Current Session**: Display current session ID and user information
+- **Session Creation**: Create new authenticated sessions
+- **Session Refresh**: Refresh existing sessions to extend validity
+- **Session Reset**: Clear current session and start fresh
+- **Session Status**: Show session expiration and validity status
+
 ## 3.0 Debug Page
 The Debug page provides system diagnostics and development tools (administrators only):
 - **System Diagnostics**: View system health, database status, and service connectivity.
 - **API Testing**: Test backend endpoints and view request/response data.
-
 - **Performance Monitoring**: Monitor response times and system metrics.
 - **Development Tools**: Access debugging utilities and development aids.
+
+### 3.1 Debug Components
+The Debug page consists of the following components:
+
+#### SystemDiagnostics Component
+- **System Overview**: Display uptime, version, environment, and debug mode status
+- **Database Status**: Connection status, table count, database size, last backup
+- **Service Connectivity**: Test and display status of all backend services
+- **Error Log**: Display recent system errors with timestamps
+- **Manual Diagnostics**: Run system diagnostics on demand
+- **Real-time Monitoring**: Continuous monitoring of system health
+
+#### ApiHealthTesting Component
+- **Comprehensive Endpoint Testing**: Test all 12 API endpoints including health, auth, config, and evaluation
+- **Real-time Status Monitoring**: Shows healthy, error, or testing status for each endpoint
+- **Response Time Tracking**: Displays response times for performance monitoring
+- **Error Details**: Shows specific error messages for failed endpoints with debug information
+- **Health Summary**: Provides overview of system health with counts and status
+- **Manual Testing**: "Test All Endpoints" button for on-demand testing
+- **Auto-testing**: Automatically runs tests when component loads
+- **Tooltip Functionality**: Hover tooltips show full response/error details
+- **Clipboard Integration**: Click error messages to copy debug information
+- **Response Preview**: Shows truncated response data with full view on hover
+- **Evaluation Testing**: Manual LLM evaluation testing with sample memo text
+
+**API Endpoints Tested**:
+- **Health Endpoints**: System, Database, Config, LLM, Auth health checks
+- **Authentication**: Session validation
+- **Admin Functions**: User management
+- **Configuration**: All 4 config files (rubric, prompt, auth, llm)
+- **Evaluation**: Text submission endpoint (manual testing with sample memo)
+
+#### PerformanceMonitoring Component
+- **Performance Metrics**: Average response time, total requests, success rate, error rate
+- **Response Time Chart**: Visual chart showing response time history
+- **Endpoint Performance**: Individual endpoint performance metrics
+- **System Resources**: Memory usage, CPU usage with visual progress bars
+- **Real-time Updates**: Continuous monitoring of performance metrics
+- **Historical Data**: Track performance trends over time
+
+#### DevelopmentTools Component
+- **Environment Information**: Display current environment variables and settings
+- **API Client Testing**: Test API endpoints with custom requests
+- **Session Management**: View and manage authentication sessions
+- **Configuration Testing**: Test configuration loading and validation
+- **Error Simulation**: Simulate various error conditions for testing
+- **Debug Utilities**: Various debugging and development utilities
 
 ## 4.0 Security Notes
 - All configuration changes are backed up automatically before modification.
