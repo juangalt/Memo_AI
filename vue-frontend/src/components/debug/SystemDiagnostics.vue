@@ -104,6 +104,40 @@
 import { ref, onMounted } from 'vue'
 import { apiClient } from '@/services/api'
 
+interface HealthResponse {
+  status: string
+  timestamp: string
+  version: string
+  services: {
+    api: string
+    database: string
+    configuration: string
+    llm: string
+    auth: string
+  }
+  database_details?: {
+    tables: string[]
+    journal_mode: string
+    user_count: number
+  }
+  config_details?: {
+    configs_loaded: string[]
+    last_loaded: string
+    config_dir: string
+  }
+  llm_details?: {
+    provider: string
+    model: string
+    api_accessible: boolean
+    config_loaded: boolean
+  }
+  auth_details?: {
+    config_loaded: boolean
+    active_sessions: number
+    brute_force_protection: boolean
+  }
+}
+
 interface SystemInfo {
   uptime: string
   version: string
@@ -157,11 +191,10 @@ const runDiagnostics = async () => {
   isLoading.value = true
   try {
     // Check system health
-    const healthResult = await apiClient.get('/health')
+    const healthResult = await apiClient.get<HealthResponse>('/health')
     
     if (healthResult.success && healthResult.data) {
-      // Parse health data - handle both direct response and wrapped response
-      const health = healthResult.data as any
+      const health = healthResult.data
       
       // Update system info with available data
       systemInfo.value = {

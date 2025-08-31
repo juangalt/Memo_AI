@@ -37,6 +37,34 @@ from services import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Helper functions for standardized responses
+def create_standardized_response(data: Any, status_code: int = 200) -> Dict[str, Any]:
+    """Create a standardized API response with {data, meta, errors} format"""
+    return {
+        "data": data,
+        "meta": {
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": "placeholder"
+        },
+        "errors": []
+    }
+
+def create_error_response(error_code: str, message: str, field: str = None, details: str = None, status_code: int = 400) -> Dict[str, Any]:
+    """Create a standardized error response"""
+    return {
+        "data": None,
+        "meta": {
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": "placeholder"
+        },
+        "errors": [{
+            "code": error_code,
+            "message": message,
+            "field": field,
+            "details": details
+        }]
+    }
+
 # Create FastAPI app
 app = FastAPI(
     title="Memo AI Coach API",
@@ -148,19 +176,22 @@ async def health_check():
         # Check if any service is unhealthy
         if any(status != "healthy" for status in health_status["services"].values()):
             health_status["status"] = "unhealthy"
-            return JSONResponse(status_code=503, content=health_status)
+            return JSONResponse(
+                status_code=503, 
+                content=create_standardized_response(health_status)
+            )
         
-        return health_status
+        return create_standardized_response(health_status)
         
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return JSONResponse(
             status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
-            }
+            content=create_error_response(
+                "HEALTH_CHECK_FAILED",
+                "Health check failed",
+                details=str(e)
+            )
         )
 
 @app.get("/health/database")
@@ -168,20 +199,20 @@ async def database_health_check():
     """Database-specific health check endpoint"""
     try:
         db_health = db_manager.health_check()
-        return {
+        return create_standardized_response({
             "status": db_health["status"],
             "timestamp": datetime.utcnow().isoformat(),
             "database": db_health
-        }
+        })
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         return JSONResponse(
             status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
-            }
+            content=create_error_response(
+                "DATABASE_HEALTH_FAILED",
+                "Database health check failed",
+                details=str(e)
+            )
         )
 
 @app.get("/health/config")
@@ -189,20 +220,20 @@ async def config_health_check():
     """Configuration-specific health check endpoint"""
     try:
         config_health = config_service.health_check()
-        return {
+        return create_standardized_response({
             "status": config_health["status"],
             "timestamp": datetime.utcnow().isoformat(),
             "configuration": config_health
-        }
+        })
     except Exception as e:
         logger.error(f"Configuration health check failed: {e}")
         return JSONResponse(
             status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
-            }
+            content=create_error_response(
+                "CONFIG_HEALTH_FAILED",
+                "Configuration health check failed",
+                details=str(e)
+            )
         )
 
 @app.get("/health/llm")
@@ -212,30 +243,28 @@ async def llm_health_check():
         llm_service = get_llm_service()
         llm_health = llm_service.health_check()
         
+        response_data = {
+            "status": llm_health["status"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "llm": llm_health
+        }
+        
         if llm_health["status"] == "healthy":
-            return {
-                "status": "healthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "llm": llm_health
-            }
+            return create_standardized_response(response_data)
         else:
             return JSONResponse(
                 status_code=503,
-                content={
-                    "status": "unhealthy",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "llm": llm_health
-                }
+                content=create_standardized_response(response_data)
             )
     except Exception as e:
         logger.error(f"LLM health check failed: {e}")
         return JSONResponse(
             status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
-            }
+            content=create_error_response(
+                "LLM_HEALTH_FAILED",
+                "LLM health check failed",
+                details=str(e)
+            )
         )
 
 @app.get("/health/auth")
@@ -245,30 +274,28 @@ async def auth_health_check():
         auth_service = get_auth_service()
         auth_health = auth_service.health_check()
         
+        response_data = {
+            "status": auth_health["status"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "auth": auth_health
+        }
+        
         if auth_health["status"] == "healthy":
-            return {
-                "status": "healthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "auth": auth_health
-            }
+            return create_standardized_response(response_data)
         else:
             return JSONResponse(
                 status_code=503,
-                content={
-                    "status": "unhealthy",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "auth": auth_health
-                }
+                content=create_standardized_response(response_data)
             )
     except Exception as e:
         logger.error(f"Auth health check failed: {e}")
         return JSONResponse(
             status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": str(e)
-            }
+            content=create_error_response(
+                "AUTH_HEALTH_FAILED",
+                "Authentication health check failed",
+                details=str(e)
+            )
         )
 
 

@@ -67,32 +67,22 @@ class APIClient {
         ...config
       })
 
-      // Handle standardized response format
+      // All endpoints now return standardized format {data, meta, errors}
       if (response.data && typeof response.data === 'object') {
-        // Check if response follows the standardized format {data, meta, errors}
-        if ('data' in response.data && 'meta' in response.data && 'errors' in response.data) {
-          const { data, meta, errors } = response.data
+        const { data, meta, errors } = response.data
 
-          if (errors && Array.isArray(errors) && errors.length > 0) {
-            return {
-              success: false,
-              data: null,
-              error: errors[0].message,
-              status: errors[0].code
-            }
-          }
-
+        if (errors && Array.isArray(errors) && errors.length > 0) {
           return {
-            success: true,
-            data: data,
-            status: response.status
+            success: false,
+            data: null,
+            error: errors[0].message,
+            status: errors[0].code
           }
         }
-        
-        // Handle direct responses (like /health endpoint)
+
         return {
           success: true,
-          data: response.data,
+          data: data,
           status: response.status
         }
       }

@@ -77,6 +77,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '@/services/api'
 
+interface ConfigResponse {
+  content: string
+  filename: string
+  last_modified: string
+}
+
 interface ConfigFile {
   name: string
   status: 'valid' | 'invalid' | 'warning' | 'unknown'
@@ -130,14 +136,14 @@ const validateConfigs = async () => {
     for (const config of configFiles.value) {
       try {
         const configName = config.name.replace('.yaml', '')
-        const result = await apiClient.get(`/api/v1/admin/config/${configName}`)
+        const result = await apiClient.get<ConfigResponse>(`/api/v1/admin/config/${configName}`)
         
         if (result.success) {
           // Configuration loaded successfully
           config.status = 'valid'
           config.errors = []
           config.warnings = []
-          const content = (result.data as any)?.content
+          const content = result.data?.content
           config.details = `Configuration loaded successfully (${content?.length || 0} characters)`
         } else {
           config.status = 'invalid'

@@ -80,6 +80,41 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { apiClient } from '@/services/api'
+
+interface HealthResponse {
+  status: string
+  timestamp: string
+  version: string
+  services: {
+    api: string
+    database: string
+    configuration: string
+    llm: string
+    auth: string
+  }
+  database_details?: {
+    tables: string[]
+    journal_mode: string
+    user_count: number
+  }
+  config_details?: {
+    configs_loaded: string[]
+    last_loaded: string
+    config_dir: string
+  }
+  llm_details?: {
+    provider: string
+    model: string
+    api_accessible: boolean
+    config_loaded: boolean
+  }
+  auth_details?: {
+    config_loaded: boolean
+    active_sessions: number
+    brute_force_protection: boolean
+  }
+}
 
 interface HealthData {
   database?: { status: string; details?: string }
@@ -119,62 +154,54 @@ const getStatusClass = (status?: string) => {
 const checkHealth = async () => {
   isLoading.value = true
   try {
-    // Check overall health first - now that routing is fixed, this should work
-    const response = await fetch('https://memo.myisland.dev/health')
+    const result = await apiClient.get<HealthResponse>('/health')
     
-    const responseText = await response.text()
-    
-    let overallData
-    try {
-      overallData = JSON.parse(responseText)
-    } catch (parseError) {
-      console.error('Failed to parse JSON:', parseError)
-      return
-    }
-    
-    // Extract service statuses from the services object
-    if (overallData.services) {
-      healthData.value = {
-        database: { status: overallData.services.database || 'unknown' },
-        config: { status: overallData.services.configuration || 'unknown' },
-        llm: { status: overallData.services.llm || 'unknown' },
-        auth: { status: overallData.services.auth || 'unknown' }
+    if (result.success && result.data) {
+      const health = result.data
+      
+      // Extract service statuses from the services object
+      if (health.services) {
+        healthData.value = {
+          database: { status: health.services.database || 'unknown' },
+          config: { status: health.services.configuration || 'unknown' },
+          llm: { status: health.services.llm || 'unknown' },
+          auth: { status: health.services.auth || 'unknown' }
+        }
       }
-    }
-    
-    // If we have detailed information, add it without overwriting status
-    if (overallData.database_details && healthData.value.database) {
-      healthData.value.database = {
-        ...healthData.value.database,
-        details: `Tables: ${overallData.database_details.tables?.length || 0}, Users: ${overallData.database_details.user_count || 0}`
+      
+      // Add details if available
+      if (health.database_details && healthData.value.database) {
+        healthData.value.database = {
+          ...healthData.value.database,
+          details: `Tables: ${health.database_details.tables?.length || 0}, Users: ${health.database_details.user_count || 0}`
+        }
       }
-    }
-    
-    if (overallData.config_details && healthData.value.config) {
-      healthData.value.config = {
-        ...healthData.value.config,
-        details: `Configs: ${overallData.config_details.configs_loaded?.length || 0}`
+      
+      if (health.config_details && healthData.value.config) {
+        healthData.value.config = {
+          ...healthData.value.config,
+          details: `Configs: ${health.config_details.configs_loaded?.length || 0}`
+        }
       }
-    }
-    
-    if (overallData.llm_details && healthData.value.llm) {
-      healthData.value.llm = {
-        ...healthData.value.llm,
-        details: `Provider: ${overallData.llm_details.provider}, Model: ${overallData.llm_details.model}`
+      
+      if (health.llm_details && healthData.value.llm) {
+        healthData.value.llm = {
+          ...healthData.value.llm,
+          details: `Provider: ${health.llm_details.provider}, Model: ${health.llm_details.model}`
+        }
       }
-    }
-    
-    if (overallData.auth_details && healthData.value.auth) {
-      healthData.value.auth = {
-        ...healthData.value.auth,
-        details: `Active Sessions: ${overallData.auth_details.active_sessions || 0}`
+      
+      if (health.auth_details && healthData.value.auth) {
+        healthData.value.auth = {
+          ...healthData.value.auth,
+          details: `Active Sessions: ${health.auth_details.active_sessions || 0}`
+        }
       }
+      
+      lastUpdated.value = new Date().toLocaleTimeString()
     }
-    
-    lastUpdated.value = new Date().toLocaleTimeString()
   } catch (error) {
     console.error('Failed to check health status:', error)
-    // Set all services to unknown if the main health check fails
     healthData.value = {
       database: { status: 'unknown' },
       config: { status: 'unknown' },
