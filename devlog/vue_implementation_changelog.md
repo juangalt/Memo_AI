@@ -34,6 +34,58 @@
 
 ## 🚀 Recent Changes
 
+### [2025-08-31] Separated Evaluation Testing into Dedicated Component
+
+**Type**: Refactored  
+**Impact**: Developer Experience  
+**Priority**: Medium  
+
+**Improvement**: Isolated evaluation endpoint testing into a separate component with manual trigger capability.
+
+**Component Separation**:
+- **New Component**: `EvaluationTesting.vue` - Dedicated evaluation endpoint testing
+- **Manual Trigger**: Evaluation testing now requires explicit button click
+- **Isolated Testing**: Evaluation endpoint separated from general API health testing
+- **Better UX**: Clear separation between fast health checks and expensive LLM operations
+
+**EvaluationTesting Component Features**:
+- **Manual Trigger**: "Test Evaluation" button for explicit testing
+- **Warning Messages**: Clear warnings about LLM processing time and authentication requirements
+- **Purple Theme**: Distinct visual styling to differentiate from health testing
+- **Comprehensive Debug Info**: Full error context with evaluation-specific notes
+- **Realistic Test Data**: Uses proper memo text for evaluation testing
+
+**ApiHealthTesting Component Updates**:
+- **Removed Evaluation Endpoint**: No longer includes expensive LLM operations
+- **Faster Testing**: Focuses on infrastructure and configuration endpoints
+- **Simplified Logic**: Removed evaluation-specific request data handling
+- **Cleaner Interface**: Streamlined for quick health status checks
+
+**Visual Design**:
+- **API Health Testing**: Blue theme for infrastructure testing
+- **Evaluation Testing**: Purple theme for LLM evaluation testing
+- **Clear Separation**: Distinct sections with different styling
+- **Consistent Layout**: Maintains general format and structure
+
+**Technical Improvements**:
+- **Component Isolation**: Evaluation testing logic separated from health testing
+- **Better Performance**: Health testing no longer blocked by LLM operations
+- **Focused Testing**: Each component has specific testing responsibilities
+- **Maintainable Code**: Clear separation of concerns
+
+**Files Modified**:
+- `vue-frontend/src/components/debug/EvaluationTesting.vue` - New dedicated evaluation testing component
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Removed evaluation endpoint and simplified logic
+- `vue-frontend/src/views/Debug.vue` - Added EvaluationTesting component to debug page
+
+**User Experience**:
+- **Faster Health Checks**: Quick infrastructure testing without LLM delays
+- **Explicit Evaluation Testing**: Manual control over expensive LLM operations
+- **Clear Warnings**: Users understand evaluation testing requirements
+- **Better Organization**: Logical separation of different testing types
+
+---
+
 ### [2025-08-31] Improved API Health Testing with Authentication Context
 
 **Type**: Enhanced  

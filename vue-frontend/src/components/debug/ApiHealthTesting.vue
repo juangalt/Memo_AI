@@ -224,8 +224,7 @@ const getDebugErrorInfo = (endpoint: Endpoint) => {
   const fullUrl = `${baseUrl}${endpoint.path}`
   
   // Determine if endpoint requires authentication
-  const requiresAuth = endpoint.path.includes('/api/v1/evaluations/') || 
-                      endpoint.path.includes('/api/v1/admin/') ||
+  const requiresAuth = endpoint.path.includes('/api/v1/admin/') ||
                       endpoint.path.includes('/api/v1/sessions/')
   
   return `=== API ENDPOINT ERROR DEBUG INFO ===
@@ -252,7 +251,6 @@ Environment:
 
 Notes:
 ${requiresAuth ? '- This endpoint requires authentication (X-Session-Token header)' : '- This is a public endpoint'}
-${endpoint.path === '/api/v1/evaluations/submit' ? '- Evaluation endpoint requires valid text_content in request body' : ''}
 ${endpoint.path.includes('/api/v1/admin/') ? '- Admin endpoint requires admin privileges' : ''}
 
 === END DEBUG INFO ===`
