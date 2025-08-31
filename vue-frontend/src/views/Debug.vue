@@ -21,11 +21,7 @@
             <ApiHealthTesting />
           </div>
 
-          <!-- Evaluation Testing -->
-          <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 class="text-lg font-semibold text-purple-900 mb-4">Evaluation Endpoint Testing</h3>
-            <EvaluationTesting />
-          </div>
+
           
           <!-- Performance Monitoring -->
           <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
@@ -54,5 +50,5 @@ import SystemDiagnostics from '@/components/debug/SystemDiagnostics.vue'
 import ApiHealthTesting from '@/components/debug/ApiHealthTesting.vue'
 import PerformanceMonitoring from '@/components/debug/PerformanceMonitoring.vue'
 import DevelopmentTools from '@/components/debug/DevelopmentTools.vue'
-import EvaluationTesting from '@/components/debug/EvaluationTesting.vue'
+
 </script>
