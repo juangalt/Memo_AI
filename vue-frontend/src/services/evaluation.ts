@@ -27,21 +27,12 @@ export const evaluationService = {
     })
 
     if (result.success) {
-      // Handle standardized response format
-      const { data, meta, errors } = result.data
-
-      if (errors && Array.isArray(errors) && errors.length > 0) {
-        return {
-          success: false,
-          error: errors[0].message,
-          status: errors[0].code
-        }
-      }
-
+      // The API client already processed the response format
+      // result.data contains the actual response data
       return {
         success: true,
-        data: data,
-        meta: meta
+        data: result.data,
+        meta: result.data?.meta || null
       }
     }
 
@@ -52,12 +43,11 @@ export const evaluationService = {
     const result = await apiClient.get<EvaluationResponse>(`/api/v1/evaluations/${evaluationId}`)
 
     if (result.success) {
-      const { data, meta, errors } = result.data
+      // The API client already processed the response format
       return {
         success: true,
-        data: data,
-        meta: meta,
-        errors: errors
+        data: result.data,
+        meta: result.data?.meta || null
       }
     }
 

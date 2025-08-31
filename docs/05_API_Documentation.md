@@ -154,7 +154,105 @@ All errors share the structure:
 ## 4.0 Authentication
 All protected endpoints require authentication via `X-Session-Token` header. See `docs/02b_Authentication_Specifications.md` for complete authentication requirements and token management.
 
-## 5.0 References
+## 5.0 Frontend Integration Guidelines
+
+### 5.1 Response Processing
+Frontend services must handle the standardized API response format correctly to avoid processing errors.
+
+#### Standard Response Format
+All API responses follow this structure:
+```json
+{
+  "data": {},           // Actual response data
+  "meta": {            // Metadata (pagination, timestamps, etc.)
+    "timestamp": "ISO8601",
+    "request_id": "uuid"
+  },
+  "errors": []         // Error array (empty on success)
+}
+```
+
+#### Frontend Processing Guidelines
+- **Direct Data Access**: Use `result.data` directly from API client responses
+- **Avoid Double Processing**: Do not re-process the `{data, meta, errors}` format
+- **Error Handling**: Check `result.data.errors` array for detailed error information
+- **Success Validation**: Verify `result.success` before accessing `result.data`
+
+#### Example Implementation
+```javascript
+// Correct pattern
+const result = await apiClient.post('/api/v1/evaluations/submit', data)
+if (result.success) {
+  // Access data directly - no double processing
+  const evaluation = result.data.evaluation
+  return evaluation
+} else {
+  // Handle errors from result.data.errors
+  throw new Error(result.error)
+}
+
+// Incorrect pattern - causes double processing
+const result = await apiClient.post('/api/v1/evaluations/submit', data)
+if (result.success && result.data) {
+  // Double processing - result.data already contains the response
+  const processed = result.data.data.evaluation  // WRONG
+  return processed
+}
+```
+
+### 5.2 Authentication Integration
+Frontend authentication must integrate properly with Vue Router and global state management.
+
+#### Global Auth Store Access
+- **Router Guards**: Use `window.authStoreInstance` for router guard authentication
+- **Session Validation**: Implement automatic session validation on protected route access
+- **Token Management**: Clear tokens from memory on 401 responses
+- **State Persistence**: Store authentication state in memory only (never localStorage)
+
+#### Vue Router Integration
+```javascript
+// Router guard implementation
+router.beforeEach(async (to, from, next) => {
+  const authStore = window.authStoreInstance
+  
+  if (to.meta.requiresAuth) {
+    if (!authStore.isAuthenticated) {
+      const valid = await authStore.validateSession()
+      if (!valid) {
+        next('/login')
+        return
+      }
+    }
+  }
+  next()
+})
+```
+
+### 5.3 Component Architecture Patterns
+Frontend components must follow specific patterns to avoid UI duplication and ensure proper authentication state management.
+
+#### Layout Component Usage
+- **Single Instance**: Use Layout component only at App.vue level
+- **No Duplication**: Avoid wrapping view components with additional Layout wrappers
+- **Authentication State**: Layout should display authentication status and navigation
+
+#### Component Hierarchy
+```
+App.vue (Layout wrapper)
+├── RouterView
+    ├── Home.vue (no Layout wrapper)
+    ├── Login.vue (no Layout wrapper)
+    ├── TextInput.vue (no Layout wrapper)
+    └── OverallFeedback.vue (no Layout wrapper)
+```
+
+#### Authentication State Management
+- **Global Store**: Use Pinia store for authentication state
+- **Memory Storage**: Store tokens in memory only per security requirements
+- **Session Validation**: Implement automatic session validation on app startup
+- **Error Handling**: Handle authentication errors gracefully with user feedback
+
+## 6.0 References
 - `docs/02b_Authentication_Specifications.md` - Complete authentication details
 - `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
 - `backend/main.py`

@@ -69,6 +69,83 @@ Based on extensibility sections in:
 #### **Estimated Effort**: 1-2 weeks
 #### **Dependencies**: None (can be added alongside existing session system)
 
+### 2.3 Session Persistence Enhancement
+**Status**: ❌ NOT IMPLEMENTED (Memory-only storage)
+**Priority**: MEDIUM
+**Source**: User experience improvement request
+
+#### **Current State**:
+- Authentication tokens stored in memory only (per security specifications)
+- Sessions lost on page reload/refresh
+- Users must re-authenticate after browser refresh
+- Secure but poor user experience for frequent page reloads
+
+#### **Enhancement Opportunities**:
+- **SessionStorage Implementation**: Persist sessions across page reloads, clear when browser closes
+- **LocalStorage Option**: Persistent sessions across browser sessions (less secure)
+- **Configurable Persistence**: Admin-configurable session persistence levels
+- **Security Headers**: Implement secure cookie-based session storage
+- **Session Expiry Management**: Automatic session cleanup and renewal
+- **Cross-Tab Session Sharing**: Share authentication state across browser tabs
+
+#### **Implementation Options**:
+
+##### **Option A: SessionStorage (Recommended)**
+- **Security Level**: Medium-High (cleared when browser closes)
+- **User Experience**: Sessions persist across page reloads
+- **Implementation**: Store tokens in `sessionStorage` instead of memory only
+- **Benefits**: Better UX without major security compromises
+
+##### **Option B: Secure Cookies**
+- **Security Level**: High (with proper httpOnly, secure flags)
+- **User Experience**: Sessions persist across browser sessions
+- **Implementation**: Use httpOnly cookies with CSRF protection
+- **Benefits**: Most secure option with good UX
+
+##### **Option C: Hybrid Approach**
+- **Security Level**: Configurable
+- **User Experience**: Admin-configurable persistence levels
+- **Implementation**: Allow admins to choose storage method per environment
+- **Benefits**: Flexibility for different deployment scenarios
+
+#### **Implementation Plan**:
+1. **Backend Changes**:
+   - Add session persistence configuration to `auth.yaml`
+   - Implement secure cookie generation and validation
+   - Add session expiry management and cleanup
+
+2. **Frontend Changes**:
+   - Update auth store to support multiple storage methods
+   - Implement sessionStorage/localStorage integration
+   - Add session state synchronization across tabs
+
+3. **Security Enhancements**:
+   - Add CSRF protection for cookie-based sessions
+   - Implement secure session rotation
+   - Add session hijacking detection
+
+4. **Configuration Management**:
+   - Add session persistence settings to admin panel
+   - Create environment-specific configuration options
+   - Add session management dashboard
+
+#### **Security Considerations**:
+- **XSS Protection**: Ensure stored tokens are protected from XSS attacks
+- **CSRF Protection**: Implement proper CSRF tokens for cookie-based sessions
+- **Token Rotation**: Regular token refresh to limit exposure window
+- **Secure Headers**: Proper security headers for cookie-based sessions
+- **Session Monitoring**: Track and alert on suspicious session activity
+
+#### **User Experience Benefits**:
+- **Reduced Login Frequency**: Users stay logged in across page reloads
+- **Better Workflow**: Seamless experience when navigating between pages
+- **Cross-Tab Consistency**: Authentication state shared across browser tabs
+- **Configurable Security**: Different persistence levels for different use cases
+
+#### **Estimated Effort**: 1-2 weeks
+#### **Dependencies**: None (can be implemented alongside current session system)
+#### **Risk Level**: Low-Medium (requires careful security implementation)
+
 ---
 
 ## 3.0 Short-term Enhancements (3-6 months)
@@ -390,6 +467,7 @@ Based on extensibility sections in:
 |---------|--------|-------------|----------------|----------|
 | Debug Tab | Low | High | Low | CRITICAL |
 | JWT Auth | Medium | Medium | Low | HIGH |
+| Session Persistence | Low | High | Low | MEDIUM |
 | LLM Providers | Medium | High | Low | HIGH |
 | Enhanced Frameworks | Medium | High | Low | HIGH |
 | Admin Analytics | Medium | Medium | Low | MEDIUM |
@@ -406,6 +484,7 @@ Based on extensibility sections in:
 ### 8.1 Phase 1: Critical Implementation Gaps (1-2 months)
 1. **Debug Tab Implementation** - Complete missing UI and API components
 2. **JWT Authentication Enhancement** - Add alongside existing session system
+3. **Session Persistence Enhancement** - Improve user experience with persistent sessions
 
 ### 8.2 Phase 2: Core Extensibility (2-4 months)
 1. **LLM Provider Extensions** - OpenAI GPT and Google Gemini support

@@ -39,6 +39,22 @@ export const useEvaluationStore = defineStore('evaluation', () => {
       const result = await evaluationService.submitEvaluation(textContent)
 
       if (result.success) {
+        // Debug: Log the result structure
+        console.log('Evaluation result:', result)
+        console.log('Result data:', result.data)
+        
+        // Check if result.data exists and has evaluation property
+        if (!result.data) {
+          error.value = 'No data received from evaluation service'
+          return null
+        }
+        
+        if (!result.data.evaluation) {
+          error.value = 'No evaluation data in response'
+          console.error('Missing evaluation in result.data:', result.data)
+          return null
+        }
+        
         // Store the evaluation result
         const evaluation = result.data.evaluation
         currentEvaluation.value = evaluation

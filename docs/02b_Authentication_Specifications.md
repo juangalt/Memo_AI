@@ -334,7 +334,65 @@ UPDATE sessions SET is_active = 0 WHERE user_id = ?;
 - Handle token expiration gracefully with automatic logout and re-auth prompts
 - Clear tokens from memory on logout or session errors
 
-### 8.3 Database Schema
+### 8.3 Vue Router Integration
+- **Global Auth Store Access**: Router guards must access global auth store via `window.authStoreInstance`
+- **Session Validation**: Implement automatic session validation before protected route access
+- **Authentication Redirects**: Handle authentication redirects gracefully with proper error messages
+- **Session State Management**: Clear session state on logout/expiration and redirect to login
+- **Route Protection**: Use `meta: { requiresAuth: true, requiresAdmin: true }` for protected routes
+
+#### Router Guard Implementation Pattern
+```javascript
+router.beforeEach(async (to, from, next) => {
+  const authStore = window.authStoreInstance
+  
+  // Validate session on protected routes
+  if (to.meta.requiresAuth || to.meta.requiresAdmin) {
+    if (!authStore.isAuthenticated) {
+      // Try to validate existing session
+      const valid = await authStore.validateSession()
+      if (!valid) {
+        next('/login')
+        return
+      }
+    }
+
+    // Check admin permissions
+    if (to.meta.requiresAdmin && !authStore.isAdmin) {
+      next('/login')
+      return
+    }
+  }
+
+  next()
+})
+```
+
+### 8.4 Component Architecture Guidelines
+- **Single Layout Instance**: Use Layout component only at App.vue level, never in view components
+- **Component Hierarchy**: Implement proper component hierarchy to avoid UI duplication
+- **Authentication State Display**: Layout should display authentication status and user information
+- **Navigation Structure**: Implement tab-based navigation with proper authentication state integration
+- **Error Handling**: Display authentication errors gracefully with user-friendly messages
+
+#### Component Structure Pattern
+```
+App.vue (Layout wrapper only)
+├── RouterView
+    ├── Home.vue (no Layout wrapper)
+    ├── Login.vue (no Layout wrapper)
+    ├── TextInput.vue (no Layout wrapper)
+    ├── OverallFeedback.vue (no Layout wrapper)
+    └── Admin.vue (no Layout wrapper)
+```
+
+#### Authentication State Integration
+- **Global Store Access**: Use `window.authStoreInstance` for component authentication state
+- **Reactive Updates**: Implement reactive authentication state updates across components
+- **Session Persistence**: Handle session persistence and validation on component initialization
+- **Error Recovery**: Implement graceful error recovery for authentication failures
+
+### 8.5 Database Schema
 ```sql
 -- Users table
 CREATE TABLE users (
