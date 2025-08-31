@@ -162,10 +162,7 @@ const endpoints = ref<Endpoint[]>([
   { name: 'Config: Rubric', method: 'GET', path: '/api/v1/admin/config/rubric', description: 'Get rubric configuration', status: 'unknown' },
   { name: 'Config: Prompt', method: 'GET', path: '/api/v1/admin/config/prompt', description: 'Get prompt configuration', status: 'unknown' },
   { name: 'Config: Auth', method: 'GET', path: '/api/v1/admin/config/auth', description: 'Get auth configuration', status: 'unknown' },
-  { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration', status: 'unknown' },
-  
-  // Evaluation endpoints
-  { name: 'Submit Evaluation', method: 'POST', path: '/api/v1/evaluations/submit', description: 'Submit text for evaluation', status: 'unknown' }
+  { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration', status: 'unknown' }
 ])
 
 const healthyCount = computed(() => endpoints.value.filter(e => e.status === 'healthy').length)
@@ -281,16 +278,7 @@ const testEndpoint = async (endpoint: Endpoint) => {
   
   try {
     let result: any
-    let requestData: any = undefined
-    
-    // Prepare appropriate test data based on endpoint
-    if (endpoint.path === '/api/v1/evaluations/submit') {
-      requestData = {
-        text_content: "This is a sample memo for testing purposes. It contains some basic content to evaluate the system's functionality."
-      }
-    } else if (endpoint.method === 'POST') {
-      requestData = { test: true }
-    }
+    const requestData = endpoint.method === 'POST' ? { test: true } : undefined
     
     switch (endpoint.method) {
       case 'GET':
@@ -362,3 +350,4 @@ onMounted(() => {
   runAllTests()
 })
 </script>
+

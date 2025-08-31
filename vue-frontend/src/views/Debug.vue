@@ -8,7 +8,7 @@
         
         <div class="grid md:grid-cols-2 gap-6">
           <!-- System Diagnostics -->
-          <div class="bg-red-50 rounded-lg p-6 border-l-4 border-red-500">
+          <div class="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
               🔍 System Diagnostics
             </h3>

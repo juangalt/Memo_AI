@@ -34,6 +34,53 @@
 
 ## 🚀 Recent Changes
 
+### [2025-08-31] Successfully Completed Evaluation Endpoint Separation
+
+**Type**: Completed  
+**Impact**: Developer Experience  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Site restored and fully functional
+
+**Final Implementation**:
+- **Evaluation Endpoint Removed**: Successfully removed from ApiHealthTesting component
+- **Separate Component**: EvaluationTesting.vue provides dedicated evaluation testing
+- **Site Restored**: All syntax errors fixed, frontend container rebuilt successfully
+- **Dual Testing Interface**: Clean separation between fast health checks and LLM evaluation testing
+
+**Current Debug Page Structure**:
+1. **API Health Testing** (Blue theme) - Fast infrastructure and configuration testing
+   - System Health, Database Health, Config Health, LLM Health, Auth Health
+   - Auth Validate, List Users, Config endpoints (Rubric, Prompt, Auth, LLM)
+   - Automatic testing on page load, quick status checks
+
+2. **Evaluation Endpoint Testing** (Purple theme) - Manual LLM evaluation testing
+   - Manual trigger with "Test Evaluation" button
+   - Clear warnings about LLM processing time and authentication requirements
+   - Comprehensive debug information with evaluation-specific context
+   - Realistic test data with proper memo text
+
+**Technical Resolution**:
+- **Syntax Errors Fixed**: Restored missing functions and closing tags in ApiHealthTesting.vue
+- **Build Success**: Frontend container rebuilt successfully without errors
+- **Clean Separation**: Evaluation endpoint completely isolated from health testing
+- **Maintained Functionality**: All existing features preserved and enhanced
+
+**User Experience Achieved**:
+- **Faster Health Checks**: Infrastructure testing no longer blocked by LLM operations
+- **Explicit Evaluation Testing**: Manual control over expensive LLM operations
+- **Clear Visual Distinction**: Blue vs Purple themes for different testing types
+- **Better Performance**: Health testing completes quickly, evaluation testing on-demand
+
+**Files Successfully Modified**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Evaluation endpoint removed, syntax fixed
+- `vue-frontend/src/components/debug/EvaluationTesting.vue` - Dedicated evaluation testing component
+- `vue-frontend/src/views/Debug.vue` - Integrated both testing components
+
+**Result**: ✅ **Site fully operational with improved debugging interface**
+
+---
+
 ### [2025-08-31] Separated Evaluation Testing into Dedicated Component
 
 **Type**: Refactored  
