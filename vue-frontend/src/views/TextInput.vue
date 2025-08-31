@@ -1,6 +1,5 @@
 <template>
-  <Layout>
-    <div class="max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
           Submit Text for Evaluation
@@ -48,14 +47,12 @@
         <div v-if="error" class="mt-4 text-sm text-red-600">{{ error }}</div>
       </div>
     </div>
-  </Layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEvaluationStore } from '@/stores/evaluation'
-import Layout from '@/components/Layout.vue'
 import CharacterCounter from '@/components/CharacterCounter.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 

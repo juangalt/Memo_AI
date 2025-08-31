@@ -62,3 +62,4 @@ const formatCriterionName = (criterion: string): string => {
     .join(' ')
 }
 </script>
+

@@ -1,6 +1,5 @@
 <template>
-  <Layout>
-    <div class="max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
           Overall Feedback
@@ -95,13 +94,11 @@
         </div>
       </div>
     </div>
-  </Layout>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useEvaluationStore } from '@/stores/evaluation'
-import Layout from '@/components/Layout.vue'
 import RubricScores from '@/components/RubricScores.vue'
 
 const evaluationStore = useEvaluationStore()

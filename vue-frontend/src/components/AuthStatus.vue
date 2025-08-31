@@ -29,3 +29,4 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const username = computed(() => authStore.username)
 const isAdmin = computed(() => authStore.isAdmin)
 </script>
+

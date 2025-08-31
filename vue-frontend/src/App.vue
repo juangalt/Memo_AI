@@ -1,9 +1,7 @@
 <template>
   <div id="app">
     <!-- Layout wrapper for authenticated routes -->
-    <Layout v-if="isAuthenticated">
-      <RouterView />
-    </Layout>
+    <Layout v-if="isAuthenticated" />
 
     <!-- Direct router view for public routes (login, etc.) -->
     <RouterView v-else />
