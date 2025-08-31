@@ -72,6 +72,11 @@
         </div>
       </div>
 
+      <!-- Phase Tracking Section -->
+      <div class="mb-16">
+        <PhaseTracking />
+      </div>
+
       <!-- How It Works Section -->
       <div class="bg-white rounded-2xl p-8 shadow-lg mb-16">
         <h3 class="text-3xl font-bold text-gray-900 text-center mb-8">How It Works</h3>
@@ -116,6 +121,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import PhaseTracking from '@/components/PhaseTracking.vue'
 
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)

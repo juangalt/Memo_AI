@@ -132,7 +132,6 @@
       
       <div class="text-xs text-gray-600 mb-4">
         <p>⚠️ <strong>Note:</strong> This test uses LLM processing and may take 5-15 seconds to complete.</p>
-        <p>⚠️ <strong>Authentication Required:</strong> You must be logged in to test this endpoint.</p>
       </div>
 
       <div v-if="evaluationTestResult" class="border rounded-lg p-3" :class="getResultStatusClass(evaluationTestResult.status)">
