@@ -62,9 +62,11 @@
 
 **Environment Variables Kept** (Sensitive Data):
 - ✅ `LLM_API_KEY` - Sensitive data
-- ✅ `SECRET_KEY` - Sensitive data
-- ✅ `ADMIN_PASSWORD` - Sensitive data
 - ✅ `APP_ENV` - Environment selection
+
+**Environment Variables Removed** (Unnecessary):
+- ✅ `ADMIN_PASSWORD` - Removed from docker-compose.yml (only used during database initialization)
+- ✅ `SECRET_KEY` - Removed from docker-compose.yml (session tokens use Python secrets module)
 
 **New Configuration Files**:
 - ✅ `config/deployment.yaml` - Deployment-specific settings (traefik, database, frontend)
@@ -103,7 +105,7 @@
 - **Consistency**: All components use same configuration source
 
 **Files Modified**:
-- `docker-compose.yml` - Removed duplicate environment variables
+- `docker-compose.yml` - Removed duplicate environment variables, ADMIN_PASSWORD, and SECRET_KEY
 - `config/auth.yaml` - Added missing configuration fields
 - `config/deployment.yaml` - **NEW** - Deployment configuration file
 - `backend/services/config_service.py` - Added deployment.yaml support
@@ -112,6 +114,12 @@
 - `vue-frontend/src/components/admin/SessionManagement.vue` - Uses configurable values
 - `vue-frontend/src/components/debug/DevelopmentTools.vue` - Uses configurable values
 - `devlog/environment_variables_to_yaml_refactoring_plan.md` - **NEW** - Implementation plan and tracking
+- `README.md` - Updated ADMIN_PASSWORD and SECRET_KEY documentation
+- `env.example` - Updated ADMIN_PASSWORD and SECRET_KEY documentation
+- `docs/04_Configuration_Guide.md` - Updated ADMIN_PASSWORD and SECRET_KEY documentation
+- `docs/13_Reference_Manual.md` - Updated ADMIN_PASSWORD documentation
+- `AGENTS.md` - Updated ADMIN_PASSWORD and SECRET_KEY documentation
+- `tests/config/test_environment.py` - Removed SECRET_KEY requirement and updated security test
 
 **Result**: ✅ **Complete configuration refactoring with centralized YAML management**
 

@@ -14,14 +14,13 @@ Files are mounted read-only into containers at `/app/config/` and validated by `
 Configuration edits made through the Admin interface create timestamped backups under `config/backups/` before any changes are written.
 
 ## 2.0 Environment Variables
-`.env` provides base values such as `DOMAIN`, `LLM_API_KEY`, `SECRET_KEY`, `ADMIN_PASSWORD`, and performance settings like `MAX_CONCURRENT_USERS`.
+`.env` provides base values such as `DOMAIN`, `LLM_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup.
 Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`).
 | Variable | Description |
 |----------|-------------|
 | `DOMAIN` | Public domain name used by Traefik for routing and certificate generation |
 | `LLM_API_KEY` | Anthropic key for Claude API access |
-| `SECRET_KEY` | Key used for signing session tokens |
-| `ADMIN_PASSWORD` | Initial administrator password used on first login |
+| `ADMIN_PASSWORD` | Optional: Initial administrator password for database setup (default: admin123) |
 | `MAX_CONCURRENT_USERS` | Target concurrency for performance testing |
 | `SESSION_TIMEOUT` | Override for session expiration in minutes |
 

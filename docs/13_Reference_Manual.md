@@ -50,7 +50,7 @@ See detailed descriptions in `docs/04_Configuration_Guide.md`. Important keys in
 ## 4.0 Constants and Defaults
 - Maximum text length: 10,000 characters (`llm.yaml` and backend validation).
 - Session token length: 32 characters (`auth.yaml`).
-- Default admin user: `admin` created by `init_db.py` with password from `ADMIN_PASSWORD` env variable.
+- Default admin user: `admin` created by `init_db.py` with password from `ADMIN_PASSWORD` env variable (optional, defaults to 'admin123').
 - Configuration backups: `config/backups/<timestamp>_<name>.yaml`.
 - Health endpoint path: `/health` returning component statuses.
 

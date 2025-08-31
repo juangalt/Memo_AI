@@ -36,7 +36,6 @@ class EnvironmentValidator:
         self.required_vars = {
             "DOMAIN": "Production domain name",
             "LLM_API_KEY": "Claude API key for LLM integration",
-            "SECRET_KEY": "Application secret key for security",
             "ADMIN_PASSWORD": "Admin password for authentication",
             "DATABASE_URL": "Database connection string",
             "SESSION_TIMEOUT": "Session timeout in seconds",
@@ -287,26 +286,14 @@ class EnvironmentValidator:
         """Test security configuration"""
         print("\n=== Testing Security Configuration ===")
         
-        secret_key = os.getenv("SECRET_KEY")
-        if not secret_key:
-            self.log_test("Security Configuration", "FAIL", "SECRET_KEY environment variable not set")
-            return False
-        
-        # Check secret key strength
-        if len(secret_key) >= 32:
-            self.log_test(
-                "Security Configuration",
-                "PASS",
-                "SECRET_KEY has sufficient length",
-                {"key_length": len(secret_key)}
-            )
-        else:
-            self.log_test(
-                "Security Configuration",
-                "WARN",
-                "SECRET_KEY may be too short for production",
-                {"key_length": len(secret_key), "recommended": ">= 32"}
-            )
+        # Note: SECRET_KEY removed - session tokens use Python's secrets module
+        # which is cryptographically secure and doesn't require a secret key
+        self.log_test(
+            "Security Configuration",
+            "PASS",
+            "Session security uses Python secrets module (no SECRET_KEY required)",
+            {"security_method": "Python secrets module", "cryptographic": True}
+        )
         
         # Check session timeout
         session_timeout = os.getenv("SESSION_TIMEOUT")

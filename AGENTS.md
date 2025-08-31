@@ -195,7 +195,7 @@ All runtime behavior controlled by **4 YAML files** in `config/`:
 - Sets security settings, rate limiting, input validation
 
 ### **Environment Variables:**
-- `.env` provides base values: `DOMAIN`, `LLM_API_KEY`, `SECRET_KEY`, `ADMIN_PASSWORD`
+- `.env` provides base values: `DOMAIN`, `LLM_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup
 - Can override YAML fields for flexibility
 - Used for performance settings and sensitive data
 

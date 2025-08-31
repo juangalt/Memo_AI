@@ -129,12 +129,9 @@ module.exports = {
    # Essential
    DOMAIN=your-domain.com
    LLM_API_KEY=your-claude-api-key  # or 'unset' for mock mode
-   SECRET_KEY=your-random-secret-key
-   ADMIN_PASSWORD=your-admin-password
 
-   # Optional
-   MAX_CONCURRENT_USERS=100
-   SESSION_TIMEOUT=3600
+   # Optional (for initial admin user setup)
+   ADMIN_PASSWORD=your-admin-password  # Only used during database initialization
    ```
 
 4. **Deploy the application**:
@@ -165,7 +162,8 @@ The system uses **4 essential YAML configuration files** for complete runtime be
 
 ### Admin Access
 - **Username**: `admin`
-- **Password**: Set via `ADMIN_PASSWORD` environment variable
+- **Password**: Set during database initialization via `ADMIN_PASSWORD` environment variable (optional)
+- **Default Password**: `admin123` if no `ADMIN_PASSWORD` is set during initialization
 - **Access**: Navigate to `/admin` for configuration management
 - **Session Tokens**: Admin operations require `X-Session-Token` header
 
@@ -326,8 +324,7 @@ memo_AI/
    DEBUG_MODE=false
    DOMAIN=your-production-domain.com
    LLM_API_KEY=your-actual-claude-api-key
-   SECRET_KEY=your-secure-random-key
-   ADMIN_PASSWORD=your-secure-admin-password
+   # Optional: ADMIN_PASSWORD=your-secure-admin-password  # Only for initial admin setup
    ```
 
 3. **Deploy to production**:

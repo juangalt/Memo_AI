@@ -63,8 +63,6 @@ services:
     environment:
       - DATABASE_URL=sqlite:///data/memoai.db
       - LLM_API_KEY=${LLM_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - APP_ENV=${APP_ENV:-production}
 
 
