@@ -220,6 +220,10 @@ All endpoints return JSON with `data`, `meta`, and `errors` keys.
 ### **Public Endpoints:**
 - `GET /` - Root information
 - `GET /health` - Aggregate health status
+- `GET /health/database` - Database health
+- `GET /health/config` - Configuration health
+- `GET /health/llm` - LLM service health
+- `GET /health/auth` - Authentication service health
 - `GET /docs` - Swagger UI with OpenAPI schema
 
 ### **Authentication Endpoints:**
@@ -245,6 +249,9 @@ All endpoints return JSON with `data`, `meta`, and `errors` keys.
 - `DELETE /api/v1/admin/users/{username}` - Delete user account
 
 ### **Request/Response Format:**
+All endpoints return standardized `{data, meta, errors}` format:
+
+**Evaluation Response:**
 ```json
 {
   "data": {
@@ -254,6 +261,26 @@ All endpoints return JSON with `data`, `meta`, and `errors` keys.
       "opportunities": ["..."],
       "rubric_scores": {"criterion": {"score": 4, "justification": "..."}},
       "segment_feedback": [...]
+    }
+  },
+  "meta": {"timestamp": "...", "request_id": "..."},
+  "errors": []
+}
+```
+
+**Health Response:**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "version": "1.0.0",
+    "services": {
+      "api": "healthy",
+      "database": "healthy",
+      "configuration": "healthy",
+      "llm": "healthy",
+      "auth": "healthy"
     }
   },
   "meta": {"timestamp": "...", "request_id": "..."},
@@ -296,7 +323,7 @@ docs/          # Comprehensive project documentation
 
 ### **Frontend Development (Vue.js):**
 - Entry point: `vue-frontend/src/main.js`
-- `vue-frontend/src/services/api.js` provides HTTP client with automatic authentication headers
+- `vue-frontend/src/services/api.ts` provides HTTP client with automatic authentication headers and standardized response handling
 - `vue-frontend/src/stores/auth.js` manages authentication state using Pinia
 - `vue-frontend/src/router/index.js` handles route-based navigation and access control
 - Follow Vue 3 Composition API patterns for reactive components
@@ -306,6 +333,8 @@ docs/          # Comprehensive project documentation
 - **Tailwind CSS**: Use v3.4.17 (stable) with proper PostCSS configuration
 - **Authentication Flow**: Login redirects to `/text-input`, logout redirects to `/`
 - **Admin Access**: Conditional menu items based on `isAdmin` status
+- **API Response Handling**: All endpoints return standardized `{data, meta, errors}` format
+- **Type Safety**: Use proper TypeScript interfaces for all API responses
 
 ### **Vue Router Integration:**
 - **Global Auth Store Access**: Router guards must access global auth store via `window.authStoreInstance`

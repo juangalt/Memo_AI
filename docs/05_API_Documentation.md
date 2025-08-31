@@ -125,7 +125,148 @@ All authentication endpoints require proper credentials and return session token
 ```
 
 ### 2.6 Health Endpoints
-All health endpoints respond with HTTP 200. The `status` field is `ok` or `error` with diagnostic details.
+All health endpoints return standardized `{data, meta, errors}` format and respond with HTTP 200 for healthy status or HTTP 503 for unhealthy status.
+
+**Main Health Endpoint (`GET /health`):**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "version": "1.0.0",
+    "services": {
+      "api": "healthy",
+      "database": "healthy", 
+      "configuration": "healthy",
+      "llm": "healthy",
+      "auth": "healthy"
+    },
+    "database_details": {
+      "tables": ["users", "sessions", "submissions", "evaluations"],
+      "journal_mode": "wal",
+      "user_count": 5
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**Database Health Endpoint (`GET /health/database`):**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "database": {
+      "connection": "connected",
+      "tables": ["users", "sessions", "submissions", "evaluations"],
+      "journal_mode": "wal",
+      "integrity_check": "ok",
+      "user_count": 5
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**Configuration Health Endpoint (`GET /health/config`):**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "configuration": {
+      "configs_loaded": ["rubric.yaml", "prompt.yaml", "llm.yaml", "auth.yaml"],
+      "last_loaded": "2024-01-01T00:00:00Z",
+      "config_dir": "/app/config",
+      "validation_status": "valid"
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**LLM Health Endpoint (`GET /health/llm`):**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "llm": {
+      "provider": "anthropic",
+      "model": "claude-3-haiku-20240307",
+      "api_accessible": true,
+      "config_loaded": true,
+      "response_time": 2.5
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**Authentication Health Endpoint (`GET /health/auth`):**
+```json
+{
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "auth": {
+      "config_loaded": true,
+      "active_sessions": 3,
+      "brute_force_protection": true,
+      "session_timeout": 3600
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+**Health Endpoint Error Response (HTTP 503):**
+```json
+{
+  "data": {
+    "status": "unhealthy",
+    "timestamp": "2024-01-01T00:00:00Z",
+    "services": {
+      "api": "healthy",
+      "database": "unhealthy",
+      "configuration": "healthy",
+      "llm": "healthy", 
+      "auth": "healthy"
+    },
+    "database_details": {
+      "error": "Connection failed",
+      "tables": [],
+      "journal_mode": "unknown"
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
 
 ## 3.0 Error Format
 All errors share the structure:
@@ -148,7 +289,7 @@ All protected endpoints require authentication via `X-Session-Token` header. See
 Frontend services must handle the standardized API response format correctly to avoid processing errors.
 
 #### Standard Response Format
-All API responses follow this structure:
+All API responses (including health endpoints) follow this structure:
 ```json
 {
   "data": {},           // Actual response data
@@ -162,29 +303,47 @@ All API responses follow this structure:
 
 #### Frontend Processing Guidelines
 - **Direct Data Access**: Use `result.data` directly from API client responses
-- **Avoid Double Processing**: Do not re-process the `{data, meta, errors}` format
-- **Error Handling**: Check `result.data.errors` array for detailed error information
+- **Consistent Format**: All endpoints (including health endpoints) return standardized format
+- **Error Handling**: Check `result.errors` array for detailed error information
 - **Success Validation**: Verify `result.success` before accessing `result.data`
+- **Type Safety**: Use proper TypeScript interfaces for all response types
 
 #### Example Implementation
 ```javascript
-// Correct pattern
-const result = await apiClient.post('/api/v1/evaluations/submit', data)
+// Correct pattern for all endpoints
+const result = await apiClient.get('/health')
 if (result.success) {
-  // Access data directly - no double processing
-  const evaluation = result.data.evaluation
-  return evaluation
+  // Access data directly - health status is in result.data
+  const healthStatus = result.data.status
+  const services = result.data.services
+  return healthStatus
 } else {
-  // Handle errors from result.data.errors
+  // Handle errors from result.errors
   throw new Error(result.error)
 }
 
-// Incorrect pattern - causes double processing
+// Correct pattern for evaluation endpoints
 const result = await apiClient.post('/api/v1/evaluations/submit', data)
-if (result.success && result.data) {
-  // Double processing - result.data already contains the response
-  const processed = result.data.data.evaluation  // WRONG
-  return processed
+if (result.success) {
+  // Access data directly - evaluation is in result.data
+  const evaluation = result.data.evaluation
+  return evaluation
+} else {
+  // Handle errors from result.errors
+  throw new Error(result.error)
+}
+```
+
+#### Health Endpoint Processing
+```javascript
+// Health endpoint returns standardized format
+const result = await apiClient.get('/health')
+if (result.success) {
+  const health = result.data
+  // Access health data directly
+  const overallStatus = health.status
+  const databaseStatus = health.services.database
+  const version = health.version
 }
 ```
 
