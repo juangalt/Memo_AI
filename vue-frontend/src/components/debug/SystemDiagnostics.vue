@@ -136,6 +136,11 @@ interface HealthResponse {
     active_sessions: number
     brute_force_protection: boolean
   }
+  environment?: {
+    app_env: string
+    debug_mode: boolean
+    mode: string
+  }
 }
 
 interface SystemInfo {
@@ -171,6 +176,7 @@ const systemInfo = ref<SystemInfo>({
   environment: 'production',
   debugMode: false
 })
+
 const dbStatus = ref<DBStatus>({
   connected: false,
   tableCount: 0,
@@ -196,12 +202,14 @@ const runDiagnostics = async () => {
     if (healthResult.success && healthResult.data) {
       const health = healthResult.data
       
+
+      
       // Update system info with available data
       systemInfo.value = {
         uptime: 'Running', // Health endpoint doesn't provide uptime
         version: health.version || '1.0.0',
-        environment: 'production', // Default since not provided by health endpoint
-        debugMode: false // Default since not provided by health endpoint
+        environment: health.environment?.app_env || 'production',
+        debugMode: health.environment?.debug_mode || false
       }
       
       // Update database status

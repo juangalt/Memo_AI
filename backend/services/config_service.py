@@ -142,6 +142,13 @@ class ConfigService:
     def _apply_environment_overrides(self, configs: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides to configurations"""
         try:
+            # Get the target environment
+            app_env = os.environ.get('APP_ENV', 'production').lower()
+            logger.info(f"Applying environment-specific configuration for: {app_env}")
+            
+            # Apply environment-specific configurations
+            configs = self._apply_environment_specific_configs(configs, app_env)
+            
             # Apply LLM API key override
             if 'LLM_API_KEY' in os.environ:
                 if 'llm.yaml' in configs and 'api_configuration' in configs['llm.yaml']:
@@ -154,17 +161,92 @@ class ConfigService:
                     configs['auth.yaml']['session_management']['session_timeout'] = int(os.environ['SESSION_TIMEOUT'])
                     logger.info("Applied session timeout from environment")
             
-            # Apply debug mode override
-            if 'DEBUG_MODE' in os.environ:
+            # Apply debug mode override only if explicitly set (allows YAML defaults to work)
+            if 'DEBUG_MODE' in os.environ and os.environ['DEBUG_MODE'].strip():
                 debug_mode = os.environ['DEBUG_MODE'].lower() == 'true'
                 if 'auth.yaml' in configs and 'security_settings' in configs['auth.yaml']:
                     configs['auth.yaml']['security_settings']['debug_mode'] = debug_mode
-                    logger.info("Applied debug mode from environment")
+                    logger.info("Applied debug mode override from environment")
             
             return configs
             
         except Exception as e:
             logger.error(f"Environment override application failed: {e}")
+            raise
+    
+    def _apply_environment_specific_configs(self, configs: Dict[str, Any], app_env: str) -> Dict[str, Any]:
+        """Apply environment-specific configuration settings"""
+        try:
+            # Apply auth.yaml environment-specific settings
+            if 'auth.yaml' in configs and 'environment_specific' in configs['auth.yaml']:
+                env_config = configs['auth.yaml']['environment_specific'].get(app_env, {})
+                if env_config:
+                    # Apply debug mode
+                    if 'debug_mode' in env_config:
+                        if 'security_settings' not in configs['auth.yaml']:
+                            configs['auth.yaml']['security_settings'] = {}
+                        configs['auth.yaml']['security_settings']['debug_mode'] = env_config['debug_mode']
+                    
+                    # Apply session timeout
+                    if 'session_timeout' in env_config:
+                        if 'session_management' not in configs['auth.yaml']:
+                            configs['auth.yaml']['session_management'] = {}
+                        configs['auth.yaml']['session_management']['session_timeout'] = env_config['session_timeout']
+                    
+                    # Apply rate limiting
+                    if 'rate_limiting' in env_config:
+                        if 'rate_limiting' not in configs['auth.yaml']:
+                            configs['auth.yaml']['rate_limiting'] = {}
+                        configs['auth.yaml']['rate_limiting']['enabled'] = env_config['rate_limiting']
+                    
+                    # Apply secure cookies
+                    if 'secure_cookies' in env_config:
+                        if 'security_settings' not in configs['auth.yaml']:
+                            configs['auth.yaml']['security_settings'] = {}
+                        configs['auth.yaml']['security_settings']['secure_cookies'] = env_config['secure_cookies']
+                    
+                    logger.info(f"Applied {app_env} environment settings to auth.yaml")
+            
+            # Apply llm.yaml environment-specific settings
+            if 'llm.yaml' in configs and 'environment_specific' in configs['llm.yaml']:
+                env_config = configs['llm.yaml']['environment_specific'].get(app_env, {})
+                if env_config:
+                    # Apply debug mode
+                    if 'debug_mode' in env_config:
+                        if 'debug_settings' not in configs['llm.yaml']:
+                            configs['llm.yaml']['debug_settings'] = {}
+                        configs['llm.yaml']['debug_settings']['debug_mode'] = env_config['debug_mode']
+                    
+                    # Apply log level
+                    if 'log_level' in env_config:
+                        if 'logging' not in configs['llm.yaml']:
+                            configs['llm.yaml']['logging'] = {}
+                        configs['llm.yaml']['logging']['level'] = env_config['log_level']
+                    
+                    # Apply mock responses
+                    if 'mock_responses' in env_config:
+                        if 'debug_settings' not in configs['llm.yaml']:
+                            configs['llm.yaml']['debug_settings'] = {}
+                        configs['llm.yaml']['debug_settings']['mock_responses'] = env_config['mock_responses']
+                    
+                    # Apply cost tracking
+                    if 'cost_tracking' in env_config:
+                        if 'cost_management' not in configs['llm.yaml']:
+                            configs['llm.yaml']['cost_management'] = {}
+                        configs['llm.yaml']['cost_management']['track_costs'] = env_config['cost_tracking']
+                    
+                    # Apply target response time
+                    if 'target_response_time' in env_config:
+                        if 'performance' not in configs['llm.yaml']:
+                            configs['llm.yaml']['performance'] = {}
+                        configs['llm.yaml']['performance']['target_response_time'] = env_config['target_response_time']
+                    
+                    logger.info(f"Applied {app_env} environment settings to llm.yaml")
+            
+            return configs
+            
+        except Exception as e:
+            logger.error(f"Environment-specific configuration application failed: {e}")
             raise
     
     def get_config(self, config_name: str) -> Optional[Dict[str, Any]]:

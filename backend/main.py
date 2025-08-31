@@ -158,7 +158,9 @@ async def health_check():
                 "provider": llm_health.get("provider", ""),
                 "model": llm_health.get("model", ""),
                 "api_accessible": llm_health.get("api_accessible", False),
-                "config_loaded": llm_health.get("config_loaded", False)
+                "config_loaded": llm_health.get("config_loaded", False),
+                "debug_mode": llm_health.get("debug_mode", False),
+                "mock_mode": llm_health.get("mock_mode", False)
             }
         else:
             health_status["llm_error"] = llm_health.get("error", "Unknown error")
@@ -172,6 +174,21 @@ async def health_check():
             }
         else:
             health_status["auth_error"] = auth_health.get("error", "Unknown error")
+        
+        # Add environment and debug mode information
+        app_env = os.environ.get('APP_ENV', 'production')
+        
+        # Get debug mode from configuration service (YAML settings)
+        auth_config = config_service.get_auth_config()
+        debug_mode = False
+        if auth_config and 'security_settings' in auth_config:
+            debug_mode = auth_config['security_settings'].get('debug_mode', False)
+        
+        health_status["environment"] = {
+            "app_env": app_env,
+            "debug_mode": debug_mode,
+            "mode": "development" if app_env == "development" or debug_mode else "production"
+        }
         
         # Check if any service is unhealthy
         if any(status != "healthy" for status in health_status["services"].values()):

@@ -319,8 +319,11 @@ class LLMService:
             if len(text_content) > max_length:
                 return False, None, f"Text exceeds maximum length of {max_length} characters"
             
-            # Check if we're in mock mode
-            if self.client is None:
+            # Check if we're in mock mode (either no client or debug settings enabled)
+            debug_mode = self.llm_config.get('debug_settings', {}).get('debug_mode', False)
+            mock_responses = self.llm_config.get('debug_settings', {}).get('mock_responses', False)
+            
+            if self.client is None or (debug_mode and mock_responses):
                 logger.info("Using mock evaluation mode")
                 return self._mock_evaluation(text_content, start_time)
             
@@ -399,8 +402,11 @@ class LLMService:
             Health status information
         """
         try:
-            # Check if we're in mock mode
-            if self.client is None:
+            # Check if we're in mock mode (either no client or debug settings enabled)
+            debug_mode = self.llm_config.get('debug_settings', {}).get('debug_mode', False)
+            mock_responses = self.llm_config.get('debug_settings', {}).get('mock_responses', False)
+            
+            if self.client is None or (debug_mode and mock_responses):
                 return {
                     "status": "healthy",
                     "provider": self.llm_config.get('provider', {}).get('name', 'claude'),
@@ -408,6 +414,8 @@ class LLMService:
                     "api_accessible": False,
                     "config_loaded": True,
                     "mock_mode": True,
+                    "debug_mode": debug_mode,
+                    "mock_responses": mock_responses,
                     "last_check": datetime.utcnow().isoformat()
                 }
             
@@ -430,6 +438,8 @@ class LLMService:
                 "api_accessible": True,
                 "config_loaded": True,
                 "mock_mode": False,
+                "debug_mode": debug_mode,
+                "mock_responses": mock_responses,
                 "last_check": datetime.utcnow().isoformat()
             }
             
