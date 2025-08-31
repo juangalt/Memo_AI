@@ -12,7 +12,7 @@
 Administrators must authenticate with valid admin credentials to access administrative functions. The system supports two user categories:
 
 - **Regular Users**: Basic application access for memo evaluation
-- **Administrators**: Full system access including configuration management and user administration
+- **Administrators**: Full system access including configuration validation and user administration
 
 See `docs/02b_Authentication_Specifications.md` for complete authentication details and security requirements.
 
@@ -21,21 +21,16 @@ See `docs/02b_Authentication_Specifications.md` for complete authentication deta
 ## 2.0 Admin Dashboard
 The Admin page provides (administrators only):
 - **Health Monitoring**: calls `/health` endpoint and displays service statuses including database, configuration, auth and LLM.
-- **Configuration Management**: select `rubric`, `prompt`, `llm`, or `auth`, load current content, edit YAML, save or reload.
+- **Configuration Validation**: verify YAML configuration files and settings.
 - **User Management**: add, edit, delete, and manage user accounts and roles.
 - **Session Management**: view current session ID, create or refresh sessions.
 - **Logout**: revoke admin session.
-
-Each configuration update triggers:
-1. YAML syntax validation.
-2. Atomic write of new file with backup stored under `config/backups/`.
-3. In-memory reload so changes take effect immediately without container restart.
 
 ## 3.0 Debug Page
 The Debug page provides system diagnostics and development tools (administrators only):
 - **System Diagnostics**: View system health, database status, and service connectivity.
 - **API Testing**: Test backend endpoints and view request/response data.
-- **Configuration Validation**: Verify YAML configuration files and settings.
+
 - **Performance Monitoring**: Monitor response times and system metrics.
 - **Development Tools**: Access debugging utilities and development aids.
 

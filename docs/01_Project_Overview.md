@@ -21,7 +21,7 @@ Memo AI Coach is an instructional text evaluation system that provides AI-genera
 
 ### 1.3 Target Users
 - **Regular Users** – writers seeking automated memo feedback with authenticated access.
-- **Administrators** – managing configuration, monitoring, user management, and system administration with elevated privileges.
+- **Administrators** – managing configuration validation, monitoring, user management, and system administration with elevated privileges.
 - **Developers/AI agents** extending the system.
 
 ### 1.4 Stakeholders
@@ -49,7 +49,8 @@ Memo AI Coach is an instructional text evaluation system that provides AI-genera
 - **Help Documentation** – Comprehensive user guide and rubric explanation.
 - **Conditional Admin Access** – Admin features only visible to admin users.
 - **Responsive Design** – Mobile and desktop compatible interface.
-- Admin interface for configuration and system management.
+- Admin interface for system monitoring and user management.
+- Debug interface for system diagnostics and development tools.
 - Comprehensive testing and deployment scripts.
 - Detailed documentation replacing legacy `devspecs/` files and `devlog/changelog.md` as the primary source of truth.
 
@@ -77,9 +78,9 @@ The stack was selected to align with project principles of simplicity, transpare
 4. **API Communication**: Frontend communicates with backend APIs using session tokens.
 5. **Evaluation Processing**: Backend processes evaluations and returns structured feedback.
 6. **Help Documentation**: Users can access comprehensive help and rubric documentation.
-7. **Admin Functions**: Administrators manage system configuration and user accounts.
-8. **Configuration Management**: Configuration changes are validated and backed up automatically.
-9. **System Monitoring**: Health endpoints provide system monitoring capabilities.
+7. **Admin Functions**: Administrators manage system monitoring, configuration validation, and user accounts.
+8. **System Monitoring**: Health endpoints provide system monitoring capabilities.
+9. **Debug Tools**: Administrators can access system diagnostics and development tools.
 
 ---
 

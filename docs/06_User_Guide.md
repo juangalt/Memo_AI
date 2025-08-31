@@ -18,7 +18,7 @@
 ## 2.0 Authentication and User Types
 ### 2.1 User Categories
 - **Regular Users**: Can submit memos for evaluation, view feedback, and access basic application functions.
-- **Administrators**: Have all regular user privileges plus access to configuration management, system monitoring, debug tools, and administrative functions.
+- **Administrators**: Have all regular user privileges plus access to configuration validation, system monitoring, debug tools, and administrative functions.
 
 ### 2.2 Login Process
 1. **Welcome Page**: Upon accessing the application, users land on a beautiful welcome page explaining the application.
@@ -36,7 +36,7 @@ The Vue.js frontend provides a single-page application with eight main views:
 4. **Overall Feedback** (`/overall-feedback`) – displays overall score, strengths and opportunities (authenticated).
 5. **Detailed Feedback** (`/detailed-feedback`) – shows rubric scores and segment-level comments (authenticated).
 6. **Help** (`/help`) – comprehensive documentation and rubric explanation (authenticated).
-7. **Admin** (`/admin`) – configuration management and system monitoring (administrators only).
+7. **Admin** (`/admin`) – system monitoring, configuration validation, and user management (administrators only).
 8. **Debug** (`/debug`) – system diagnostics, API testing, and development tools (administrators only).
 
 Tooltips on each input explain expected format. Navigation links at the top allow switching between views without losing session state. Access to views is controlled by user role and authentication status through Vue Router guards.
@@ -71,7 +71,7 @@ Tooltips on each input explain expected format. Navigation links at the top allo
 ### Debug Page (Administrators Only)
 - **System Diagnostics**: View system health, database status, and service connectivity.
 - **API Testing**: Test backend endpoints and view request/response data.
-- **Configuration Validation**: Verify YAML configuration files and settings.
+
 - **Performance Monitoring**: Monitor response times and system metrics.
 - **Development Tools**: Access debugging utilities and development aids.
 

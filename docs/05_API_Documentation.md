@@ -124,19 +124,7 @@ All authentication endpoints require proper credentials and return session token
 }
 ```
 
-### 2.6 Configuration Management (Admin)
-| Method | Path | Description |
-|-------|------|-------------|
-| GET | `/api/v1/admin/config/{config_name}` | Read configuration file |
-| PUT | `/api/v1/admin/config/{config_name}` | Update configuration file |
-
-**Update Payload:**
-```json
-{"content": "<YAML string>"}
-```
-Success responses include updated YAML and path to the backup file created before modification.
-
-### 2.7 Health Endpoints
+### 2.6 Health Endpoints
 All health endpoints respond with HTTP 200. The `status` field is `ok` or `error` with diagnostic details.
 
 ## 3.0 Error Format

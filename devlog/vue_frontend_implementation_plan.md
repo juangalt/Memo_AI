@@ -154,8 +154,8 @@ const routes = [
 - `/overall-feedback` - Evaluation results (authenticated)
 - `/detailed-feedback` - Detailed scoring (authenticated)
 - `/help` - Documentation page (authenticated)
-- `/admin` - Admin panel (admin-only)
-- `/debug` - Debug tools (admin-only)
+- `/admin` - System monitoring, configuration validation, and user management (admin-only)
+- `/debug` - System diagnostics, API testing, and development tools (admin-only)
 
 ### **Store Integration Pattern:**
 ```javascript
@@ -1754,12 +1754,8 @@ export const authService = {
     return apiClient.delete(`/api/v1/admin/users/${username}`)
   },
 
-  async getConfig(configName) {
-    return apiClient.get(`/api/v1/admin/config/${configName}`)
-  },
-
-  async updateConfig(configName, content) {
-    return apiClient.put(`/api/v1/admin/config/${configName}`, { content })
+  async validateConfig(configName) {
+    return apiClient.get(`/api/v1/admin/config/${configName}/validate`)
   }
 }
 ```
@@ -2802,7 +2798,7 @@ const createdAt = computed(() => evaluation.value?.created_at || new Date())
 
 2. **Admin Panel Components**
    - ✅ Test health monitoring section - verify system status displays correctly
-   - ✅ Test configuration management - verify config files can be viewed/edited
+   - ✅ Test configuration validation - verify config files can be validated
    - ✅ Test user management - verify user list displays and management functions work
    - ✅ Test session management - verify active sessions display properly
 
@@ -2815,15 +2811,16 @@ const createdAt = computed(() => evaluation.value?.created_at || new Date())
 4. **Debug Functionality**
    - ✅ Navigate to `/debug` - verify debug panel loads for admin users
    - ✅ Test system diagnostics - verify debug information displays correctly
-   - ✅ Test logging display - verify application logs are accessible
-   - ✅ Test error simulation - verify debug tools work properly
+   - ✅ Test API testing - verify backend endpoint testing works
+   - ✅ Test performance monitoring - verify system metrics display correctly
+   - ✅ Test development tools - verify debugging utilities work properly
 
 ---
 
 ## Phase 8: Admin and Debug Components
 
 ### Step 8.1: Create Admin Component
-**Goal**: Implement admin panel with configuration management
+**Goal**: Implement admin panel with system monitoring and configuration validation
 
 **Actions**:
 ```vue
@@ -2846,9 +2843,9 @@ const createdAt = computed(() => evaluation.value?.created_at || new Date())
           
           <div class="bg-green-50 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              ⚙️ Configuration Management
+              ✅ Configuration Validation
             </h3>
-            <ConfigEditor />
+            <ConfigValidator />
           </div>
           
           <div class="bg-yellow-50 rounded-lg p-6">
@@ -2873,7 +2870,7 @@ const createdAt = computed(() => evaluation.value?.created_at || new Date())
 <script setup>
 import Layout from '@/components/Layout.vue'
 import HealthStatus from '@/components/admin/HealthStatus.vue'
-import ConfigEditor from '@/components/admin/ConfigEditor.vue'
+import ConfigValidator from '@/components/admin/ConfigValidator.vue'
 import UserManagement from '@/components/admin/UserManagement.vue'
 import SessionManagement from '@/components/admin/SessionManagement.vue'
 </script>
@@ -2885,7 +2882,9 @@ import SessionManagement from '@/components/admin/SessionManagement.vue'
 # Navigate to admin panel
 # Verify all admin components load
 # Test health monitoring
-# Test configuration editing
+# Test configuration validation
+# Test user management
+# Test session management
 ```
 
 ### Step 8.2: Create Error Handling Components
@@ -3318,7 +3317,7 @@ curl -f https://memo.myisland.dev/health
 3. **Functional Testing - Admin Features**
    - ✅ Test admin panel access - verify admin-only routes protected
    - ✅ Test user management - verify admin can view/manage users
-   - ✅ Test configuration editing - verify admin can modify settings
+   - ✅ Test configuration validation - verify admin can validate settings
    - ✅ Test health monitoring - verify system status displays correctly
    - ✅ Test debug functionality - verify admin debugging tools work
 
@@ -3539,7 +3538,7 @@ echo "🎉 Phase 10: Comprehensive testing and validation passed!"
 1. **Authentication**: Login/logout for both users and admins
 2. **Text Submission**: Submit text and receive evaluation
 3. **Feedback Display**: View overall and detailed feedback
-4. **Admin Functions**: Configuration editing, user management
+4. **Admin Functions**: System monitoring, configuration validation, user management
 5. **Session Management**: Session persistence and cleanup
 6. **Error Handling**: Network errors, validation errors
 7. **Responsive Design**: Mobile and desktop compatibility
@@ -3714,7 +3713,8 @@ Vue Frontend (/vue)          Backend API (per Auth Specs)
 ├── Session Validation → GET /api/v1/auth/validate
 ├── Logout → POST /api/v1/auth/logout
 ├── Text Evaluation → POST /api/v1/evaluations/submit
-├── Admin Functions → /api/v1/admin/* (requires is_admin: true)
+├── Admin Functions → /api/v1/admin/users/* (requires is_admin: true)
+├── Debug Functions → System diagnostics and development tools
 ├── Headers → X-Session-Token (memory-only storage)
 ├── Component Architecture → Single Layout instance (no duplication)
 ├── Router Guards → Global auth store instance access
@@ -3736,6 +3736,7 @@ Vue Frontend (/vue)          Backend API (per Auth Specs)
 - Standardized error codes and messages
 - Brute force protection UI handling
 - Environment variable security configuration
+- Configuration validation instead of editing for enhanced security
 
 #### **✅ Improved User Experience**
 - Real-time progress indicators
@@ -3750,6 +3751,7 @@ Vue Frontend (/vue)          Backend API (per Auth Specs)
 - Proper error handling and recovery
 - Role-based access control implementation
 - Component architecture best practices
+- Clear separation of admin and debug functions
 
 ## Conclusion
 
@@ -3759,8 +3761,10 @@ This updated implementation plan provides a **fully corrected and comprehensive 
 2. **Complete Auth Spec Compliance** - Full alignment with current security requirements and unified API endpoints
 3. **Unified Authentication Flow** - Single login endpoint (`/api/v1/auth/login`) for all users, legacy admin endpoint removed
 4. **Enhanced Security Implementation** - Memory-only token storage and standardized error handling
-5. **Phase Tracking Homepage** - Real-time progress display of implementation status
-6. **Production-Ready Architecture** - Security, performance, and maintainability optimizations
+5. **Updated Admin Functions** - System monitoring, configuration validation, and user management (no config editing)
+6. **Separated Debug Functions** - System diagnostics, API testing, and development tools
+7. **Phase Tracking Homepage** - Real-time progress display of implementation status
+8. **Production-Ready Architecture** - Security, performance, and maintainability optimizations
 
 The Vue frontend will provide a modern, responsive interface that maintains complete compatibility with the existing backend while offering enhanced user experience, phase tracking, and full compliance with the updated authentication specifications.
 
@@ -3816,7 +3820,8 @@ Each step must have browser-based testing covering:
 - **v1.3**: Updated to reflect legacy admin endpoint removal and unified authentication system
 - **v1.4**: Added comprehensive human testing requirements and documentation standards
 - **v1.5**: Updated for primary domain deployment at `memo.myisland.dev/` with phase tracking homepage
-- **Status**: Ready for primary domain implementation with phase tracking
+- **v1.6**: Updated admin and debug functions - removed config editing from admin, moved debug functions appropriately
+- **Status**: Ready for primary domain implementation with updated admin/debug functions
 - **Next Review**: After Phase 3 completion (authentication and API integration)
 
 ---

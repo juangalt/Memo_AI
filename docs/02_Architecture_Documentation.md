@@ -30,7 +30,7 @@ The system implements session-based authentication with role-based access contro
 4. Backend validates authentication and processes request.
 5. Backend loads configurations and sends prompt to LLM service.
 6. Response is parsed, stored, and returned to frontend.
-7. Admin functions allow configuration and user management.
+7. Admin functions allow system monitoring and user management.
 
 ### 1.4 Data Model
 | Table | Purpose | Key Fields |
@@ -54,8 +54,8 @@ The Vue.js frontend provides a single-page application with router-based navigat
 4. **Overall Feedback** (`/overall-feedback`) – Evaluation results display (authenticated)
 5. **Detailed Feedback** (`/detailed-feedback`) – Detailed scoring and comments (authenticated)
 6. **Help** (`/help`) – Comprehensive documentation and rubric explanation (authenticated)
-7. **Admin** (`/admin`) – System management and configuration (admin only)
-8. **Debug** (`/debug`) – System diagnostics and tools (admin only)
+7. **Admin** (`/admin`) – System monitoring, configuration validation, and user management (admin only)
+8. **Debug** (`/debug`) – System diagnostics, API testing, and development tools (admin only)
 
 Vue Router controls navigation and enforces authentication requirements on protected routes. The Layout component provides consistent navigation and is used in individual view components when needed.
 
