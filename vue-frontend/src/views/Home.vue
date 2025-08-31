@@ -1,92 +1,111 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
     <!-- Header -->
-    <header class="bg-white shadow">
+    <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="text-center">
           <h1 class="text-4xl font-bold text-gray-900 mb-2">
             📝 Memo AI Coach
           </h1>
           <p class="text-lg text-gray-600">
-            Vue Frontend Implementation Progress
+            Intelligent text evaluation and feedback system
           </p>
         </div>
       </div>
     </header>
 
-    <!-- Phase Progress -->
-    <main class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-          🚀 Implementation Phases
-        </h2>
-
-        <!-- Phase Progress Cards -->
-        <div class="space-y-4" v-if="phases.length > 0">
-          <div
-            v-for="phase in phases"
-            :key="phase.id"
-            class="border rounded-lg p-4"
-            :class="phase.status === 'completed' ? 'border-green-200 bg-green-50' :
-                     phase.status === 'in-progress' ? 'border-blue-200 bg-blue-50' :
-                     'border-gray-200 bg-gray-50'"
-          >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <span class="text-2xl">{{ phase.emoji }}</span>
-                <div>
-                  <h3 class="font-semibold text-gray-900">{{ phase.title }}</h3>
-                  <p class="text-sm text-gray-600">{{ phase.description }}</p>
-                </div>
-              </div>
-              <span
-                class="px-3 py-1 rounded-full text-sm font-medium"
-                :class="phase.status === 'completed' ? 'bg-green-100 text-green-800' :
-                         phase.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                         'bg-gray-100 text-gray-800'"
-              >
-                {{ phase.statusText }}
-              </span>
-            </div>
-
-            <!-- Progress bar for in-progress phases -->
-            <div v-if="phase.status === 'in-progress' && phase.progress" class="mt-3">
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  :style="{ width: phase.progress + '%' }"
-                ></div>
-              </div>
-              <p class="text-xs text-gray-500 mt-1">{{ phase.progress }}% complete</p>
-            </div>
-
-            <!-- Completion date -->
-            <div v-if="phase.completedDate" class="mt-2 text-xs text-gray-500">
-              ✅ Completed on {{ formatDate(phase.completedDate) }}
-            </div>
-          </div>
+    <!-- Hero Section -->
+    <main class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <div class="mb-8">
+          <div class="text-8xl mb-6">🚀</div>
+          <h2 class="text-5xl font-bold text-gray-900 mb-6">
+            Welcome to Memo AI Coach
+          </h2>
+          <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Transform your writing with AI-powered evaluation and personalized feedback. 
+            Get comprehensive insights to improve your business memos and professional communication.
+          </p>
         </div>
 
-        <!-- All Complete Message -->
-        <div class="mt-8 text-center">
-          <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-            <h3 class="text-lg font-semibold text-green-800 mb-2">
-              🎉 Implementation Complete!
-            </h3>
-            <p class="text-green-700">
-              All phases have been successfully implemented. The Vue frontend is now fully operational.
-            </p>
-          </div>
-
-          <!-- Get Started Button - Always visible -->
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
           <router-link
-            to="/login"
-            class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            :to="isAuthenticated ? '/text-input' : '/login'"
+            class="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
           >
-            🔑 Login to Access Features
+            🔑 Get Started
           </router-link>
-          <p class="text-sm text-gray-600 mt-2">
-            Access the memo evaluation system and explore all implemented features
+          <button
+            @click="scrollToFeatures"
+            class="inline-flex items-center px-8 py-4 bg-white text-gray-700 text-lg font-semibold rounded-lg border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+          >
+            ✨ Learn More
+          </button>
+        </div>
+      </div>
+
+      <!-- Features Section -->
+      <div ref="featuresSection" class="grid md:grid-cols-3 gap-8 mb-16">
+        <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-2">
+          <div class="text-4xl mb-4">🎯</div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-3">Smart Evaluation</h3>
+          <p class="text-gray-600">
+            Advanced AI analyzes your text against comprehensive rubrics, providing detailed scoring and insights.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-2">
+          <div class="text-4xl mb-4">💡</div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-3">Actionable Feedback</h3>
+          <p class="text-gray-600">
+            Receive specific, actionable suggestions to improve clarity, structure, and impact of your writing.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-2">
+          <div class="text-4xl mb-4">📊</div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-3">Detailed Analytics</h3>
+          <p class="text-gray-600">
+            Comprehensive breakdown of strengths and opportunities with segment-level feedback for targeted improvement.
+          </p>
+        </div>
+      </div>
+
+      <!-- How It Works Section -->
+      <div class="bg-white rounded-2xl p-8 shadow-lg mb-16">
+        <h3 class="text-3xl font-bold text-gray-900 text-center mb-8">How It Works</h3>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl">1</span>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">Submit Your Text</h4>
+            <p class="text-gray-600">Paste your memo or business text into our evaluation system.</p>
+          </div>
+          <div class="text-center">
+            <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl">2</span>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">AI Analysis</h4>
+            <p class="text-gray-600">Our AI evaluates your text using comprehensive business writing criteria.</p>
+          </div>
+          <div class="text-center">
+            <div class="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <span class="text-2xl">3</span>
+            </div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">Get Feedback</h4>
+            <p class="text-gray-600">Receive detailed feedback with scores, strengths, and improvement suggestions.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Final CTA -->
+      <div class="text-center">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white">
+          <h3 class="text-3xl font-bold mb-4">Ready to Improve Your Writing?</h3>
+          <p class="text-xl mb-6 opacity-90">
+            Join professionals who are already using Memo AI Coach to enhance their communication skills.
           </p>
         </div>
       </div>
@@ -95,78 +114,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-// Phase data structure - Updated to reflect actual completion status
-const phases = ref([
-  {
-    id: 'phase1',
-    title: 'Phase 1: Project Setup',
-    description: 'Vue project structure, build system, and Docker configuration',
-    emoji: '🏗️',
-    status: 'completed',
-    statusText: 'Completed',
-    completedDate: '2025-08-30',
-    progress: null
-  },
-  {
-    id: 'phase2',
-    title: 'Phase 2: Infrastructure',
-    description: 'Docker Compose integration and production deployment',
-    emoji: '🐳',
-    status: 'completed',
-    statusText: 'Completed',
-    completedDate: '2025-08-30',
-    progress: null
-  },
-  {
-    id: 'phase3',
-    title: 'Phase 3: Core Application',
-    description: 'Vue Router, authentication store, and app structure',
-    emoji: '⚛️',
-    status: 'completed',
-    statusText: 'Completed',
-    completedDate: '2025-08-30',
-    progress: null
-  },
-  {
-    id: 'phase4',
-    title: 'Phase 4: API Integration',
-    description: 'API client service and backend communication',
-    emoji: '🔌',
-    status: 'completed',
-    statusText: 'Completed',
-    completedDate: '2025-08-30',
-    progress: null
-  },
-  {
-    id: 'phase5',
-    title: 'Phase 5: UI Components',
-    description: 'Core UI components and responsive design',
-    emoji: '🎨',
-    status: 'completed',
-    statusText: 'Completed',
-    completedDate: '2025-08-30',
-    progress: null
-  }
-])
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
-const hasIncompletePhases = computed(() =>
-  phases.value.some(phase => phase.status !== 'completed')
-)
+const featuresSection = ref<HTMLElement>()
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString()
+const scrollToFeatures = () => {
+  featuresSection.value?.scrollIntoView({ 
+    behavior: 'smooth',
+    block: 'start'
+  })
 }
-
-// Load phase status from changelog file (mounted to container)
-onMounted(async () => {
-  try {
-    // This would load from the mounted changelog file
-    // For now, using static data - will be updated dynamically
-    console.log('Phase tracking initialized')
-  } catch (error) {
-    console.error('Failed to load phase status:', error)
-  }
-})
 </script>

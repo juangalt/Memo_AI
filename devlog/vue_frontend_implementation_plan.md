@@ -34,6 +34,149 @@ This document outlines the comprehensive implementation plan for creating a Vue.
 
 ---
 
+## 🏗️ Component Architecture & Design Patterns
+
+### **🚨 CRITICAL: Layout Component Usage**
+
+**⚠️ IMPORTANT**: The Layout component is used **ONLY** at the App.vue level for authenticated routes. Individual view components should **NEVER** wrap their content in Layout to prevent menu duplication.
+
+#### **Correct Architecture:**
+```vue
+<!-- App.vue -->
+<template>
+  <div id="app">
+    <!-- Layout wrapper for authenticated routes -->
+    <Layout v-if="isAuthenticated" />
+    <!-- Direct router view for public routes (login, etc.) -->
+    <RouterView v-else />
+  </div>
+</template>
+
+<!-- Layout.vue -->
+<template>
+  <div class="min-h-screen bg-gray-50">
+    <header>...</header>
+    <main>
+      <router-view /> <!-- This renders the individual view components -->
+    </main>
+  </div>
+</template>
+
+<!-- View Components (TextInput.vue, OverallFeedback.vue, etc.) -->
+<template>
+  <div class="max-w-4xl mx-auto">
+    <!-- Content WITHOUT Layout wrapper -->
+  </div>
+</template>
+```
+
+#### **❌ INCORRECT - DO NOT DO THIS:**
+```vue
+<!-- View Components - WRONG -->
+<template>
+  <Layout> <!-- ❌ This creates nested Layout components -->
+    <div class="max-w-4xl mx-auto">
+      <!-- Content -->
+    </div>
+  </Layout>
+</template>
+```
+
+### **Component Hierarchy Rules:**
+
+1. **App.vue**: Root component that handles authentication state and Layout routing
+2. **Layout.vue**: Wrapper for authenticated routes with header, navigation, and `<router-view />`
+3. **View Components**: Individual page components that render content directly (no Layout wrapper)
+4. **Child Components**: Reusable components used within view components
+
+### **File Structure:**
+```
+src/
+├── App.vue                    # Root component with Layout routing
+├── components/
+│   ├── Layout.vue            # Layout wrapper (used only in App.vue)
+│   ├── CharacterCounter.vue  # Reusable component
+│   └── ProgressBar.vue       # Reusable component
+├── views/
+│   ├── TextInput.vue         # View component (no Layout wrapper)
+│   ├── OverallFeedback.vue   # View component (no Layout wrapper)
+│   └── Login.vue             # Public route (no Layout wrapper)
+└── stores/
+    ├── auth.ts               # Authentication store
+    └── evaluation.ts         # Evaluation store
+```
+
+### **Route Protection Pattern:**
+```javascript
+// router/index.js
+const routes = [
+  { path: '/', name: 'Home', component: () => import('@/views/Home.vue') },
+  { path: '/login', name: 'Login', component: () => import('@/views/Login.vue') },
+  { 
+    path: '/text-input', 
+    name: 'TextInput', 
+    component: () => import('@/views/TextInput.vue'), 
+    meta: { requiresAuth: true } 
+  }
+]
+```
+
+### **Store Integration Pattern:**
+```javascript
+// View components use stores directly
+import { useAuthStore } from '@/stores/auth'
+import { useEvaluationStore } from '@/stores/evaluation'
+
+const authStore = useAuthStore()
+const evaluationStore = useEvaluationStore()
+```
+
+### **API Service Pattern:**
+```javascript
+// Services handle API communication
+import { apiClient } from '@/services/api'
+import { authService } from '@/services/auth'
+import { evaluationService } from '@/services/evaluation'
+```
+
+### **🚨 Common Pitfalls & Prevention:**
+
+#### **1. Menu Duplication (CRITICAL)**
+- **Problem**: Wrapping view components in Layout creates nested navigation
+- **Prevention**: Never use `<Layout>` wrapper in individual view components
+- **Detection**: Check for duplicate navigation menus in browser
+
+#### **2. Component Import Errors**
+- **Problem**: Missing or incorrect component imports
+- **Prevention**: Always verify imports match component names exactly
+- **Detection**: Browser console shows import errors
+
+#### **3. Store State Management**
+- **Problem**: Inconsistent store usage across components
+- **Prevention**: Use stores consistently, avoid local state for shared data
+- **Detection**: State not persisting across component navigation
+
+#### **4. API Response Handling**
+- **Problem**: Double processing of API response format
+- **Prevention**: Handle `{data, meta, errors}` format correctly
+- **Detection**: Console errors about undefined properties
+
+#### **5. Route Protection**
+- **Problem**: Unprotected routes accessible without authentication
+- **Prevention**: Always add `meta: { requiresAuth: true }` to protected routes
+- **Detection**: Users can access admin features without login
+
+### **Testing Checklist for Each Component:**
+- ✅ Component renders without Layout wrapper
+- ✅ No duplicate navigation menus
+- ✅ Proper store integration
+- ✅ Correct API service usage
+- ✅ Route protection working
+- ✅ Responsive design tested
+- ✅ Error handling implemented
+
+---
+
 ## 📋 Implementation Guidelines
 
 ### **🔍 Human Testing Requirements**
@@ -1981,63 +2124,62 @@ const handleLogout = () => {
 ### Step 6.1: Create Text Input Component
 **Goal**: Implement text submission functionality
 
+**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used ONLY at the App.vue level for authenticated routes. Individual view components should NOT wrap their content in Layout to prevent menu duplication.
+
 **Actions**:
 ```vue
 <!-- src/views/TextInput.vue -->
 <template>
-  <Layout>
-    <div class="max-w-4xl mx-auto">
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">
-          Submit Text for Evaluation
-        </h1>
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">
+        Submit Text for Evaluation
+      </h1>
+      
+      <p class="text-gray-600 mb-6">
+        Enter your text below for comprehensive AI-powered evaluation and feedback.
+      </p>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Text to Evaluate
+        </label>
+        <textarea
+          v-model="textContent"
+          :maxlength="10000"
+          rows="12"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter your text here (maximum 10,000 characters)..."
+        />
         
-        <p class="text-gray-600 mb-6">
-          Enter your text below for comprehensive AI-powered evaluation and feedback.
-        </p>
-        
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Text to Evaluate
-          </label>
-          <textarea
-            v-model="textContent"
-            :maxlength="10000"
-            rows="12"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your text here (maximum 10,000 characters)..."
-          />
-          
-          <div class="flex justify-between items-center mt-2">
-            <span class="text-sm text-gray-500">
-              {{ characterCount }}/10,000 characters
-            </span>
-            <CharacterCounter :count="characterCount" :max="10000" />
-          </div>
+        <div class="flex justify-between items-center mt-2">
+          <span class="text-sm text-gray-500">
+            {{ characterCount }}/10,000 characters
+          </span>
+          <CharacterCounter :count="characterCount" :max="10000" />
         </div>
-        
-        <div class="flex justify-center">
-          <button
-            @click="submitEvaluation"
-            :disabled="!canSubmit || isSubmitting"
-            class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="isSubmitting">🤖 AI is evaluating your text...</span>
-            <span v-else>🚀 Submit for Evaluation</span>
-          </button>
-        </div>
-        
-        <ProgressBar v-if="isSubmitting" :progress="progress" :status="status" />
       </div>
+      
+      <div class="flex justify-center">
+        <button
+          @click="submitEvaluation"
+          :disabled="!canSubmit || isSubmitting"
+          class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span v-if="isSubmitting">🤖 AI is evaluating your text...</span>
+          <span v-else>🚀 Submit for Evaluation</span>
+        </button>
+      </div>
+      
+      <ProgressBar v-if="isSubmitting" :progress="progress" :status="status" />
     </div>
-  </Layout>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEvaluationStore } from '@/stores/evaluation'
-import Layout from '@/components/Layout.vue'
 import CharacterCounter from '@/components/CharacterCounter.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 
@@ -2207,87 +2349,86 @@ console.log(evalStore.hasEvaluation) // Should be false initially
 ### Step 7.1: Create Overall Feedback Component
 **Goal**: Display evaluation results with scores and feedback
 
+**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used ONLY at the App.vue level for authenticated routes. Individual view components should NOT wrap their content in Layout to prevent menu duplication.
+
 **Actions**:
 ```vue
 <!-- src/views/OverallFeedback.vue -->
 <template>
-  <Layout>
-    <div class="max-w-6xl mx-auto">
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">
-          Overall Feedback
-        </h1>
-        
-        <div v-if="evaluation" class="space-y-8">
-          <div class="text-center">
-            <div class="bg-blue-50 rounded-lg p-8 border-l-4 border-blue-500">
-              <h2 class="text-2xl font-semibold text-gray-700 mb-2">
-                Overall Score
-              </h2>
-              <div class="text-6xl font-bold text-blue-600">
-                {{ overallScore }}/5.0
-              </div>
-            </div>
-          </div>
-          
-          <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
-              <h3 class="text-xl font-semibold text-gray-900 mb-4">
-                💪 Strengths
-              </h3>
-              <ul v-if="strengths.length" class="space-y-2">
-                <li v-for="strength in strengths" :key="strength" class="flex items-start">
-                  <span class="text-green-500 mr-2">•</span>
-                  <span>{{ strength }}</span>
-                </li>
-              </ul>
-              <p v-else class="text-gray-600">No specific strengths identified</p>
-            </div>
-            
-            <div class="bg-yellow-50 rounded-lg p-6 border-l-4 border-yellow-500">
-              <h3 class="text-xl font-semibold text-gray-900 mb-4">
-                🎯 Opportunities for Improvement
-              </h3>
-              <ul v-if="opportunities.length" class="space-y-2">
-                <li v-for="opportunity in opportunities" :key="opportunity" class="flex items-start">
-                  <span class="text-yellow-500 mr-2">•</span>
-                  <span>{{ opportunity }}</span>
-                </li>
-              </ul>
-              <p v-else class="text-gray-600">No improvement opportunities identified</p>
-            </div>
-          </div>
-          
-          <RubricScores :scores="rubricScores" />
-          
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="flex justify-between text-sm text-gray-600">
-              <span>Processing Time: {{ processingTime }}s</span>
-              <span>Created: {{ formatDate(createdAt) }}</span>
+  <div class="max-w-6xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">
+        Overall Feedback
+      </h1>
+      
+      <div v-if="evaluation" class="space-y-8">
+        <div class="text-center">
+          <div class="bg-blue-50 rounded-lg p-8 border-l-4 border-blue-500">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">
+              Overall Score
+            </h2>
+            <div class="text-6xl font-bold text-blue-600">
+              {{ overallScore }}/5.0
             </div>
           </div>
         </div>
         
-        <div v-else class="text-center py-12">
-          <div class="text-gray-500">
-            <p class="text-lg mb-4">📝 Submit text for evaluation to see overall feedback</p>
-            <router-link 
-              to="/text-input"
-              class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Go to Text Input
-            </router-link>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">
+              💪 Strengths
+            </h3>
+            <ul v-if="strengths.length" class="space-y-2">
+              <li v-for="strength in strengths" :key="strength" class="flex items-start">
+                <span class="text-green-500 mr-2">•</span>
+                <span>{{ strength }}</span>
+              </li>
+            </ul>
+            <p v-else class="text-gray-600">No specific strengths identified</p>
+          </div>
+          
+          <div class="bg-yellow-50 rounded-lg p-6 border-l-4 border-yellow-500">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">
+              🎯 Opportunities for Improvement
+            </h3>
+            <ul v-if="opportunities.length" class="space-y-2">
+              <li v-for="opportunity in opportunities" :key="opportunity" class="flex items-start">
+                <span class="text-yellow-500 mr-2">•</span>
+                <span>{{ opportunity }}</span>
+              </li>
+            </ul>
+            <p v-else class="text-gray-600">No improvement opportunities identified</p>
+          </div>
+        </div>
+        
+        <RubricScores :scores="rubricScores" />
+        
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex justify-between text-sm text-gray-600">
+            <span>Processing Time: {{ processingTime }}s</span>
+            <span>Created: {{ formatDate(createdAt) }}</span>
           </div>
         </div>
       </div>
+      
+      <div v-else class="text-center py-12">
+        <div class="text-gray-500">
+          <p class="text-lg mb-4">📝 Submit text for evaluation to see overall feedback</p>
+          <router-link 
+            to="/text-input"
+            class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Text Input
+          </router-link>
+        </div>
+      </div>
     </div>
-  </Layout>
+  </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useEvaluationStore } from '@/stores/evaluation'
-import Layout from '@/components/Layout.vue'
 import RubricScores from '@/components/RubricScores.vue'
 import { formatDate } from '@/utils/formatters'
 

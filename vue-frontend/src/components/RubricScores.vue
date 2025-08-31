@@ -1,46 +1,31 @@
 <template>
-  <div class="mt-8">
-    <h3 class="text-xl font-semibold text-gray-900 mb-4">
+  <div style="margin-top: 2rem;">
+    <h3 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">
       📊 Detailed Rubric Scores
     </h3>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div style="display: grid; gap: 1rem; grid-template-columns: 1fr;">
       <div
         v-for="[criterion, score] in Object.entries(scores)"
         :key="criterion"
-        class="bg-gray-50 rounded-lg p-4"
+        style="background-color: #f9fafb; border-radius: 0.5rem; padding: 1rem;"
       >
-        <div class="flex items-center justify-between mb-2">
-          <h4 class="font-medium text-gray-900 capitalize">
-            {{ formatCriterionName(criterion) }}
-          </h4>
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
           <span
-            class="px-2 py-1 rounded text-sm font-medium"
-            :class="[
-              score.score >= 4 ? 'bg-green-100 text-green-800' :
-              score.score >= 3 ? 'bg-yellow-100 text-yellow-800' :
-              score.score >= 2 ? 'bg-orange-100 text-orange-800' :
-              'bg-red-100 text-red-800'
-            ]"
+            style="padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 500; white-space: nowrap;"
+            :style="{
+              backgroundColor: score.score >= 4 ? '#dcfce7' : score.score >= 3 ? '#fef3c7' : score.score >= 2 ? '#fed7aa' : '#fee2e2',
+              color: score.score >= 4 ? '#166534' : score.score >= 3 ? '#92400e' : score.score >= 2 ? '#ea580c' : '#dc2626'
+            }"
           >
             {{ score.score }}/5.0
           </span>
+          <h4 style="font-weight: 500; color: #111827; text-transform: capitalize; margin: 0;">
+            {{ formatCriterionName(criterion) }}
+          </h4>
         </div>
 
-        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-          <div
-            class="h-2 rounded-full"
-            :class="[
-              score.score >= 4 ? 'bg-green-500' :
-              score.score >= 3 ? 'bg-yellow-500' :
-              score.score >= 2 ? 'bg-orange-500' :
-              'bg-red-500'
-            ]"
-            :style="{ width: (score.score / 5) * 100 + '%' }"
-          ></div>
-        </div>
-
-        <p v-if="score.justification" class="text-sm text-gray-600">
+        <p v-if="score.justification" style="font-size: 0.875rem; color: #6b7280;">
           {{ score.justification }}
         </p>
       </div>

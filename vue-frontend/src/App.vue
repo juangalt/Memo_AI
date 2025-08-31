@@ -1,21 +1,14 @@
 <template>
   <div id="app">
-    <!-- Layout wrapper for authenticated routes -->
-    <Layout v-if="isAuthenticated" />
-
-    <!-- Direct router view for public routes (login, etc.) -->
-    <RouterView v-else />
+    <RouterView />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import Layout from '@/components/Layout.vue'
 
 const authStore = useAuthStore()
-
-const isAuthenticated = computed(() => authStore.isAuthenticated)
 </script>
 
 <style scoped>

@@ -56,6 +56,15 @@
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           <span class="ml-2 text-sm text-gray-600">Authenticating...</span>
         </div>
+
+        <div class="mt-6 text-center">
+          <router-link
+            to="/"
+            class="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ← Back to Home
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -86,17 +95,11 @@ const handleLogin = async () => {
       if (redirect) {
         router.push(redirect)
       } else {
-        router.push('/')
+        router.push('/text-input')
       }
     } else {
-      // Handle auth spec error codes
-      if (result.code === 'AUTH_ACCOUNT_LOCKED') {
-        error.value = 'Account temporarily locked due to multiple failed attempts. Please try again later.'
-      } else if (result.code === 'AUTH_INVALID_CREDENTIALS') {
-        error.value = 'Invalid username or password.'
-      } else {
-        error.value = result.error || 'Login failed. Please try again.'
-      }
+      // Handle authentication errors
+      error.value = result.error || 'Login failed. Please try again.'
     }
   } catch (err: any) {
     error.value = 'Login failed. Please try again.'

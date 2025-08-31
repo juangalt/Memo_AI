@@ -41,6 +41,12 @@ const routes = [
     name: 'Debug',
     component: () => import('@/views/Debug.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/help',
+    name: 'Help',
+    component: () => import('@/views/Help.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

@@ -1,32 +1,52 @@
 <template>
-  <div class="flex items-center space-x-2">
-    <div class="flex items-center space-x-1">
+  <div class="flex items-center space-x-3">
+    <!-- Status Indicator -->
+    <div class="flex items-center">
       <div
         class="w-2 h-2 rounded-full"
-        :class="isAuthenticated ? 'bg-green-500' : 'bg-red-500'"
+        :class="isAuthenticated ? 'bg-green-500' : 'bg-gray-400'"
       ></div>
-      <span class="text-sm text-gray-600">
+      <span class="ml-2 text-sm text-gray-600">
         {{ isAuthenticated ? 'Authenticated' : 'Not Authenticated' }}
       </span>
     </div>
 
-    <div v-if="isAuthenticated" class="text-sm text-gray-600">
-      <span class="font-medium">{{ username }}</span>
-      <span v-if="isAdmin" class="ml-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+    <!-- User Info -->
+    <div v-if="isAuthenticated" class="flex items-center space-x-2">
+      <span class="text-sm text-gray-700">{{ username }}</span>
+      <span
+        v-if="isAdmin"
+        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+      >
         Admin
       </span>
     </div>
+
+    <!-- Logout Button -->
+    <button
+      v-if="isAuthenticated"
+      @click="handleLogout"
+      class="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+    >
+      Logout
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const authStore = useAuthStore()
 
-const isAuthenticated = computed(() => authStore.isAuthenticated)
-const username = computed(() => authStore.username)
-const isAdmin = computed(() => authStore.isAdmin)
+const isAuthenticated = authStore.isAuthenticated
+const isAdmin = authStore.isAdmin
+const username = authStore.username
+
+const handleLogout = async () => {
+  await authStore.logout()
+  router.push('/')
+}
 </script>
 

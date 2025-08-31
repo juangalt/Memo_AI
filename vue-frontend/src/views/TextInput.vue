@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <Layout>
+    <div class="max-w-4xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
           Submit Text for Evaluation
@@ -30,10 +31,9 @@
           <button
             @click="submitEvaluation"
             :disabled="!canSubmit || isSubmitting"
-            class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            <span v-if="isSubmitting">🤖 AI is evaluating your text...</span>
-            <span v-else>🚀 Submit for Evaluation</span>
+            Submit for Evaluation
           </button>
         </div>
 
@@ -47,12 +47,14 @@
         <div v-if="error" class="mt-4 text-sm text-red-600">{{ error }}</div>
       </div>
     </div>
+  </Layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useEvaluationStore } from '@/stores/evaluation'
+import Layout from '@/components/Layout.vue'
 import CharacterCounter from '@/components/CharacterCounter.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 

@@ -1,73 +1,74 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-6">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo and Title -->
           <div class="flex items-center">
-            <h1 class="text-2xl font-bold text-gray-900">📝 Memo AI Coach</h1>
+            <h1 class="text-xl font-semibold text-gray-900">📝 Memo AI Coach</h1>
           </div>
 
-          <div class="flex items-center space-x-4">
-            <AuthStatus />
-            <button @click="handleLogout" class="text-sm text-gray-500 hover:text-gray-700">
-              Logout
-            </button>
-          </div>
+          <!-- Navigation Tabs -->
+          <nav class="flex space-x-8">
+            <router-link
+              to="/text-input"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/text-input' }"
+            >
+              📝 Text Input
+            </router-link>
+            <router-link
+              to="/overall-feedback"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/overall-feedback' }"
+            >
+              📊 Overall Feedback
+            </router-link>
+            <router-link
+              to="/help"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/help' }"
+            >
+              📚 Help
+            </router-link>
+            <router-link
+              v-if="isAdmin"
+              to="/admin"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/admin' }"
+            >
+              ⚙️ Admin
+            </router-link>
+            <router-link
+              v-if="isAdmin"
+              to="/debug"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/debug' }"
+            >
+              🐛 Debug
+            </router-link>
+          </nav>
+
+          <!-- Auth Status -->
+          <AuthStatus />
         </div>
-
-        <nav class="flex space-x-8">
-          <router-link
-            v-for="tab in tabs"
-            :key="tab.name"
-            :to="tab.path"
-            :class="[
-              'py-2 px-1 border-b-2 font-medium text-sm',
-              $route.path === tab.path
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            ]"
-          >
-            {{ tab.name }}
-          </router-link>
-        </nav>
       </div>
     </header>
 
+    <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <router-view />
+      <slot />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AuthStatus from './AuthStatus.vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
-
-const tabs = computed(() => {
-  const baseTabs = [
-    { name: 'Text Input', path: '/text-input' },
-    { name: 'Overall Feedback', path: '/overall-feedback' },
-    { name: 'Detailed Feedback', path: '/detailed-feedback' }
-  ]
-
-  if (authStore.isAdmin) {
-    baseTabs.push(
-      { name: 'Admin', path: '/admin' },
-      { name: 'Debug', path: '/debug' }
-    )
-  }
-
-  return baseTabs
-})
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
+const isAdmin = computed(() => authStore.isAdmin)
 </script>
 

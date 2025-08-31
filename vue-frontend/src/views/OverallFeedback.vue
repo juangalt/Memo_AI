@@ -1,5 +1,6 @@
 <template>
-  <div class="max-w-6xl mx-auto">
+  <Layout>
+    <div class="max-w-6xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
           Overall Feedback
@@ -20,7 +21,7 @@
             </div>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 gap-6">
             <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-500">
               <h3 class="text-xl font-semibold text-gray-900 mb-4">
                 💪 Strengths
@@ -59,13 +60,13 @@
               <div class="flex space-x-2">
                 <router-link
                   to="/detailed-feedback"
-                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  class="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
                 >
                   View Detailed Feedback
                 </router-link>
                 <router-link
                   to="/text-input"
-                  class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                  class="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
                 >
                   Submit New Text
                 </router-link>
@@ -75,13 +76,13 @@
         </div>
 
         <div v-else class="text-center py-12">
-          <div class="text-gray-500">
+          <div class="text-gray-600">
             <div class="text-6xl mb-4">📝</div>
             <p class="text-lg mb-4">No evaluation results available</p>
             <p class="text-sm mb-6">Submit your text for evaluation to see comprehensive feedback</p>
             <router-link
               to="/text-input"
-              class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               🚀 Submit Text for Evaluation
             </router-link>
@@ -94,11 +95,13 @@
         </div>
       </div>
     </div>
+  </Layout>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useEvaluationStore } from '@/stores/evaluation'
+import Layout from '@/components/Layout.vue'
 import RubricScores from '@/components/RubricScores.vue'
 
 const evaluationStore = useEvaluationStore()
