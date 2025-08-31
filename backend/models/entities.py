@@ -126,14 +126,25 @@ class Session:
         self.user_id = user_id
         self.is_admin = is_admin
         self.created_at = created_at or datetime.utcnow()
-        self.expires_at = expires_at or (datetime.utcnow() + timedelta(hours=24))
+        self.expires_at = expires_at or (datetime.utcnow() + timedelta(seconds=3600))  # Default 1 hour
         self.is_active = is_active
     
     @classmethod
     def create(cls, session_id: str, user_id: Optional[int] = None, is_admin: bool = False) -> 'Session':
         """Create a new session"""
         try:
-            expires_at = datetime.utcnow() + timedelta(hours=24)
+            # Get session timeout from configuration service
+            from services.config_service import ConfigService
+            config_service = ConfigService()
+            auth_config = config_service.get_auth_config()
+            
+            # Default to 1 hour if configuration is not available
+            session_timeout_seconds = 3600
+            if auth_config and 'session_management' in auth_config:
+                session_timeout_seconds = auth_config['session_management'].get('session_timeout', 3600)
+            
+
+            expires_at = datetime.utcnow() + timedelta(seconds=session_timeout_seconds)
             query = """
                 INSERT INTO sessions (session_id, user_id, is_admin, created_at, expires_at, is_active)
                 VALUES (?, ?, ?, ?, ?, ?)

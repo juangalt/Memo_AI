@@ -155,11 +155,11 @@ class ConfigService:
                     configs['llm.yaml']['api_configuration']['api_key'] = os.environ['LLM_API_KEY']
                     logger.info("Applied LLM API key from environment")
             
-            # Apply session timeout override
-            if 'SESSION_TIMEOUT' in os.environ:
+            # Apply session timeout override only if explicitly set (allows YAML defaults to work)
+            if 'SESSION_TIMEOUT' in os.environ and os.environ['SESSION_TIMEOUT'].strip():
                 if 'auth.yaml' in configs and 'session_management' in configs['auth.yaml']:
                     configs['auth.yaml']['session_management']['session_timeout'] = int(os.environ['SESSION_TIMEOUT'])
-                    logger.info("Applied session timeout from environment")
+                    logger.info("Applied session timeout override from environment")
             
             # Apply debug mode override only if explicitly set (allows YAML defaults to work)
             if 'DEBUG_MODE' in os.environ and os.environ['DEBUG_MODE'].strip():
@@ -192,6 +192,7 @@ class ConfigService:
                         if 'session_management' not in configs['auth.yaml']:
                             configs['auth.yaml']['session_management'] = {}
                         configs['auth.yaml']['session_management']['session_timeout'] = env_config['session_timeout']
+                        logger.info(f"Applied session timeout: {env_config['session_timeout']} seconds for {app_env} environment")
                     
                     # Apply rate limiting
                     if 'rate_limiting' in env_config:

@@ -115,6 +115,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { apiClient } from '@/services/api'
+import { authService } from '@/services/auth'
 
 interface Session {
   id: string
@@ -135,7 +136,9 @@ const sessionTimer = ref<number | null>(null)
 
 const sessionAge = computed(() => {
   if (!currentSession.value) return 'N/A'
-  const created = new Date(currentSession.value.created_at)
+  // Parse UTC dates correctly by appending 'Z' if not present
+  const createdStr = currentSession.value.created_at.endsWith('Z') ? currentSession.value.created_at : currentSession.value.created_at + 'Z'
+  const created = new Date(createdStr)
   const now = new Date()
   const diff = Math.floor((now.getTime() - created.getTime()) / 1000 / 60) // minutes
   return `${diff}m`
@@ -143,7 +146,9 @@ const sessionAge = computed(() => {
 
 const timeRemaining = computed(() => {
   if (!currentSession.value) return 'N/A'
-  const expires = new Date(currentSession.value.expires_at)
+  // Parse UTC dates correctly by appending 'Z' if not present
+  const expiresStr = currentSession.value.expires_at.endsWith('Z') ? currentSession.value.expires_at : currentSession.value.expires_at + 'Z'
+  const expires = new Date(expiresStr)
   const now = new Date()
   const diff = Math.floor((expires.getTime() - now.getTime()) / 1000 / 60) // minutes
   return diff > 0 ? `${diff}m` : 'Expired'
@@ -151,14 +156,18 @@ const timeRemaining = computed(() => {
 
 const isSessionValid = computed(() => {
   if (!currentSession.value) return false
-  const expires = new Date(currentSession.value.expires_at)
+  // Parse UTC dates correctly by appending 'Z' if not present
+  const expiresStr = currentSession.value.expires_at.endsWith('Z') ? currentSession.value.expires_at : currentSession.value.expires_at + 'Z'
+  const expires = new Date(expiresStr)
   const now = new Date()
   return expires > now && currentSession.value.is_active
 })
 
 const expiresSoon = computed(() => {
   if (!currentSession.value) return false
-  const expires = new Date(currentSession.value.expires_at)
+  // Parse UTC dates correctly by appending 'Z' if not present
+  const expiresStr = currentSession.value.expires_at.endsWith('Z') ? currentSession.value.expires_at : currentSession.value.expires_at + 'Z'
+  const expires = new Date(expiresStr)
   const now = new Date()
   const diff = Math.floor((expires.getTime() - now.getTime()) / 1000 / 60) // minutes
   return diff > 0 && diff <= 10 // expires within 10 minutes
@@ -172,13 +181,21 @@ const loadCurrentSession = async () => {
   try {
     // Get current session info from auth store or API
     if (authStore.user) {
-      currentSession.value = {
-        id: 'current-session',
-        username: authStore.username,
-        is_admin: authStore.isAdmin,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 3600000).toISOString() // 1 hour from now
+      // Validate session to get real session data including expires_at
+      const result = await authStore.validateSession()
+      if (result) {
+        // Get session data from the validate response
+        const response = await authService.validateSession()
+        if (response.success && response.data) {
+          currentSession.value = {
+            id: 'current-session',
+            username: response.data.username,
+            is_admin: response.data.is_admin,
+            is_active: true,
+            created_at: response.data.created_at,
+            expires_at: response.data.expires_at
+          }
+        }
       }
     }
   } catch (error) {
