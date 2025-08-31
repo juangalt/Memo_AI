@@ -63,13 +63,93 @@ docs/          Comprehensive project documentation
 - New features require corresponding unit or integration tests.
 - Test files mirror module paths to simplify discovery.
 
-## 7.0 Contribution Workflow
+## 7.0 Changelog Standards
+
+### 7.1 Changelog File Location
+- **Primary Changelog**: `devlog/vue_implementation_changelog.md`
+- **Purpose**: Track all significant changes, fixes, and enhancements to the Vue frontend implementation
+- **Audience**: Developers, stakeholders, and future maintainers
+
+### 7.2 Structure Standards
+- **Reverse Chronological Order**: Most recent changes first
+- **Consistent Date Format**: `[YYYY-MM-DD]` for all entries
+- **Clear Entry Types**: Use standardized prefixes (Added, Changed, Deprecated, Removed, Fixed, Security)
+- **Concise Headlines**: One-line summaries that clearly describe the change
+- **Detailed Descriptions**: Provide context, impact, and technical details when needed
+
+### 7.3 Content Guidelines
+- **User-Focused**: Explain what changed from the user's perspective
+- **Technical Accuracy**: Include specific file paths, code examples, and technical details
+- **Impact Assessment**: Describe the effect on functionality, performance, or user experience
+- **Testing Information**: Document verification steps and test results
+- **Breaking Changes**: Clearly mark and explain any breaking changes
+
+### 7.4 Entry Format Template
+```markdown
+### [YYYY-MM-DD] Brief Description of Change
+
+**Type**: Fixed/Added/Changed/Deprecated/Removed/Security  
+**Impact**: User Experience/UI/UX/Security/Performance/Developer Experience  
+**Priority**: High/Medium/Low  
+
+**Issue**: Clear description of the problem or enhancement need.
+
+**Root Cause**: Technical explanation of why the issue occurred (for fixes).
+
+**Solution**: Detailed description of the implemented solution.
+
+**Files Modified**:
+- `path/to/file.ext` - Specific change made
+
+**Testing**: Description of verification steps and results.
+
+**Code Change** (if applicable):
+```javascript
+// Before: Previous implementation
+oldCode();
+
+// After: New implementation
+newCode();
+```
+```
+
+### 7.5 Formatting Standards
+- **Consistent Markdown**: Use proper heading hierarchy and formatting
+- **Code Blocks**: Include relevant code examples with syntax highlighting
+- **File References**: Use backticks for file paths and technical terms
+- **Status Indicators**: Use ✅/❌/🔧/🔍 symbols for quick visual scanning
+- **Categorization**: Group related changes and use clear section headers
+
+### 7.6 Quality Criteria
+- **Completeness**: Include all significant changes with sufficient detail
+- **Clarity**: Write in clear, professional language
+- **Traceability**: Link changes to issues, phases, or requirements
+- **Maintainability**: Structure for easy updates and navigation
+- **Historical Value**: Preserve context for future reference
+
+### 7.7 When to Update Changelog
+- **All bug fixes** with clear issue description and solution
+- **New features** with user impact and technical details
+- **UI/UX changes** affecting user experience
+- **Security updates** with impact assessment
+- **Performance improvements** with measurable results
+- **Breaking changes** with migration guidance
+- **Configuration changes** affecting deployment or behavior
+
+### 7.8 Changelog Maintenance
+- **Regular Updates**: Update changelog with each significant change
+- **Version Tracking**: Maintain document history and version numbers
+- **Cross-References**: Link to related documentation, issues, or pull requests
+- **Review Process**: Ensure accuracy and completeness before finalizing entries
+
+## 8.0 Contribution Workflow
 1. Review relevant docs in this directory before coding.
 2. Implement changes in small, well-documented commits.
-3. Update changelog in `devlog/changelog.md` for historical context.
+3. Update changelog in `devlog/vue_implementation_changelog.md` following the standards in section 7.0.
 4. Add or update tests when modifying behavior.
 5. Run appropriate test suites and document results in pull requests.
 
-## 8.0 References
+## 9.0 References
 - `AGENTS.md`
 - `tests/README.md`
+- `devlog/vue_implementation_changelog.md`
