@@ -116,6 +116,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { apiClient } from '@/services/api'
 import { authService } from '@/services/auth'
+import { configService } from '@/services/config'
 
 interface Session {
   id: string
@@ -133,6 +134,7 @@ const currentSession = ref<Session | null>(null)
 const isRefreshing = ref(false)
 const isLoggingOut = ref(false)
 const sessionTimer = ref<number | null>(null)
+const frontendConfig = ref<any>(null)
 
 const sessionAge = computed(() => {
   if (!currentSession.value) return 'N/A'
@@ -170,7 +172,7 @@ const expiresSoon = computed(() => {
   const expires = new Date(expiresStr)
   const now = new Date()
   const diff = Math.floor((expires.getTime() - now.getTime()) / 1000 / 60) // minutes
-  return diff > 0 && diff <= 10 // expires within 10 minutes
+  return diff > 0 && diff <= (frontendConfig.value?.session_warning_threshold || 10) // expires within configured threshold
 })
 
 const formatDate = (dateString: string) => {
@@ -230,14 +232,24 @@ const logout = async () => {
   }
 }
 
-const startSessionTimer = () => {
-  // Update session info every minute
-  sessionTimer.value = window.setInterval(() => {
-    loadCurrentSession()
-  }, 60000)
+const loadFrontendConfig = async () => {
+  try {
+    frontendConfig.value = await configService.getFrontendConfig()
+  } catch (error) {
+    console.error('Failed to load frontend configuration:', error)
+  }
 }
 
-onMounted(() => {
+const startSessionTimer = () => {
+  // Update session info every configured interval
+  const interval = frontendConfig.value?.session_refresh_interval || 60000
+  sessionTimer.value = window.setInterval(() => {
+    loadCurrentSession()
+  }, interval * 1000) // Convert seconds to milliseconds
+}
+
+onMounted(async () => {
+  await loadFrontendConfig()
   loadCurrentSession()
   startSessionTimer()
 })

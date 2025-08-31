@@ -154,6 +154,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { apiClient } from '@/services/api'
+import { configService } from '@/services/config'
 
 interface ConsoleLog {
   id: string
@@ -188,6 +189,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const consoleLogs = ref<ConsoleLog[]>([])
+const frontendConfig = ref<any>(null)
 const envInfo = ref<EnvInfo>({
   nodeVersion: '18.x',
   npmVersion: '9.x',
@@ -229,9 +231,18 @@ const addLog = (level: 'info' | 'warn' | 'error' | 'debug', message: string) => 
     message
   })
   
-  // Keep only last 50 logs
-  if (consoleLogs.value.length > 50) {
-    consoleLogs.value = consoleLogs.value.slice(-50)
+  // Keep only last configured number of logs
+  const logLimit = frontendConfig.value?.debug_console_log_limit || 50
+  if (consoleLogs.value.length > logLimit) {
+    consoleLogs.value = consoleLogs.value.slice(-logLimit)
+  }
+}
+
+const loadFrontendConfig = async () => {
+  try {
+    frontendConfig.value = await configService.getFrontendConfig()
+  } catch (error) {
+    console.error('Failed to load frontend configuration:', error)
   }
 }
 
@@ -326,7 +337,8 @@ const updateNetworkStatus = () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadFrontendConfig()
   addLog('info', 'Development tools initialized')
   
   // Test components

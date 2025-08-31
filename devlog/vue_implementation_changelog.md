@@ -34,6 +34,89 @@
 
 ## 🚀 Recent Changes
 
+### [2025-08-31] Environment Variables to YAML Configuration Refactoring - COMPLETED
+
+**Type**: Refactored  
+**Impact**: Configuration Management  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Complete refactoring of environment variables to centralized YAML configuration
+
+**Implementation Summary**:
+- **Centralized Configuration**: Moved all non-sensitive configuration from environment variables to YAML files
+- **New Configuration File**: Created `config/deployment.yaml` for deployment-specific settings
+- **Backend Integration**: Updated `ConfigService` to support new YAML configuration
+- **Frontend Integration**: Created frontend configuration service and endpoint
+- **Component Updates**: Updated admin and debug components to use configurable values
+- **Comprehensive Testing**: All 6 phases completed with full validation
+
+**Environment Variables Removed**:
+- ✅ `LLM_TIMEOUT` → Uses YAML: `config/llm.yaml` → `api_configuration.timeout`
+- ✅ `LLM_PROVIDER` → Uses YAML: `config/llm.yaml` → `provider.name`
+- ✅ `LLM_MODEL` → Uses YAML: `config/llm.yaml` → `provider.model`
+- ✅ `RATE_LIMIT_PER_SESSION` → Uses YAML: `config/auth.yaml` → `rate_limiting.requests_per_session_per_hour`
+- ✅ `RATE_LIMIT_PER_HOUR` → Uses YAML: `config/auth.yaml` → `rate_limiting.global_requests_per_hour`
+- ✅ `LOG_LEVEL` → Uses YAML: `config/auth.yaml` → `session_management.log_level`
+- ✅ `MAX_CONCURRENT_USERS` → Uses YAML: `config/auth.yaml` → `session_management.max_concurrent_users`
+- ✅ `VITE_BACKEND_URL` → Uses YAML: `config/deployment.yaml` → `frontend.backend_url`
+
+**Environment Variables Kept** (Sensitive Data):
+- ✅ `LLM_API_KEY` - Sensitive data
+- ✅ `SECRET_KEY` - Sensitive data
+- ✅ `ADMIN_PASSWORD` - Sensitive data
+- ✅ `APP_ENV` - Environment selection
+
+**New Configuration Files**:
+- ✅ `config/deployment.yaml` - Deployment-specific settings (traefik, database, frontend)
+- ✅ `vue-frontend/src/services/config.ts` - Frontend configuration service
+
+**Backend Changes**:
+- ✅ `backend/services/config_service.py` - Added deployment.yaml support and validation
+- ✅ `backend/main.py` - Added `/api/v1/config/frontend` endpoint
+- ✅ Updated configuration loading to support new YAML structure
+
+**Frontend Changes**:
+- ✅ `vue-frontend/src/components/admin/SessionManagement.vue` - Uses configurable session warning threshold and refresh interval
+- ✅ `vue-frontend/src/components/debug/DevelopmentTools.vue` - Uses configurable console log limit
+- ✅ Created frontend configuration service for loading settings from backend
+
+**Configuration Integration**:
+- ✅ **Session Management**: Configurable warning threshold (10 minutes) and refresh interval (60 seconds)
+- ✅ **Debug Tools**: Configurable console log limit (50 entries)
+- ✅ **Frontend Settings**: All hardcoded values now configurable via YAML
+- ✅ **Backend Settings**: All non-sensitive configuration centralized in YAML
+
+**Testing Results**:
+- ✅ **Health Endpoint**: Shows all 5 YAML files loaded correctly
+- ✅ **LLM Configuration**: Correct model and settings from YAML
+- ✅ **Auth Configuration**: Rate limiting and session settings from YAML
+- ✅ **Frontend Config Endpoint**: Returns configurable values from deployment.yaml
+- ✅ **Component Integration**: Admin and debug components use configurable values
+- ✅ **All Services**: Backend and frontend working correctly with YAML configuration
+
+**Benefits Achieved**:
+- **Centralized Configuration**: All settings in YAML files for easy management
+- **Environment Flexibility**: Different settings for development/production via APP_ENV
+- **Security**: Sensitive data remains as environment variables
+- **Maintainability**: No duplicate configuration between env vars and YAML
+- **Developer Experience**: Easy configuration changes without code deployment
+- **Consistency**: All components use same configuration source
+
+**Files Modified**:
+- `docker-compose.yml` - Removed duplicate environment variables
+- `config/auth.yaml` - Added missing configuration fields
+- `config/deployment.yaml` - **NEW** - Deployment configuration file
+- `backend/services/config_service.py` - Added deployment.yaml support
+- `backend/main.py` - Added frontend configuration endpoint
+- `vue-frontend/src/services/config.ts` - **NEW** - Frontend configuration service
+- `vue-frontend/src/components/admin/SessionManagement.vue` - Uses configurable values
+- `vue-frontend/src/components/debug/DevelopmentTools.vue` - Uses configurable values
+- `devlog/environment_variables_to_yaml_refactoring_plan.md` - **NEW** - Implementation plan and tracking
+
+**Result**: ✅ **Complete configuration refactoring with centralized YAML management**
+
+---
+
 ### [2025-08-31] Phase 9: Production Deployment - COMPLETED
 
 **Type**: Production Deployment  

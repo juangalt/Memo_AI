@@ -36,7 +36,7 @@ class ConfigService:
             configs = {}
             
             # Load each configuration file
-            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
+            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
             
             for filename in config_files:
                 file_path = self.config_dir / filename
@@ -98,6 +98,10 @@ class ConfigService:
             if 'auth.yaml' in configs:
                 self._validate_auth_config(configs['auth.yaml'])
             
+            # Validate deployment.yaml
+            if 'deployment.yaml' in configs:
+                self._validate_deployment_config(configs['deployment.yaml'])
+            
             logger.info("All configurations validated successfully")
             
         except Exception as e:
@@ -138,6 +142,13 @@ class ConfigService:
         for field in required_fields:
             if field not in config:
                 raise ValueError(f"Missing required field '{field}' in auth.yaml")
+    
+    def _validate_deployment_config(self, config: Dict[str, Any]) -> None:
+        """Validate deployment configuration"""
+        required_fields = ['traefik', 'database', 'frontend']
+        for field in required_fields:
+            if field not in config:
+                raise ValueError(f"Missing required field '{field}' in deployment.yaml")
     
     def _apply_environment_overrides(self, configs: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides to configurations"""
@@ -273,13 +284,17 @@ class ConfigService:
         """Get authentication configuration"""
         return self.get_config('auth.yaml')
     
+    def get_deployment_config(self) -> Optional[Dict[str, Any]]:
+        """Get deployment configuration"""
+        return self.get_config('deployment.yaml')
+    
     def health_check(self) -> Dict[str, Any]:
         """Check configuration health and accessibility"""
         try:
             if not self.configs:
                 self.load_all_configs()
             
-            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
+            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
             missing_configs = []
             
             for filename in config_files:

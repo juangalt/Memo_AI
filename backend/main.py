@@ -1444,6 +1444,67 @@ async def get_evaluation(evaluation_id: str):
         logger.error(f"Evaluation retrieval failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve evaluation")
 
+@app.get("/api/v1/config/frontend")
+async def get_frontend_config():
+    """Get frontend-specific configuration"""
+    try:
+        # Get deployment configuration
+        deployment_config = config_service.get_deployment_config()
+        
+        if not deployment_config:
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "data": None,
+                    "meta": {
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "request_id": "placeholder"
+                    },
+                    "errors": [{
+                        "code": "CONFIG_ERROR",
+                        "message": "Deployment configuration not found",
+                        "field": None,
+                        "details": "Frontend configuration could not be loaded"
+                    }]
+                }
+            )
+        
+        frontend_config = deployment_config.get('frontend', {})
+        
+        return {
+            "data": {
+                "session_warning_threshold": frontend_config.get('session_warning_threshold', 10),
+                "session_refresh_interval": frontend_config.get('session_refresh_interval', 60),
+                "debug_console_log_limit": frontend_config.get('debug_console_log_limit', 50),
+                "llm_timeout_expectation": frontend_config.get('llm_timeout_expectation', 15),
+                "default_response_time": frontend_config.get('default_response_time', 1000)
+            },
+            "meta": {
+                "timestamp": datetime.utcnow().isoformat(),
+                "request_id": "placeholder"
+            },
+            "errors": []
+        }
+        
+    except Exception as e:
+        logger.error(f"Frontend configuration retrieval failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "request_id": "placeholder"
+                },
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Frontend configuration retrieval failed",
+                    "field": None,
+                    "details": "An internal error occurred while retrieving frontend configuration"
+                }]
+            }
+        )
+
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

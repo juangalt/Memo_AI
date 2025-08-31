@@ -5,6 +5,10 @@ session_management:
   session_timeout: 3600
   session_cleanup_interval: 300
   max_sessions_per_user: 5
+  max_concurrent_users: 100
+  log_level: "INFO"
+  session_warning_threshold: 10  # minutes
+  session_refresh_interval: 60   # seconds
   session_token_length: 32
   session_token_alphabet: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   secure_cookies: true

@@ -1,0 +1,47 @@
+# Deployment Configuration
+# Memo AI Coach - Deployment Settings
+
+traefik:
+  admin_email: "admin@example.com"
+  domain: "memo.myisland.dev"
+  rate_limit_average: 100
+  rate_limit_burst: 200
+  dashboard_enabled: true
+  dashboard_path: "/dashboard"
+
+database:
+  url: "sqlite:///data/memoai.db"
+  type: "sqlite"
+  max_connections: 10
+  journal_mode: "wal"
+  timeout: 30
+  retry_attempts: 3
+
+frontend:
+  backend_url: "https://memo.myisland.dev"
+  phase_tracking_enabled: true
+  debug_console_log_limit: 50
+  session_warning_threshold: 10
+  session_refresh_interval: 60
+  llm_timeout_expectation: 15
+  default_response_time: 1000
+
+environment:
+  default_env: "production"
+  supported_envs:
+    - "development"
+    - "production"
+    - "staging"
+  env_specific_settings:
+    development:
+      debug_mode: true
+      log_level: "DEBUG"
+      mock_responses: true
+    production:
+      debug_mode: false
+      log_level: "INFO"
+      mock_responses: false
+    staging:
+      debug_mode: true
+      log_level: "INFO"
+      mock_responses: false
