@@ -92,7 +92,10 @@ services:
       start_period: 40s
 
   vue-frontend:
-    build: ./vue-frontend
+    build:
+      context: ./vue-frontend
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://memo.myisland.dev}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.vue-frontend.rule=Host(`${DOMAIN:-localhost}`) && !PathPrefix(`/api`)"
@@ -102,7 +105,7 @@ services:
       - "traefik.http.routers.vue-frontend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
       - "traefik.http.services.vue-frontend.loadbalancer.server.port=80"
     environment:
-      - VITE_BACKEND_URL=http://backend:8000
+      - VITE_BACKEND_URL=https://memo.myisland.dev
       - APP_ENV=${APP_ENV:-production}
       - DEBUG_MODE=${DEBUG_MODE:-false}
       - PHASE_TRACKING_ENABLED=true

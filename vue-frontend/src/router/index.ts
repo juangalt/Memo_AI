@@ -60,6 +60,18 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
+  // Skip authentication checks for login page to avoid interference
+  if (to.path === '/login') {
+    // If user is already authenticated and trying to access login, redirect to home
+    if (authStore.isAuthenticated) {
+      next('/')
+      return
+    }
+    // Allow access to login page
+    next()
+    return
+  }
+
   // If route requires authentication or admin access
   if (to.meta.requiresAuth || to.meta.requiresAdmin) {
     // Check if user is authenticated
@@ -82,12 +94,6 @@ router.beforeEach(async (to, from, next) => {
       next('/')
       return
     }
-  }
-
-  // If user is authenticated and trying to access login page, redirect to home
-  if (authStore.isAuthenticated && to.path === '/login') {
-    next('/')
-    return
   }
 
   // Allow navigation
