@@ -11,6 +11,12 @@ interface EvaluationResponse {
     strengths: string[]
     opportunities: string[]
     rubric_scores: Record<string, any>
+    segment_feedback?: Array<{
+      segment: string
+      comment: string
+      questions: string[]
+      suggestions: string[]
+    }>
     processing_time: number
     created_at: string
   }

@@ -2486,7 +2486,9 @@ console.log(evalStore.hasEvaluation) // Should be false initially
    - ✅ Test content formatting - verify proper spacing and readability
 
 3. **Detailed Feedback Components**
-   - ✅ Check rubric scores display - verify detailed scoring breakdown
+   - ✅ Navigate to `/detailed-feedback` - verify detailed scoring breakdown displays
+   - ✅ Check rubric scores display - verify individual criterion scores with justifications
+   - ✅ Test segment feedback - verify text segment analysis and suggestions
    - ✅ Verify processing time display - confirm shows realistic timing information
    - ✅ Test creation date formatting - verify human-readable date display
    - ✅ Test navigation between feedback views - verify tab switching works
@@ -2608,6 +2610,182 @@ const createdAt = computed(() => evaluation.value?.created_at || new Date())
 # Navigate to overall feedback
 # Verify score, strengths, and opportunities display correctly
 ```
+
+### Step 7.2: Create Detailed Feedback Component
+**Goal**: Display detailed evaluation results with rubric scores and segment analysis
+
+**⚠️ CRITICAL ARCHITECTURE NOTE**: The Layout component is used in individual view components when navigation is needed. App.vue uses RouterView only. This prevents menu duplication while providing consistent navigation.
+
+**Actions**:
+```vue
+<!-- src/views/DetailedFeedback.vue -->
+<template>
+  <Layout>
+    <div class="max-w-6xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-6">
+        Detailed Feedback
+      </h1>
+      
+      <div v-if="evaluation" class="space-y-8">
+        <!-- Overall Score Summary -->
+        <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            📊 Overall Evaluation Summary
+          </h2>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-2xl font-bold text-blue-600">{{ overallScore }}/5.0</p>
+              <p class="text-sm text-gray-600">Overall Score</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-gray-600">Processing Time</p>
+              <p class="text-lg font-semibold">{{ processingTime }}s</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Rubric Scores Breakdown -->
+        <div class="bg-gray-50 rounded-lg p-6">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">
+            📋 Rubric Scores Breakdown
+          </h3>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div
+              v-for="(score, criterion) in rubricScores"
+              :key="criterion"
+              class="bg-white rounded-lg p-4 border"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="font-semibold text-gray-900 capitalize">
+                  {{ criterion.replace(/_/g, ' ') }}
+                </h4>
+                <span class="text-lg font-bold text-blue-600">
+                  {{ score.score }}/5
+                </span>
+              </div>
+              <p class="text-sm text-gray-600">{{ score.justification }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Segment Analysis -->
+        <div v-if="segmentFeedback && segmentFeedback.length > 0" class="bg-yellow-50 rounded-lg p-6 border-l-4 border-yellow-500">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">
+            📝 Segment Analysis
+          </h3>
+          <div class="space-y-4">
+            <div
+              v-for="(segment, index) in segmentFeedback"
+              :key="index"
+              class="bg-white rounded-lg p-4 border"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <h4 class="font-semibold text-gray-900">
+                  Segment {{ index + 1 }}
+                </h4>
+                <span class="text-sm text-gray-500">
+                  {{ segment.start_char }}-{{ segment.end_char }}
+                </span>
+              </div>
+              <div class="bg-gray-100 rounded p-3 mb-3">
+                <p class="text-sm text-gray-800 font-mono">{{ segment.text }}</p>
+              </div>
+              <div v-if="segment.feedback" class="text-sm text-gray-700">
+                <p class="font-medium mb-1">Feedback:</p>
+                <p>{{ segment.feedback }}</p>
+              </div>
+              <div v-if="segment.suggestions && segment.suggestions.length > 0" class="mt-2">
+                <p class="font-medium text-sm mb-1">Suggestions:</p>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li v-for="suggestion in segment.suggestions" :key="suggestion" class="flex items-start">
+                    <span class="text-blue-500 mr-2">•</span>
+                    <span>{{ suggestion }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Metadata -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex justify-between text-sm text-gray-600">
+            <span>Evaluation ID: {{ evaluationId }}</span>
+            <span>Created: {{ formatDate(createdAt) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div v-else class="text-center py-12">
+        <div class="text-gray-500">
+          <p class="text-lg mb-4">📝 Submit text for evaluation to see detailed feedback</p>
+          <router-link 
+            to="/text-input"
+            class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Text Input
+          </router-link>
+        </div>
+      </div>
+    </div>
+  </div>
+  </Layout>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useEvaluationStore } from '@/stores/evaluation'
+import Layout from '@/components/Layout.vue'
+import { formatDate } from '@/utils/formatters'
+
+const evaluationStore = useEvaluationStore()
+
+const evaluation = computed(() => evaluationStore.currentEvaluation)
+const overallScore = computed(() => evaluation.value?.overall_score || 0)
+const rubricScores = computed(() => evaluation.value?.rubric_scores || {})
+const segmentFeedback = computed(() => evaluation.value?.segment_feedback || [])
+const processingTime = computed(() => evaluation.value?.processing_time || 0)
+const evaluationId = computed(() => evaluation.value?.id || 'N/A')
+const createdAt = computed(() => evaluation.value?.created_at || new Date())
+</script>
+```
+
+**Test**:
+```bash
+# Submit text for evaluation
+# Navigate to detailed feedback
+# Verify rubric scores display with justifications
+# Verify segment analysis shows text segments and feedback
+# Test navigation between overall and detailed feedback views
+```
+
+---
+
+## Phase 7: Feedback Display Components
+
+### 📋 Phase 7 Completion Checklist
+
+**Before proceeding to Phase 8, ensure Phase 7 tests pass:**
+
+1. ✅ **Test Overall Feedback Component**: Verify overall score, strengths, and opportunities display correctly
+2. ✅ **Test Detailed Feedback Component**: Verify rubric scores and segment analysis display properly
+3. ✅ **Check Navigation**: Test switching between overall and detailed feedback views
+4. ✅ **Validate Data Display**: Ensure evaluation data is properly formatted and displayed
+5. ✅ **Test Responsive Design**: Verify components work on mobile and desktop viewports
+6. ✅ **Check Empty States**: Test display when no evaluation data is available
+7. ✅ **Verify Component Integration**: Ensure both feedback components work with evaluation store
+8. ✅ **Update Changelog**: Document successful completion in `vue_implementation_changelog.md`
+9. ✅ **Ensure Updated Containers**: Confirm all updated containers are running and healthy
+
+**Expected Results:**
+- Overall feedback displays score, strengths, and opportunities correctly
+- Detailed feedback shows rubric scores with justifications
+- Segment analysis displays text segments with feedback and suggestions
+- Navigation between feedback views works smoothly
+- Components are responsive and accessible
+- Empty states provide helpful guidance to users
+- All components integrate properly with the evaluation store
 
 ---
 

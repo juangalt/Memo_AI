@@ -2,12 +2,20 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { evaluationService } from '@/services/evaluation'
 
+interface SegmentFeedback {
+  segment: string
+  comment: string
+  questions: string[]
+  suggestions: string[]
+}
+
 interface Evaluation {
   id: string
   overall_score: number
   strengths: string[]
   opportunities: string[]
   rubric_scores: Record<string, any>
+  segment_feedback?: SegmentFeedback[]
   processing_time: number
   created_at: string
 }
@@ -68,7 +76,7 @@ export const useEvaluationStore = defineStore('evaluation', () => {
         return evaluation
       } else {
         // Handle evaluation errors
-        error.value = result.error || 'Evaluation failed'
+        error.value = 'Evaluation failed'
         return null
       }
     } catch (err: any) {
@@ -86,12 +94,12 @@ export const useEvaluationStore = defineStore('evaluation', () => {
     try {
       const result = await evaluationService.getEvaluation(evaluationId)
 
-      if (result.success) {
+      if (result.success && result.data) {
         const evaluation = result.data.evaluation
         currentEvaluation.value = evaluation
         return evaluation
       } else {
-        error.value = result.error || 'Failed to retrieve evaluation'
+        error.value = 'Failed to retrieve evaluation'
         return null
       }
     } catch (err: any) {

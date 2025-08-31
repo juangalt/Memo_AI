@@ -26,6 +26,13 @@
               📊 Overall Feedback
             </router-link>
             <router-link
+              to="/detailed-feedback"
+              class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              :class="{ 'text-blue-600 bg-blue-50': $route.path === '/detailed-feedback' }"
+            >
+              🔍 Detailed Feedback
+            </router-link>
+            <router-link
               to="/help"
               class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               :class="{ 'text-blue-600 bg-blue-50': $route.path === '/help' }"

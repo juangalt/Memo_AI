@@ -71,6 +71,45 @@ Frontend (Streamlit) ← Traefik
 - **LLM API Key**: Anthropic Claude API key (or set `LLM_API_KEY=unset` for mock mode)
 - **Domain Name**: For production deployment with SSL
 
+### 🚨 Critical: Tailwind CSS Configuration
+**⚠️ IMPORTANT**: If you're working with the Vue.js frontend, use Tailwind CSS v3.4.17 (stable) for production. Avoid v4.x (beta) versions which cause build failures.
+
+✅ **Correct Configuration**:
+```json
+// package.json
+{
+  "dependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
+```
+```javascript
+// postcss.config.js
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+❌ **Wrong Configuration** (causes build failures):
+```json
+// package.json - WRONG
+{
+  "dependencies": {
+    "tailwindcss": "^4.1.12"  // Beta version
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12"  // Wrong plugin
+  }
+}
+```
+
+**CSS File Size Indicators**:
+- ✅ **Correct**: 25-30 kB (Tailwind processing)
+- ❌ **Wrong**: 4-5 kB (Tailwind not processing)
+
 ### Installation
 
 1. **Clone and enter the repository**:
@@ -443,6 +482,7 @@ The project maintains a comprehensive documentation system in the `docs/` direct
 | **`docs/05_API_Documentation.md`** | Complete API reference and endpoints | **MANDATORY** |
 | **`docs/08_Development_Guide.md`** | Development standards and procedures | **MANDATORY** |
 | **`docs/09_Testing_Guide.md`** | Testing procedures and frameworks | **MANDATORY** |
+| **`docs/14_Tailwind_CSS_Troubleshooting.md`** | Vue frontend Tailwind CSS issues | **FOR VUE DEVELOPERS** |
 
 #### **Specialized Documentation**
 - **`docs/03_Installation_Guide.md`** - Installation and setup procedures
@@ -452,6 +492,7 @@ The project maintains a comprehensive documentation system in the `docs/` direct
 - **`docs/11_Maintenance_Guide.md`** - System maintenance
 - **`docs/12_Troubleshooting_Guide.md`** - Problem resolution
 - **`docs/13_Reference_Manual.md`** - Technical reference
+- **`docs/14_Tailwind_CSS_Troubleshooting.md`** - Vue frontend Tailwind CSS issues
 - **`docs/AGENTS.md`** - AI agent guidelines and quality standards
 
 ### 🤖 AI Agent Guidelines (CRITICAL)
@@ -479,6 +520,31 @@ AI agents **MUST NOT** modify any files in the `docs/` directory. This directory
 ## 🆘 Troubleshooting
 
 ### Common Issues
+
+#### 🎨 Tailwind CSS Issues (Vue Frontend)
+**Symptoms**:
+- Components display without styling
+- CSS file size < 10 kB
+- Build succeeds but styles don't work
+- Console shows PostCSS plugin errors
+
+**Solution**:
+1. **Check package.json**: Ensure `tailwindcss: "^3.4.17"` (not v4.x)
+2. **Verify postcss.config.js**: Use `tailwindcss: {}` (not `@tailwindcss/postcss`)
+3. **Remove beta dependencies**: Delete any `@tailwindcss/postcss` packages
+4. **Rebuild**: Use `npm install` (not `npm ci`) for better dependency management
+5. **Check CSS file size**: Should be 25-30 kB if Tailwind is processing correctly
+
+**Quick Fix**:
+```bash
+# Option 1: Use the automated fix script
+./fix_tailwind_css.sh
+
+# Option 2: Manual fix
+npm uninstall @tailwindcss/postcss
+npm install tailwindcss@^3.4.17
+npm run build
+```
 
 #### Configuration Problems
 - **Validate config**: `python3 backend/validate_config.py`

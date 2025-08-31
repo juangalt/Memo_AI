@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
-interface APIResponse<T = any> {
+export interface APIResponse<T = any> {
   success: boolean
   data: T | null
   error?: string

@@ -86,7 +86,7 @@ const submitEvaluation = async () => {
 
   try {
     const progressInterval = setInterval(() => {
-      progress.value += 1
+      progress.value = Math.min(progress.value + 1, 100)
       if (progress.value <= 30) {
         status.value = '📝 Analyzing text structure...'
         progressDescription.value = 'Breaking down your content for analysis'
