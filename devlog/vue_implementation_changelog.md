@@ -34,6 +34,314 @@
 
 ## 🚀 Recent Changes
 
+### [2025-08-31] Improved API Health Testing with Authentication Context
+
+**Type**: Enhanced  
+**Impact**: Developer Experience  
+**Priority**: Medium  
+
+**Improvement**: Enhanced error debugging to include authentication context and better test data for different endpoint types.
+
+**Authentication Context Added**:
+- **Requires Authentication Field**: Shows whether endpoint needs authentication
+- **Endpoint-Specific Notes**: Contextual information about endpoint requirements
+- **Better Error Context**: Explains why certain endpoints fail (auth required, admin privileges, etc.)
+- **Request Data Improvements**: Better test data for evaluation endpoints
+
+**Enhanced Debug Information**:
+- **Authentication Status**: Clear indication if endpoint requires authentication
+- **Endpoint-Specific Requirements**: Notes about text_content for evaluations, admin privileges, etc.
+- **Better Test Data**: Evaluation endpoints now use realistic memo text instead of `{"test": true}`
+- **Contextual Error Messages**: More helpful explanations for common failure reasons
+
+**Debug Information Format**:
+```
+=== API ENDPOINT ERROR DEBUG INFO ===
+
+Endpoint: [Endpoint Name]
+Method: [HTTP Method]
+Path: [API Path]
+Full URL: [Complete URL]
+Status Code: [HTTP Status]
+Response Time: [Time in ms]
+Timestamp: [ISO Timestamp]
+Requires Authentication: [Yes/No]
+
+Error Message: [Error Details]
+
+Request Data: [JSON Request Data]
+
+Response Data: [JSON Response Data]
+
+Environment:
+- Backend URL: [Backend URL]
+- User Agent: [Browser Info]
+- Timestamp: [Current Time]
+
+Notes:
+- [Authentication requirements]
+- [Endpoint-specific requirements]
+- [Admin privileges if applicable]
+
+=== END DEBUG INFO ===
+```
+
+**Technical Improvements**:
+- **Smart Test Data**: Different test payloads for different endpoint types
+- **Authentication Detection**: Automatic detection of endpoints requiring auth
+- **Contextual Notes**: Dynamic notes based on endpoint type and requirements
+- **Better Error Handling**: More informative error context for debugging
+
+**Test Data Improvements**:
+- **Evaluation Endpoints**: Use realistic memo text: "This is a sample memo for testing purposes..."
+- **Other POST Endpoints**: Continue using `{"test": true}` for general testing
+- **GET Endpoints**: No request data needed
+
+**Files Modified**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Enhanced debug information with authentication context
+
+**User Experience**:
+- **Better Debugging**: Clear understanding of why endpoints fail
+- **Authentication Context**: Know which endpoints require login
+- **Realistic Testing**: Evaluation endpoints use proper test data
+- **Helpful Notes**: Contextual information for troubleshooting
+
+---
+
+### [2025-08-31] Enhanced API Health Testing Error Debugging
+
+**Type**: Enhanced  
+**Impact**: Developer Experience  
+**Priority**: Medium  
+
+**Improvement**: Enhanced error tooltips to include comprehensive debug information that can be copied to clipboard.
+
+**Debug Information Added**:
+- **Endpoint Details**: Name, method, path, and full URL
+- **Request Information**: Request data, method, and path
+- **Response Information**: Status code, response data, and response time
+- **Timing Data**: Timestamp and response time in milliseconds
+- **Environment Info**: Backend URL, user agent, and current timestamp
+- **Error Context**: Full error message with context
+
+**Enhanced Features**:
+- **Comprehensive Debug Info**: Complete error context in structured format
+- **Clipboard Integration**: Click error messages to copy full debug information
+- **Enhanced Tooltips**: Hover to see complete debug information preview
+- **Structured Format**: Well-formatted debug output for easy analysis
+- **Environment Context**: Includes browser and system information
+
+**Debug Information Format**:
+```
+=== API ENDPOINT ERROR DEBUG INFO ===
+
+Endpoint: [Endpoint Name]
+Method: [HTTP Method]
+Path: [API Path]
+Full URL: [Complete URL]
+Status Code: [HTTP Status]
+Response Time: [Time in ms]
+Timestamp: [ISO Timestamp]
+
+Error Message: [Error Details]
+
+Request Data: [JSON Request Data]
+
+Response Data: [JSON Response Data]
+
+Environment:
+- Backend URL: [Backend URL]
+- User Agent: [Browser Info]
+- Timestamp: [Current Time]
+
+=== END DEBUG INFO ===
+```
+
+**Technical Improvements**:
+- **Extended Interface**: Added statusCode, requestData, responseData, timestamp fields
+- **Enhanced Error Capture**: Captures detailed request/response information
+- **Better Error Handling**: Improved error context and debugging capabilities
+- **Timestamp Tracking**: Consistent timestamp tracking across all operations
+
+**Files Modified**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Enhanced error debugging and debug information generation
+
+**User Experience**:
+- **Better Debugging**: Comprehensive error information for troubleshooting
+- **Easy Copy/Paste**: One-click copy of complete debug information
+- **Developer Friendly**: Structured debug output for analysis
+- **Environment Context**: Full context for error reproduction
+
+---
+
+### [2025-08-31] Improved API Health Testing Layout - Status on New Line
+
+**Type**: Changed  
+**Impact**: User Experience  
+**Priority**: Low  
+
+**Improvement**: Moved status badges and response time to a separate line for better visual organization.
+
+**Layout Changes**:
+- **Separated Status Row**: Status (Healthy/Error) and response time now appear on their own line
+- **Cleaner Header**: Method and endpoint name are now on the first line without status clutter
+- **Better Visual Hierarchy**: Clear separation between endpoint info and status information
+- **Right-aligned Status**: Status and response time are right-aligned for better visual balance
+
+**Visual Improvements**:
+- **Less Crowded Header**: First line now focuses on method and endpoint name
+- **Clear Status Display**: Status badges have their own dedicated space
+- **Better Readability**: Easier to scan endpoint names without status interference
+- **Professional Layout**: More organized and structured appearance
+
+**Layout Structure**:
+1. **Line 1**: Method badge + Endpoint name
+2. **Line 2**: Status badge + Response time (right-aligned)
+3. **Line 3**: Endpoint path
+4. **Line 4+**: Response preview or error details (if applicable)
+
+**Files Modified**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Restructured layout with status on separate line
+
+**User Experience**:
+- **Easier Scanning**: Endpoint names are more prominent and easier to read
+- **Clear Status Visibility**: Status information is clearly separated and visible
+- **Better Organization**: Logical grouping of related information
+- **Improved Workflow**: Faster identification of endpoint status and performance
+
+---
+
+### [2025-08-31] Improved API Health Testing Component Formatting
+
+**Type**: Changed  
+**Impact**: User Experience  
+**Priority**: Medium  
+
+**Improvement**: Enhanced the layout and spacing of the API Health Testing component to reduce empty space and improve text fitting.
+
+**Formatting Improvements**:
+- **Removed Fixed Heights**: Eliminated `min-h-[80px]` to allow natural content-based sizing
+- **Better Layout Structure**: Reorganized content into clear sections (Header, Path, Response, Error)
+- **Reduced Empty Space**: Optimized margins and padding throughout the component
+- **Improved Text Flow**: Better text wrapping and spacing for all content elements
+- **Consistent Spacing**: Standardized margins between sections (`mb-2`)
+
+**Layout Changes**:
+- **Header Row**: Method, name, status, and response time in a single compact row
+- **Path Section**: Dedicated section for endpoint path with proper wrapping
+- **Response Preview**: Moved above error details for better visual hierarchy
+- **Error Details**: Positioned at the bottom for consistent placement
+
+**Space Optimization**:
+- **Eliminated Vertical Gaps**: Reduced unnecessary spacing between elements
+- **Better Content Distribution**: More efficient use of available space
+- **Responsive Design**: Maintains proper layout on different screen sizes
+- **Compact Cards**: Each endpoint card now uses space more efficiently
+
+**Visual Improvements**:
+- **Cleaner Appearance**: Less empty space makes the interface look more polished
+- **Better Readability**: Improved text flow and spacing enhance readability
+- **Consistent Heights**: Cards now size naturally based on content
+- **Professional Layout**: More organized and structured appearance
+
+**Files Modified**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Improved layout and spacing
+
+**User Experience**:
+- **More Information Visible**: Better use of space shows more content at once
+- **Cleaner Interface**: Reduced empty space creates a more professional appearance
+- **Better Organization**: Clear section separation improves content scanning
+- **Improved Efficiency**: More compact layout allows viewing more endpoints simultaneously
+
+---
+
+### [2025-08-31] Added API Health Testing Box to Debug Page
+
+**Type**: Added  
+**Impact**: Developer Experience  
+**Priority**: Medium  
+
+**New Feature**: Created comprehensive API health testing component that monitors all API endpoints.
+
+**Component Features**:
+- **Comprehensive Endpoint Testing**: Tests all 12 API endpoints including health, auth, config, and evaluation endpoints
+- **Real-time Status Monitoring**: Shows healthy, error, or testing status for each endpoint
+- **Response Time Tracking**: Displays response times for performance monitoring
+- **Error Details**: Shows specific error messages for failed endpoints
+- **Health Summary**: Provides overview of system health with counts and status
+- **Manual Testing**: "Test All Endpoints" button for on-demand testing
+- **Auto-testing**: Automatically runs tests when component loads
+- **Tooltip Functionality**: Hover tooltips show full response/error details
+- **Clipboard Integration**: Click error messages to copy to clipboard
+- **Response Preview**: Shows truncated response data with full view on hover
+
+**API Endpoints Tested**:
+- **Health Endpoints**: System, Database, Config, LLM, Auth health checks
+- **Authentication**: Session validation
+- **Admin Functions**: User management
+- **Configuration**: All 4 config files (rubric, prompt, auth, llm)
+- **Evaluation**: Text submission endpoint
+
+**Visual Features**:
+- **Color-coded Status**: Green (healthy), Red (error), Blue (testing), Gray (unknown)
+- **Grid Layout**: Responsive 2-column grid for endpoint display
+- **Status Badges**: Clear visual indicators for each endpoint status
+- **Loading Spinners**: Animated indicators during testing
+- **Error Details**: Expandable error information with clipboard functionality
+- **Response Details**: Full response preview with tooltip display
+- **Word Wrapping**: Proper text wrapping to prevent overflow
+- **Minimum Height**: Consistent box heights for better layout
+
+**Interactive Features**:
+- **Error Tooltips**: Hover over error messages to see full text
+- **Response Tooltips**: Hover over response previews to see full JSON
+- **Clipboard Copy**: Click error messages to copy to clipboard
+- **Hover Effects**: Visual feedback for interactive elements
+
+**Files Created**:
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - New API health testing component
+
+**Files Modified**:
+- `vue-frontend/src/views/Debug.vue` - Added API Health Testing box to debug page
+
+**User Experience**:
+- **Comprehensive Monitoring**: Complete overview of all API endpoint health
+- **Quick Diagnostics**: Immediate identification of problematic endpoints
+- **Performance Insights**: Response time data for optimization
+- **Developer Friendly**: Clear error messages and status indicators
+- **Enhanced Usability**: Tooltips and clipboard functionality for better workflow
+- **Clean Layout**: Proper word wrapping and consistent spacing
+
+---
+
+### [2025-08-31] Removed API Testing Box from Debug Page
+
+**Type**: Changed  
+**Impact**: User Experience  
+**Priority**: Low  
+
+**Change**: Removed the "API Testing" box from the debug page to simplify the interface.
+
+**Changes Made**:
+- **Removed API Testing Section**: Eliminated the blue API Testing box from the debug panel
+- **Cleaned Up Layout**: Removed unused import and component reference
+- **Simplified Interface**: Debug page now has 3 sections instead of 4
+
+**Debug Page Sections Remaining**:
+- 🔍 **System Diagnostics** - System health and status monitoring
+- 📊 **Performance Monitoring** - Response time and metrics tracking
+- 🛠️ **Development Tools** - Debug utilities and development aids
+
+**Files Modified**:
+- `vue-frontend/src/views/Debug.vue` - Removed API Testing component and import
+
+**User Experience**:
+- **Cleaner Interface**: Less cluttered debug panel
+- **Focused Functionality**: Remaining sections provide core debugging capabilities
+- **Simplified Navigation**: Easier to find specific debugging tools
+
+---
+
 ### [2025-08-31] Fixed Progress Bar Overflow in Text Input Page
 
 **Type**: Fixed  

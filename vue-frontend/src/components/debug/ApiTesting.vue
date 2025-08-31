@@ -173,6 +173,10 @@ const endpoints: Endpoint[] = [
   { method: 'GET', path: '/health', description: 'System health check' },
   { method: 'GET', path: '/api/v1/auth/validate', description: 'Validate session' },
   { method: 'GET', path: '/api/v1/admin/users', description: 'List users' },
+  { method: 'GET', path: '/api/v1/admin/config/rubric', description: 'Get rubric configuration' },
+  { method: 'GET', path: '/api/v1/admin/config/prompt', description: 'Get prompt configuration' },
+  { method: 'GET', path: '/api/v1/admin/config/auth', description: 'Get auth configuration' },
+  { method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration' },
   { method: 'POST', path: '/api/v1/evaluations/submit', description: 'Submit evaluation' }
 ]
 
@@ -180,7 +184,10 @@ const quickTests = [
   { name: 'Health Check', method: 'GET', path: '/health' },
   { name: 'Auth Validate', method: 'GET', path: '/api/v1/auth/validate' },
   { name: 'List Users', method: 'GET', path: '/api/v1/admin/users' },
-  { name: 'Config Validate', method: 'GET', path: '/api/v1/admin/config/rubric/validate' }
+  { name: 'Config: Rubric', method: 'GET', path: '/api/v1/admin/config/rubric' },
+  { name: 'Config: Prompt', method: 'GET', path: '/api/v1/admin/config/prompt' },
+  { name: 'Config: Auth', method: 'GET', path: '/api/v1/admin/config/auth' },
+  { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm' }
 ]
 
 const getStatusClass = (status: number) => {

@@ -15,12 +15,12 @@
             <SystemDiagnostics />
           </div>
           
-          <!-- API Testing -->
+          <!-- API Health Testing -->
           <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              🔌 API Testing
+              🔌 API Health Testing
             </h3>
-            <ApiTesting />
+            <ApiHealthTesting />
           </div>
           
           <!-- Performance Monitoring -->
@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
 import SystemDiagnostics from '@/components/debug/SystemDiagnostics.vue'
-import ApiTesting from '@/components/debug/ApiTesting.vue'
+import ApiHealthTesting from '@/components/debug/ApiHealthTesting.vue'
 import PerformanceMonitoring from '@/components/debug/PerformanceMonitoring.vue'
 import DevelopmentTools from '@/components/debug/DevelopmentTools.vue'
 </script>
