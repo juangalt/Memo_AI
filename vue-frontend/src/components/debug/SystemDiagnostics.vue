@@ -158,25 +158,33 @@ const runDiagnostics = async () => {
   try {
     // Check system health
     const healthResult = await apiClient.get('/health')
-    if (healthResult.success) {
-      // Parse health data
-      const health = healthResult.data
+    
+    if (healthResult.success && healthResult.data) {
+      // Parse health data - handle both direct response and wrapped response
+      const health = healthResult.data as any
       
-      // Update system info
+      // Update system info with available data
       systemInfo.value = {
-        uptime: health.uptime || 'Unknown',
+        uptime: 'Running', // Health endpoint doesn't provide uptime
         version: health.version || '1.0.0',
-        environment: health.environment || 'production',
-        debugMode: health.debug_mode || false
+        environment: 'production', // Default since not provided by health endpoint
+        debugMode: false // Default since not provided by health endpoint
       }
       
       // Update database status
-      if (health.database) {
+      if (health.database_details) {
         dbStatus.value = {
-          connected: health.database.status === 'ok',
-          tableCount: health.database.table_count || 0,
-          size: health.database.size || '0 MB',
-          lastBackup: health.database.last_backup || 'Never'
+          connected: health.services?.database === 'healthy',
+          tableCount: health.database_details.tables?.length || 0,
+          size: 'Unknown', // Not provided by health endpoint
+          lastBackup: 'Never' // Not provided by health endpoint
+        }
+      } else {
+        dbStatus.value = {
+          connected: health.services?.database === 'healthy',
+          tableCount: 0,
+          size: 'Unknown',
+          lastBackup: 'Never'
         }
       }
       
@@ -184,24 +192,45 @@ const runDiagnostics = async () => {
       serviceStatus.value = [
         {
           name: 'Database',
-          status: health.database?.status || 'unknown',
-          responseTime: health.database?.response_time || 0
+          status: health.services?.database || 'unknown',
+          responseTime: 0 // Not provided by health endpoint
         },
         {
           name: 'Configuration',
-          status: health.config?.status || 'unknown',
-          responseTime: health.config?.response_time || 0
+          status: health.services?.configuration || 'unknown',
+          responseTime: 0
         },
         {
           name: 'LLM Service',
-          status: health.llm?.status || 'unknown',
-          responseTime: health.llm?.response_time || 0
+          status: health.services?.llm || 'unknown',
+          responseTime: 0
         },
         {
           name: 'Authentication',
-          status: health.auth?.status || 'unknown',
-          responseTime: health.auth?.response_time || 0
+          status: health.services?.auth || 'unknown',
+          responseTime: 0
         }
+      ]
+    } else {
+      // Handle case where health check failed
+      console.error('Health check failed:', healthResult)
+      systemInfo.value = {
+        uptime: 'Unknown',
+        version: 'Unknown',
+        environment: 'Unknown',
+        debugMode: false
+      }
+      dbStatus.value = {
+        connected: false,
+        tableCount: 0,
+        size: 'Unknown',
+        lastBackup: 'Never'
+      }
+      serviceStatus.value = [
+        { name: 'Database', status: 'error', responseTime: 0 },
+        { name: 'Configuration', status: 'error', responseTime: 0 },
+        { name: 'LLM Service', status: 'error', responseTime: 0 },
+        { name: 'Authentication', status: 'error', responseTime: 0 }
       ]
     }
     
