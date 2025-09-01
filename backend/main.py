@@ -10,6 +10,7 @@ import uvicorn
 import os
 import logging
 import secrets
+import json
 from datetime import datetime
 from typing import Dict, Any
 
@@ -1397,6 +1398,9 @@ async def submit_evaluation(request: Request):
                 }
             )
         
+        # Create submission record
+        submission = Submission.create(text_content, session_data['session_id'])
+        
         # Use LLM service for text evaluation
         success, evaluation_result, error = evaluate_text_with_llm(text_content)
         
@@ -1418,7 +1422,21 @@ async def submit_evaluation(request: Request):
                 }
             )
         
-        # Session data already contains user association
+        # Create evaluation record with raw data
+        evaluation = Evaluation.create(
+            submission_id=submission.id,
+            overall_score=evaluation_result['overall_score'],
+            strengths=json.dumps(evaluation_result['strengths']),
+            opportunities=json.dumps(evaluation_result['opportunities']),
+            rubric_scores=json.dumps(evaluation_result['rubric_scores']),
+            segment_feedback=json.dumps(evaluation_result['segment_feedback']),
+            llm_provider='claude',
+            llm_model=evaluation_result.get('model_used', 'claude-3-haiku-20240307'),
+            raw_prompt=evaluation_result.get('raw_prompt'),
+            raw_response=evaluation_result.get('raw_response'),
+            debug_enabled=True,  # Enable debug mode
+            processing_time=evaluation_result.get('processing_time')
+        )
         
         return {
             "data": {
@@ -1569,6 +1587,204 @@ async def get_frontend_config():
                     "details": "An internal error occurred while retrieving frontend configuration"
                 }]
             }
+        )
+
+@app.get("/api/v1/admin/last-evaluations")
+async def get_last_evaluations(request: Request):
+    """Get last evaluation for each user (admin only)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content=create_error_response(
+                    "AUTHENTICATION_ERROR",
+                    "Authentication required",
+                    "session_token",
+                    "Please log in to access admin functions"
+                )
+            )
+        
+        # Validate session and check admin status
+        valid, session_data, error = validate_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content=create_error_response(
+                    "AUTHENTICATION_ERROR",
+                    "Invalid session",
+                    "session_token",
+                    error or "Please log in again"
+                )
+            )
+        
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content=create_error_response(
+                    "AUTHORIZATION_ERROR",
+                    "Admin access required",
+                    None,
+                    "This endpoint requires administrator privileges"
+                )
+            )
+        
+        # Get last evaluation for each user
+        query = """
+            SELECT 
+                e.id, e.submission_id, e.overall_score, e.processing_time,
+                e.created_at, e.llm_provider, e.llm_model, e.debug_enabled,
+                e.raw_prompt, e.raw_response,
+                s.text_content as submission_content,
+                u.username, u.is_admin
+            FROM evaluations e
+            JOIN submissions s ON e.submission_id = s.id
+            JOIN sessions sess ON s.session_id = sess.session_id
+            JOIN users u ON sess.user_id = u.id
+            WHERE e.id IN (
+                SELECT MAX(e2.id) FROM evaluations e2
+                JOIN submissions s2 ON e2.submission_id = s2.id
+                JOIN sessions sess2 ON s2.session_id = sess2.session_id
+                GROUP BY sess2.user_id
+            )
+            ORDER BY e.created_at DESC
+            LIMIT 50
+        """
+        
+        result = db_manager.execute_query(query)
+        
+        evaluations = []
+        for row in result:
+            evaluations.append({
+                "id": row['id'],
+                "submission_id": row['submission_id'],
+                "overall_score": row['overall_score'],
+                "processing_time": row['processing_time'],
+                "created_at": row['created_at'],
+                "llm_provider": row['llm_provider'],
+                "llm_model": row['llm_model'],
+                "debug_enabled": bool(row['debug_enabled']),
+                "has_raw_data": bool(row['raw_prompt'] and row['raw_response']),
+                "submission_preview": row['submission_content'][:100] + "..." if len(row['submission_content']) > 100 else row['submission_content'],
+                "username": row['username'],
+                "is_admin": bool(row['is_admin'])
+            })
+        
+        return {
+            "data": {
+                "evaluations": evaluations,
+                "total": len(evaluations)
+            },
+            "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": str(secrets.token_urlsafe(16))},
+            "errors": []
+        }
+    except Exception as e:
+        logger.error(f"Failed to get last evaluations: {e}")
+        return JSONResponse(
+            status_code=500,
+            content=create_error_response(
+                "INTERNAL_ERROR",
+                "Failed to retrieve evaluations",
+                None,
+                "An internal error occurred while retrieving evaluation data"
+            )
+        )
+
+@app.get("/api/v1/admin/evaluation/{evaluation_id}/raw")
+async def get_evaluation_raw_data(evaluation_id: int, request: Request):
+    """Get raw data for specific evaluation (admin only)"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token", "")
+        
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content=create_error_response(
+                    "AUTHENTICATION_ERROR",
+                    "Authentication required",
+                    "session_token",
+                    "Please log in to access admin functions"
+                )
+            )
+        
+        # Validate session and check admin status
+        valid, session_data, error = validate_session(session_token)
+        
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content=create_error_response(
+                    "AUTHENTICATION_ERROR",
+                    "Invalid session",
+                    "session_token",
+                    error or "Please log in again"
+                )
+            )
+        
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content=create_error_response(
+                    "AUTHORIZATION_ERROR",
+                    "Admin access required",
+                    None,
+                    "This endpoint requires administrator privileges"
+                )
+            )
+        
+        # Get evaluation by ID
+        evaluation = Evaluation.get_by_id(evaluation_id)
+        if not evaluation:
+            return JSONResponse(
+                status_code=404,
+                content=create_error_response(
+                    "NOT_FOUND",
+                    "Evaluation not found",
+                    "evaluation_id",
+                    f"Evaluation with ID {evaluation_id} does not exist"
+                )
+            )
+        
+        # Get submission data
+        submission = Submission.get_by_id(evaluation.submission_id)
+        
+        return {
+            "data": {
+                "evaluation": {
+                    "id": evaluation.id,
+                    "submission_id": evaluation.submission_id,
+                    "overall_score": evaluation.overall_score,
+                    "processing_time": evaluation.processing_time,
+                    "created_at": evaluation.created_at.isoformat(),
+                    "llm_provider": evaluation.llm_provider,
+                    "llm_model": evaluation.llm_model,
+                    "debug_enabled": evaluation.debug_enabled,
+                    "raw_prompt": evaluation.raw_prompt,
+                    "raw_response": evaluation.raw_response,
+                    "submission": {
+                        "id": submission.id if submission else None,
+                        "content": submission.text_content if submission else "",
+                        "created_at": submission.created_at.isoformat() if submission else None
+                    }
+                }
+            },
+            "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": str(secrets.token_urlsafe(16))},
+            "errors": []
+        }
+    except Exception as e:
+        logger.error(f"Failed to get evaluation raw data: {e}")
+        return JSONResponse(
+            status_code=500,
+            content=create_error_response(
+                "INTERNAL_ERROR",
+                "Failed to retrieve evaluation raw data",
+                None,
+                "An internal error occurred while retrieving evaluation raw data"
+            )
         )
 
 if __name__ == "__main__":

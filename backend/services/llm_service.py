@@ -279,6 +279,25 @@ class LLMService:
                         ]
                     })
             
+            # Generate mock raw prompt and response
+            system_message, user_message = self._generate_prompt(text_content)
+            raw_prompt = f"System: {system_message}\n\nUser: {user_message}"
+            raw_response = f"""Mock LLM Response for text evaluation:
+
+Overall Score: {overall_score}
+
+Strengths:
+{chr(10).join(strengths)}
+
+Opportunities:
+{chr(10).join(opportunities)}
+
+Rubric Scores:
+{chr(10).join([f"{k}: {v['score']} - {v['justification']}" for k, v in rubric_scores.items()])}
+
+Segment Feedback:
+{chr(10).join([f"Segment {i+1}: {s['comment']}" for i, s in enumerate(segment_feedback)])}"""
+
             evaluation_data = {
                 "overall_score": round(overall_score, 1),
                 "strengths": strengths,
@@ -287,7 +306,9 @@ class LLMService:
                 "segment_feedback": segment_feedback,
                 "processing_time": round(processing_time, 2),
                 "created_at": datetime.utcnow().isoformat(),
-                "model_used": "mock-claude-3-haiku-20240307"
+                "model_used": "mock-claude-3-haiku-20240307",
+                "raw_prompt": raw_prompt,
+                "raw_response": raw_response
             }
             
             logger.info(f"Mock text evaluation completed successfully in {processing_time:.2f} seconds")
@@ -329,6 +350,7 @@ class LLMService:
             
             # Generate prompt
             system_message, user_message = self._generate_prompt(text_content)
+            raw_prompt = f"System: {system_message}\n\nUser: {user_message}"
             
             # Get model configuration
             model = self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307')
@@ -353,12 +375,17 @@ class LLMService:
             
             # Extract response content
             response_text = response.content[0].text if response.content else ""
+            raw_response = response_text
             
             if not response_text:
                 return False, None, "Empty response from Claude API"
             
             # Parse response
             evaluation_data = self._parse_response(response_text)
+            
+            # Add raw data to evaluation_data
+            evaluation_data['raw_prompt'] = raw_prompt
+            evaluation_data['raw_response'] = raw_response
             
             # Add metadata
             processing_time = time.time() - start_time

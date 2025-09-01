@@ -6,7 +6,7 @@
           Admin Panel
         </h1>
         
-        <div class="grid md:grid-cols-2 gap-6">
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
           <!-- Health Monitoring -->
           <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">
@@ -39,6 +39,11 @@
             <SessionManagement />
           </div>
         </div>
+
+        <!-- Last Evaluations Viewer - Full Width -->
+        <div class="bg-orange-50 rounded-lg p-6 border-l-4 border-orange-500">
+          <LastEvaluationsViewer />
+        </div>
       </div>
     </div>
   </Layout>
@@ -50,4 +55,5 @@ import HealthStatus from '@/components/admin/HealthStatus.vue'
 import ConfigValidator from '@/components/admin/ConfigValidator.vue'
 import UserManagement from '@/components/admin/UserManagement.vue'
 import SessionManagement from '@/components/admin/SessionManagement.vue'
+import LastEvaluationsViewer from '@/components/admin/LastEvaluationsViewer.vue'
 </script>
