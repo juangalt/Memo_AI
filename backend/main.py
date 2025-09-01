@@ -33,9 +33,29 @@ from services import (
     delete_user
 )
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging (will be updated after config loading)
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(name)s:%(message)s')
 logger = logging.getLogger(__name__)
+
+# Function to update logging level based on config
+def update_logging_level():
+    """Update logging level based on configuration"""
+    try:
+        # Get deployment config to check environment settings
+        deployment_config = config_service.get_deployment_config()
+        if deployment_config:
+            env_settings = deployment_config.get('environment', {}).get('env_specific_settings', {})
+            app_env = os.environ.get('APP_ENV', 'production')
+            env_config = env_settings.get(app_env, {})
+
+            log_level_str = env_config.get('log_level', 'INFO')
+            log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+
+            # Update the root logger
+            logging.getLogger().setLevel(log_level)
+            logger.info(f"Updated logging level to {log_level_str} for {app_env} environment")
+    except Exception as e:
+        logger.error(f"Failed to update logging level: {e}")
 
 # Helper functions for standardized responses
 def create_standardized_response(data: Any, status_code: int = 200) -> Dict[str, Any]:
@@ -71,6 +91,22 @@ app = FastAPI(
     description="REST API for intelligent text evaluation and feedback",
     version="1.0.0"
 )
+
+# Debug environment variables at module import time
+print(f"MODULE DEBUG: DOMAIN={os.environ.get('DOMAIN', 'NOT_SET')}, APP_ENV={os.environ.get('APP_ENV', 'NOT_SET')}")
+
+# Load configurations on startup
+@app.on_event("startup")
+async def startup_event():
+    """Load configurations on application startup"""
+    try:
+        logger.info("Loading configurations on startup...")
+        config_service.load_all_configs()
+        update_logging_level()
+        logger.info("Configurations loaded successfully on startup")
+    except Exception as e:
+        logger.error(f"Failed to load configurations on startup: {e}")
+        raise
 
 # Add CORS middleware
 app.add_middleware(
@@ -1444,10 +1480,33 @@ async def get_evaluation(evaluation_id: str):
         logger.error(f"Evaluation retrieval failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve evaluation")
 
+@app.get("/api/v1/debug/env")
+async def debug_env():
+    """Debug endpoint to check environment variables"""
+    domain = os.environ.get('DOMAIN', 'NOT_SET')
+    app_env = os.environ.get('APP_ENV', 'NOT_SET')
+    print(f"DEBUG ENV: DOMAIN={domain}, APP_ENV={app_env}")
+    return {
+        "data": {
+            "DOMAIN": domain,
+            "APP_ENV": app_env,
+            "all_env": {k: v for k, v in os.environ.items() if 'DOMAIN' in k or 'APP' in k}
+        },
+        "meta": {
+            "timestamp": datetime.utcnow().isoformat(),
+            "request_id": "debug"
+        },
+        "errors": []
+    }
+
 @app.get("/api/v1/config/frontend")
 async def get_frontend_config():
     """Get frontend-specific configuration"""
     try:
+        # Force reload configurations to ensure DOMAIN override is applied
+        logger.info("Reloading configurations for frontend config request...")
+        config_service.reload_configs()
+        
         # Get deployment configuration
         deployment_config = config_service.get_deployment_config()
         
@@ -1471,8 +1530,15 @@ async def get_frontend_config():
         
         frontend_config = deployment_config.get('frontend', {})
         
+        # Get DOMAIN from environment variable with localhost as fallback
+        domain = os.environ.get('DOMAIN', 'localhost')
+        backend_url = f"https://{domain}"
+        print(f"DEBUG: Frontend config API called - DOMAIN: {domain}, backend_url: {backend_url}")
+        logger.info(f"Frontend config API called - DOMAIN: {domain}, backend_url: {backend_url}")
+        
         return {
             "data": {
+                "backend_url": backend_url,
                 "session_warning_threshold": frontend_config.get('session_warning_threshold', 10),
                 "session_refresh_interval": frontend_config.get('session_refresh_interval', 60),
                 "debug_console_log_limit": frontend_config.get('debug_console_log_limit', 50),

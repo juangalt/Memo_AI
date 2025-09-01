@@ -52,7 +52,18 @@ class ConfigService:
             self._validate_configs(configs)
             
             # Apply environment overrides
-            configs = self._apply_environment_overrides(configs)
+            logger.info("About to apply environment overrides...")
+            logger.info(f"Calling _apply_environment_overrides with {len(configs)} configs")
+            logger.info(f"Configs keys: {list(configs.keys())}")
+            try:
+                logger.info("Calling _apply_environment_overrides method...")
+                configs = self._apply_environment_overrides(configs)
+                logger.info("Environment overrides applied successfully")
+            except Exception as e:
+                logger.error(f"Environment overrides failed: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                raise
             
             self.configs = configs
             self.last_loaded = datetime.utcnow()
@@ -153,6 +164,7 @@ class ConfigService:
     def _apply_environment_overrides(self, configs: Dict[str, Any]) -> Dict[str, Any]:
         """Apply environment variable overrides to configurations"""
         try:
+            logger.info("=== ENVIRONMENT OVERRIDES START ===")
             # Get the target environment
             app_env = os.environ.get('APP_ENV', 'production').lower()
             logger.info(f"Applying environment-specific configuration for: {app_env}")
@@ -179,6 +191,22 @@ class ConfigService:
                     configs['auth.yaml']['security_settings']['debug_mode'] = debug_mode
                     logger.info("Applied debug mode override from environment")
             
+            # Apply DOMAIN override for backend URL construction
+            domain = os.environ.get('DOMAIN', 'localhost')
+            logger.info(f"DOMAIN value: {domain}")
+            logger.info(f"deployment.yaml in configs: {'deployment.yaml' in configs}")
+            if 'deployment.yaml' in configs:
+                logger.info(f"frontend in deployment.yaml: {'frontend' in configs['deployment.yaml']}")
+                if 'frontend' in configs['deployment.yaml']:
+                    old_url = configs['deployment.yaml']['frontend'].get('backend_url', 'NOT_SET')
+                    configs['deployment.yaml']['frontend']['backend_url'] = f"https://{domain}"
+                    logger.info(f"Applied DOMAIN override for backend URL: {old_url} -> https://{domain}")
+                else:
+                    logger.warning("frontend section not found in deployment.yaml")
+            else:
+                logger.warning("deployment.yaml not found in configs")
+            
+            logger.info("=== ENVIRONMENT OVERRIDES END ===")
             return configs
             
         except Exception as e:
@@ -341,5 +369,15 @@ class ConfigService:
                 "last_loaded": self.last_loaded.isoformat() if self.last_loaded else None
             }
 
-# Global configuration service instance
-config_service = ConfigService()
+# Global configuration service instance (lazy initialization)
+_config_service_instance = None
+
+def get_config_service():
+    """Get the global configuration service instance with lazy initialization"""
+    global _config_service_instance
+    if _config_service_instance is None:
+        _config_service_instance = ConfigService()
+    return _config_service_instance
+
+# For backward compatibility
+config_service = get_config_service()

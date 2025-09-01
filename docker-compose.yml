@@ -54,7 +54,7 @@ services:
     build: ./backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost}`) && (PathPrefix(`/api`) || PathPrefix(`/health`))"
+      - "traefik.http.routers.backend.rule=(Host(`${DOMAIN:-localhost}`) || Host(`localhost`)) && (PathPrefix(`/api`) || PathPrefix(`/health`))"
       - "traefik.http.routers.backend.priority=300"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
@@ -63,6 +63,7 @@ services:
     environment:
       - DATABASE_URL=sqlite:///data/memoai.db
       - LLM_API_KEY=${LLM_API_KEY}
+      - DOMAIN=${DOMAIN}
       - APP_ENV=${APP_ENV:-production}
 
 
@@ -86,7 +87,7 @@ services:
     build:
       context: ./vue-frontend
       args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://memo.myisland.dev}
+        VITE_BACKEND_URL: https://${DOMAIN:-localhost}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.vue-frontend.rule=Host(`${DOMAIN:-localhost}`) && !PathPrefix(`/api`)"
@@ -97,7 +98,6 @@ services:
       - "traefik.http.services.vue-frontend.loadbalancer.server.port=80"
     environment:
       - APP_ENV=${APP_ENV:-production}
-      - PHASE_TRACKING_ENABLED=true
     depends_on:
       - backend
     volumes:

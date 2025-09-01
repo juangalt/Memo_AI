@@ -1,6 +1,7 @@
 import { apiClient } from './api'
 
 interface FrontendConfig {
+  backend_url: string
   session_warning_threshold: number
   session_refresh_interval: number
   debug_console_log_limit: number
@@ -20,6 +21,7 @@ export const configService = {
       console.error('Error loading frontend configuration:', error)
       // Return default values if configuration loading fails
       return {
+        backend_url: 'https://localhost',
         session_warning_threshold: 10,
         session_refresh_interval: 60,
         debug_console_log_limit: 50,

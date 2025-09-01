@@ -67,6 +67,7 @@
 **Environment Variables Removed** (Unnecessary):
 - ✅ `ADMIN_PASSWORD` - Removed from docker-compose.yml (only used during database initialization)
 - ✅ `SECRET_KEY` - Removed from docker-compose.yml (session tokens use Python secrets module)
+- ✅ `PHASE_TRACKING_ENABLED` - Removed from docker-compose.yml (unused variable)
 
 **New Configuration Files**:
 - ✅ `config/deployment.yaml` - Deployment-specific settings (traefik, database, frontend)
@@ -105,9 +106,9 @@
 - **Consistency**: All components use same configuration source
 
 **Files Modified**:
-- `docker-compose.yml` - Removed duplicate environment variables, ADMIN_PASSWORD, and SECRET_KEY
+- `docker-compose.yml` - Removed duplicate environment variables, ADMIN_PASSWORD, SECRET_KEY, and PHASE_TRACKING_ENABLED
 - `config/auth.yaml` - Added missing configuration fields
-- `config/deployment.yaml` - **NEW** - Deployment configuration file
+- `config/deployment.yaml` - **NEW** - Deployment configuration file (removed unused phase_tracking_enabled)
 - `backend/services/config_service.py` - Added deployment.yaml support
 - `backend/main.py` - Added frontend configuration endpoint
 - `vue-frontend/src/services/config.ts` - **NEW** - Frontend configuration service
