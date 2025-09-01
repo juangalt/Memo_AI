@@ -39,6 +39,24 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 | GET | `/api/v1/evaluations/{evaluation_id}` | Retrieve evaluation result (placeholder) |
 | GET | `/api/v1/evaluations/session/{session_id}` | List evaluations for a session |
 
+**Dynamic Framework Injection**: The evaluation system dynamically injects framework content from `config/rubric.yaml` into LLM prompts. Framework definitions and application guidance are loaded at runtime and included in evaluation prompts for enhanced quality.
+
+**Framework Content Structure**:
+```yaml
+# config/rubric.yaml
+frameworks:
+  framework_definitions:
+    - name: "Pyramid Principle"
+      description: "Structure ideas in a pyramid..."
+    - name: "SCQA Framework" 
+      description: "Situation, Complication, Question, Answer..."
+    - name: "Healthcare Investment Framework"
+      description: "Market analysis framework..."
+  application_guidance:
+    - "Apply frameworks based on content type..."
+    - "Consider audience and context..."
+```
+
 **Request Body for `/api/v1/evaluations/submit`:**
 ```json
 {
@@ -176,7 +194,144 @@ All authentication endpoints require proper credentials and return session token
 }
 ```
 
-### 2.7 Health Endpoints
+### 2.7 Debug and Development Endpoints
+
+#### Debug Environment Variables
+**GET `/api/v1/debug/env`**
+
+Returns environment variable information for debugging purposes.
+
+**Response:**
+```json
+{
+  "data": {
+    "DOMAIN": "memo.myisland.dev",
+    "APP_ENV": "production",
+    "all_env": {
+      "DOMAIN": "memo.myisland.dev",
+      "APP_ENV": "production"
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "debug"
+  },
+  "errors": []
+}
+```
+
+#### Frontend Configuration
+**GET `/api/v1/config/frontend`**
+
+Returns frontend-specific configuration settings.
+
+**Response:**
+```json
+{
+  "data": {
+    "backend_url": "https://memo.myisland.dev",
+    "session_warning_threshold": 10,
+    "session_refresh_interval": 60,
+    "debug_console_log_limit": 50,
+    "llm_timeout_expectation": 15,
+    "default_response_time": 1000
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "placeholder"
+  },
+  "errors": []
+}
+```
+
+### 2.8 Admin Evaluation Data (Admin Only)
+
+#### Last Evaluations List
+**GET `/api/v1/admin/last-evaluations`**
+
+Returns the last evaluation for each user in the system.
+
+**Headers Required:**
+- `X-Session-Token`: Valid admin session token
+
+**Response:**
+```json
+{
+  "data": {
+    "evaluations": [
+      {
+        "id": 123,
+        "submission_id": 456,
+        "overall_score": 4.2,
+        "processing_time": 3.1,
+        "created_at": "2024-01-01T00:00:00Z",
+        "llm_provider": "anthropic",
+        "llm_model": "claude-3-haiku-20240307",
+        "debug_enabled": true,
+        "has_raw_data": true,
+        "submission_preview": "This is a sample memo for testing purposes...",
+        "username": "admin",
+        "is_admin": true
+      }
+    ],
+    "total": 1
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "abc123"
+  },
+  "errors": []
+}
+```
+
+#### Evaluation Raw Data
+**GET `/api/v1/admin/evaluation/{evaluation_id}/raw`**
+
+Returns raw LLM prompt and response data for a specific evaluation.
+
+**Headers Required:**
+- `X-Session-Token`: Valid admin session token
+
+**Path Parameters:**
+- `evaluation_id`: Integer ID of the evaluation
+
+**Response:**
+```json
+{
+  "data": {
+    "evaluation": {
+      "id": 123,
+      "submission_id": 456,
+      "overall_score": 4.2,
+      "processing_time": 3.1,
+      "created_at": "2024-01-01T00:00:00Z",
+      "llm_provider": "anthropic",
+      "llm_model": "claude-3-haiku-20240307",
+      "debug_enabled": true,
+      "raw_prompt": "You are an expert evaluator...",
+      "raw_response": "Based on the provided memo...",
+      "submission": {
+        "id": 456,
+        "content": "This is the original memo text...",
+        "created_at": "2024-01-01T00:00:00Z"
+      }
+    }
+  },
+  "meta": {
+    "timestamp": "2024-01-01T00:00:00Z",
+    "request_id": "abc123"
+  },
+  "errors": []
+}
+```
+
+**Error Responses:**
+- **401 Unauthorized**: Invalid or missing session token
+- **403 Forbidden**: Non-admin user attempting to access admin endpoint
+- **404 Not Found**: Evaluation with specified ID does not exist
+- **500 Internal Server Error**: Server error during data retrieval
+
+### 2.9 Health Endpoints
 All health endpoints return standardized `{data, meta, errors}` format and respond with HTTP 200 for healthy status or HTTP 503 for unhealthy status.
 
 **Main Health Endpoint (`GET /health`):**

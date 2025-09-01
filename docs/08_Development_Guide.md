@@ -80,6 +80,29 @@ Debug and admin components follow specific patterns for consistency and maintain
 - **UserManagement**: User account creation, management, and role assignment
 - **SessionManagement**: Session creation, refresh, and management
 
+#### Last Evaluation Page Development
+- **Location**: `vue-frontend/src/views/LastEvaluation.vue`
+- **Purpose**: Dedicated page for viewing raw LLM evaluation data
+- **Access Control**: Admin-only access with proper route protection
+- **Component Integration**: Hosts LastEvaluationsViewer component with Layout wrapper
+- **Navigation**: Integrated with main navigation menu for admin users
+
+#### Copyright Footer Implementation
+- **Universal Footer**: All pages include consistent "© Copyright FGS" footer
+- **Layout Integration**: Footer added to Layout component for authenticated pages
+- **Standalone Pages**: Custom footer implementation for Home and Login pages
+- **Styling**: Consistent design with white background, gray border, and centered text
+- **Responsive Design**: Footer adapts to different page layouts and screen sizes
+- **Accessibility**: Uses semantic HTML `<footer>` tag for screen readers
+
+#### Dynamic Framework Injection Development
+- **Backend Integration**: Framework content dynamically loaded from `config/rubric.yaml`
+- **LLM Service Methods**: `_get_frameworks_content()` and `_get_framework_application_guidance()`
+- **Prompt Enhancement**: Framework content injected into LLM prompts at runtime
+- **Configuration-Driven**: Framework changes take effect immediately without restarts
+- **Validation**: Framework content validated during prompt generation
+- **Fallback Handling**: Graceful handling if framework content is missing
+
 #### Testing Requirements
 - **Manual Testing**: All debug and admin components require manual testing
 - **Authentication Testing**: Verify proper admin access control

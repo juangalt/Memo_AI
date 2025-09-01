@@ -48,16 +48,17 @@ Relationships:
 ### 1.5 Frontend Interface Structure
 The Vue.js frontend provides a single-page application with router-based navigation and role-based access control:
 
-1. **Home** (`/`) - Beautiful welcome page with application overview
-2. **Login** (`/login`) - Authentication interface with "Back to Home" link
-3. **Text Input** (`/text-input`) – Content submission for evaluation (authenticated)
-4. **Overall Feedback** (`/overall-feedback`) – Evaluation results display (authenticated)
-5. **Detailed Feedback** (`/detailed-feedback`) – Detailed scoring and comments (authenticated)
-6. **Help** (`/help`) – Comprehensive documentation and rubric explanation (authenticated)
-7. **Admin** (`/admin`) – System monitoring, configuration validation, and user management (admin only)
-8. **Debug** (`/debug`) – System diagnostics, API testing, and development tools (admin only)
+1. **Home** (`/`) - Beautiful welcome page with application overview and copyright footer
+2. **Login** (`/login`) - Authentication interface with "Back to Home" link and copyright footer
+3. **Text Input** (`/text-input`) – Content submission for evaluation (authenticated) with copyright footer
+4. **Overall Feedback** (`/overall-feedback`) – Evaluation results display (authenticated) with copyright footer
+5. **Detailed Feedback** (`/detailed-feedback`) – Detailed scoring and comments (authenticated) with copyright footer
+6. **Help** (`/help`) – Comprehensive documentation and rubric explanation (authenticated) with copyright footer
+7. **Admin** (`/admin`) – System monitoring, configuration validation, and user management (admin only) with copyright footer
+8. **Last Evaluation** (`/last-evaluation`) – Raw LLM evaluation data viewer (admin only) with copyright footer
+9. **Debug** (`/debug`) – System diagnostics, API testing, and development tools (admin only) with copyright footer
 
-Vue Router controls navigation and enforces authentication requirements on protected routes. The Layout component provides consistent navigation and is used in individual view components when needed.
+Vue Router controls navigation and enforces authentication requirements on protected routes. The Layout component provides consistent navigation and is used in individual view components when needed. All pages include a consistent copyright footer with "© Copyright FGS" for brand protection and professional appearance.
 
 ### 1.6 Deployment Topology
 - Containers orchestrated by `docker-compose.yml` with Traefik reverse proxy.

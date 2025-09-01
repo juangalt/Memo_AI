@@ -34,6 +34,287 @@
 
 ## 🚀 Recent Changes
 
+### [2025-09-01] Copyright Footer Implementation - COMPLETED
+
+**Type**: Added  
+**Impact**: User Experience & Branding  
+**Priority**: Medium  
+
+**Status**: ✅ **COMPLETED** - Copyright footer with "© Copyright FGS" implemented on all pages
+
+**Implementation Summary**:
+- **Universal Footer**: Added copyright footer to all 9 pages of the application
+- **Consistent Design**: Professional footer with consistent styling across all pages
+- **Responsive Layout**: Footer adapts to different page layouts and screen sizes
+- **Brand Protection**: Clear copyright attribution to FGS on all pages
+
+**Footer Implementation Details**:
+
+**1. Layout Component Footer**:
+- **File**: `vue-frontend/src/components/Layout.vue`
+- **Coverage**: 7 authenticated pages (Text Input, Overall Feedback, Detailed Feedback, Help, Admin, Last Evaluation, Debug)
+- **Styling**: Standard footer with `mt-auto` for proper positioning
+
+**2. Home Page Footer**:
+- **File**: `vue-frontend/src/views/Home.vue`
+- **Coverage**: Landing page with standalone layout
+- **Styling**: Footer with `mt-16` for spacing from content
+
+**3. Login Page Footer**:
+- **File**: `vue-frontend/src/views/Login.vue`
+- **Coverage**: Authentication page with centered layout
+- **Styling**: Absolute positioning at bottom for centered layout
+
+**Footer Design Features**:
+- **Background**: White (`bg-white`) with top border (`border-t border-gray-200`)
+- **Text**: Small, centered, gray text (`text-sm text-gray-500`)
+- **Content**: "© Copyright FGS" consistently displayed
+- **Responsive**: Works on all screen sizes and devices
+- **Semantic HTML**: Uses proper `<footer>` tag for accessibility
+
+**Technical Implementation**:
+- **Files Modified**: 3 Vue.js components with different footer approaches
+- **Build Process**: Frontend rebuilt and deployed successfully
+- **Vue.js SPA**: Footer renders client-side (normal SPA behavior)
+- **Tailwind CSS**: Uses existing design system for consistency
+
+**Coverage Analysis**:
+- **Total Pages**: 9 pages
+- **Pages with Footer**: 9 pages (100% coverage)
+- **Implementation Methods**: 3 different approaches for different page types
+- **Layout-based pages**: 7 pages using Layout component footer
+- **Standalone pages**: 2 pages with custom footer implementation
+
+**User Experience Benefits**:
+- **Professional Appearance**: Clean, consistent footer across all pages
+- **Brand Recognition**: Clear copyright attribution to FGS
+- **Visual Completeness**: Pages feel finished and professional
+- **Legal Compliance**: Proper copyright notice on all pages
+
+**Files Modified**:
+- `vue-frontend/src/components/Layout.vue` - Added footer for authenticated pages
+- `vue-frontend/src/views/Home.vue` - Added footer for home page
+- `vue-frontend/src/views/Login.vue` - Added footer for login page
+- `FOOTER_IMPLEMENTATION_SUMMARY.md` - **NEW** - Detailed implementation documentation
+
+**Result**: ✅ **Copyright footer fully implemented across entire application**
+
+---
+
+### [2025-09-01] Dynamic Framework Injection - COMPLETED
+
+**Type**: Enhanced  
+**Impact**: LLM Evaluation Quality  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Dynamic framework injection from rubric.yaml into LLM prompts
+
+**Implementation Summary**:
+- **Dynamic Content**: Framework definitions and application guidance now dynamically injected into LLM prompts
+- **Configuration-Driven**: Framework content loaded from `config/rubric.yaml` instead of hardcoded values
+- **Real-time Updates**: Framework changes take effect immediately without container restarts
+- **Enhanced Evaluation Quality**: LLM receives comprehensive framework context for better evaluations
+
+**Technical Implementation**:
+
+**Backend Changes**:
+- **File**: `backend/services/llm_service.py`
+- **New Methods**: Added `_get_frameworks_content()` and `_get_framework_application_guidance()`
+- **Dynamic Generation**: Framework content extracted from `rubric.yaml` and formatted for prompts
+- **Prompt Enhancement**: `_generate_prompt()` method updated to use dynamic framework content
+
+**Framework Content Structure**:
+```yaml
+# config/rubric.yaml
+frameworks:
+  framework_definitions:
+    - name: "Pyramid Principle"
+      description: "Structure ideas in a pyramid..."
+    - name: "SCQA Framework"
+      description: "Situation, Complication, Question, Answer..."
+    - name: "Healthcare Investment Framework"
+      description: "Market analysis framework..."
+  application_guidance:
+    - "Apply frameworks based on content type..."
+    - "Consider audience and context..."
+```
+
+**Prompt Enhancement**:
+- **Before**: Hardcoded framework content in prompt templates
+- **After**: Dynamic framework content injected from `rubric.yaml`
+- **Benefits**: Real-time framework updates, configuration-driven content, enhanced evaluation quality
+
+**Configuration Integration**:
+- **Dynamic Loading**: Framework content loaded at runtime from YAML configuration
+- **Hot Reload**: Changes to `rubric.yaml` take effect immediately
+- **Validation**: Framework content validated during prompt generation
+- **Fallback**: Graceful handling if framework content is missing
+
+**Testing and Verification**:
+- **Framework Extraction**: Verified framework definitions extracted correctly
+- **Application Guidance**: Confirmed guidance content properly formatted
+- **Prompt Generation**: Tested complete prompt generation with dynamic content
+- **Health Check**: Updated LLM health check to verify framework injection
+
+**Files Modified**:
+- `backend/services/llm_service.py` - Added dynamic framework injection methods
+- `config/rubric.yaml` - Enhanced with comprehensive framework definitions
+- `config/prompt.yaml` - Updated to use dynamic framework placeholders
+- `devlog/framework_injection_implementation_summary.md` - **NEW** - Implementation documentation
+
+**Benefits Achieved**:
+- **Enhanced Evaluation Quality**: LLM receives comprehensive framework context
+- **Configuration Flexibility**: Framework content easily modifiable via YAML
+- **Real-time Updates**: Changes take effect without service restarts
+- **Maintainability**: Framework content centralized in configuration files
+- **Extensibility**: Easy to add new frameworks or modify existing ones
+
+**Result**: ✅ **Dynamic framework injection fully operational with enhanced evaluation quality**
+
+---
+
+### [2025-09-01] Last Evaluation Tab Implementation - COMPLETED
+
+**Type**: Added  
+**Impact**: Admin Experience  
+**Priority**: Medium  
+
+**Status**: ✅ **COMPLETED** - New "Last Evaluation" tab for admin users with raw LLM data viewer
+
+**Implementation Summary**:
+- **New Admin Tab**: Created dedicated "Last Evaluation" page accessible only to admin users
+- **Raw Data Viewer**: Moved LastEvaluationsViewer component to dedicated page
+- **Enhanced Navigation**: Added navigation link in Layout component
+- **Improved Organization**: Separated debug viewer from main admin interface
+
+**Technical Implementation**:
+
+**New Page Component**:
+- **File**: `vue-frontend/src/views/LastEvaluation.vue` - **NEW**
+- **Content**: Hosts LastEvaluationsViewer component with Layout wrapper
+- **Access Control**: Admin-only access with proper route protection
+- **Navigation**: Integrated with main navigation menu
+
+**Router Configuration**:
+- **File**: `vue-frontend/src/router/index.ts`
+- **New Route**: `/last-evaluation` with admin-only access
+- **Route Protection**: `meta: { requiresAuth: true, requiresAdmin: true }`
+- **Component**: Lazy-loaded LastEvaluation component
+
+**Navigation Integration**:
+- **File**: `vue-frontend/src/components/Layout.vue`
+- **New Link**: "🔍 Last Evaluation" tab in navigation menu
+- **Conditional Display**: Only visible to admin users (`v-if="isAdmin"`)
+- **Active State**: Proper highlighting when on Last Evaluation page
+
+**Component Relocation**:
+- **Moved**: LastEvaluationsViewer from Admin.vue to LastEvaluation.vue
+- **Cleaner Admin**: Admin page now focused on configuration and user management
+- **Dedicated Space**: Raw evaluation data has its own dedicated page
+- **Better Organization**: Logical separation of admin functions
+
+**User Experience**:
+- **Dedicated Interface**: Raw LLM data viewer has its own page
+- **Easy Access**: Quick access through navigation menu
+- **Admin-Only**: Secure access limited to admin users
+- **Clean Organization**: Better separation of admin functions
+
+**Files Modified**:
+- `vue-frontend/src/views/LastEvaluation.vue` - **NEW** - Dedicated last evaluation page
+- `vue-frontend/src/router/index.ts` - Added last-evaluation route
+- `vue-frontend/src/components/Layout.vue` - Added navigation link
+- `vue-frontend/src/views/Admin.vue` - Removed LastEvaluationsViewer component
+
+**Testing and Verification**:
+- **Route Access**: Verified admin-only access control
+- **Navigation**: Confirmed navigation link appears for admin users
+- **Component Display**: Tested LastEvaluationsViewer functionality
+- **Layout Integration**: Verified proper Layout wrapper integration
+
+**Result**: ✅ **Last Evaluation tab fully implemented with dedicated admin interface**
+
+---
+
+### [2025-09-01] Environment Domain Handling Refactor - COMPLETED
+
+**Type**: Refactored  
+**Impact**: Configuration Management & Security  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Comprehensive refactoring of domain handling from hardcoded to environment-driven
+
+**Implementation Summary**:
+- **Dynamic Domain Configuration**: Replaced all hardcoded domain references with environment variable system
+- **Flexible Deployment**: Same codebase deployable to any domain without code changes
+- **Security Enhancement**: Eliminated hardcoded secrets and domain references
+- **Development Flexibility**: Proper localhost fallback for development environments
+
+**Root Cause Analysis**:
+- **Hardcoded Domains**: 50+ instances of `memo.myisland.dev` throughout codebase
+- **Environment Variable Issues**: DOMAIN variable not being properly applied
+- **HTTPS Routing Issues**: API failures due to routing configuration problems
+- **Debug Logging Problems**: Debug logging not working in development environment
+
+**Comprehensive Solution Implemented**:
+
+**1. Dynamic DOMAIN Configuration System**:
+- ✅ Removed all 50+ hardcoded `memo.myisland.dev` instances
+- ✅ Implemented dynamic DOMAIN environment variable with `localhost` fallback
+- ✅ Updated all configuration files to use variable substitution
+- ✅ Created centralized domain management through environment variables
+
+**2. Environment Variable Infrastructure**:
+- ✅ Fixed DOMAIN variable passing to backend container
+- ✅ Updated docker-compose.yml with proper environment variable mapping
+- ✅ Verified container receives DOMAIN variable correctly
+- ✅ Implemented fallback to `localhost` when DOMAIN not set
+
+**3. HTTPS Routing Resolution**:
+- ✅ Identified Traefik routing issue (HTTPS-only backend router)
+- ✅ Updated Traefik configuration for flexible routing
+- ✅ Verified HTTPS requests route correctly through Traefik
+- ✅ Confirmed backend receives and processes requests properly
+
+**4. Debug Logging Implementation**:
+- ✅ Fixed logging configuration for development environment
+- ✅ Enabled DEBUG level logging with proper format
+- ✅ Added dynamic logging level based on APP_ENV
+- ✅ Verified debug messages appear in logs correctly
+
+**Files Updated (Critical Infrastructure)**:
+- ✅ `docker-compose.yml` - Updated DOMAIN variable mapping and Traefik routing
+- ✅ `config/deployment.yaml` - Removed hardcoded domain, uses dynamic configuration
+- ✅ `vue-frontend/src/services/config.ts` - Updated fallback to localhost
+- ✅ `backend/main.py` - Enhanced logging configuration and DOMAIN processing
+- ✅ `backend/services/config_service.py` - Fixed DOMAIN override logic
+- ✅ `mode.sh` - Updated to use dynamic DOMAIN
+- ✅ `test_phase9.sh` - Updated all test URLs to use DOMAIN variable
+
+**Testing Results**:
+- ✅ **Dynamic Domain Override**: `DOMAIN=memo.myisland.dev` → Backend URL: `https://memo.myisland.dev`
+- ✅ **HTTPS Routing**: API calls working correctly through Traefik
+- ✅ **Debug Logging**: DEBUG messages appearing in development environment
+- ✅ **Environment Variables**: DOMAIN and APP_ENV properly passed to containers
+- ✅ **Fallback Behavior**: Defaults to `localhost` when DOMAIN not specified
+- ✅ **Multiple Domains**: Tested with different DOMAIN values (localhost, test.example.com, memo.myisland.dev)
+
+**Security & Configuration Benefits**:
+- **No Hardcoded Secrets**: Eliminated all hardcoded domain references
+- **Environment-Driven**: Configuration controlled by environment variables
+- **Flexible Deployment**: Same codebase deployable to any domain
+- **Development-Friendly**: Proper debug logging for troubleshooting
+- **Production-Ready**: HTTPS routing working correctly
+
+**Technical Implementation Details**:
+- **Backend URL Construction**: `f"https://{os.environ.get('DOMAIN', 'localhost')}"`
+- **Traefik Routing**: `(Host(`${DOMAIN:-localhost}`) || Host(`localhost`))`
+- **Logging Configuration**: Dynamic level based on APP_ENV (DEBUG for development)
+- **Environment Variable Chain**: HOST → docker-compose.yml → container → application
+
+**Result**: ✅ **DOMAIN configuration system fully operational with dynamic domain support**
+
+---
+
 ### [2025-08-31] DOMAIN Configuration System - COMPLETED
 
 **Type**: Fixed/Enhanced

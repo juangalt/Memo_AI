@@ -24,24 +24,47 @@ Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`
 | `MAX_CONCURRENT_USERS` | Target concurrency for performance testing |
 | `SESSION_TIMEOUT` | Override for session expiration in minutes |
 
-## 3.0 YAML Files
+## 2.0 Configuration Files
 
-### 3.1 rubric.yaml
-Defines evaluation rubric and scoring categories.
-Key sections:
-- `rubric`: name, description, total_weight, scoring_scale, criteria with weights and scoring guidance.
-- `scoring_categories`: machine-friendly keys for each criterion.
-- `evaluation_framework`: lists strengths, improvement opportunities, segment evaluation metadata and frameworks.
-Example:
+### 2.1 `config/rubric.yaml`
+Defines the evaluation rubric and scoring criteria.
+
+**Structure**:
 ```yaml
-rubric:
-  name: Healthcare Investment Memo
-  total_weight: 100
-  criteria:
-    thesis_clarity:
-      weight: 20
-      description: "Clarity of investment thesis"
-```
+criteria:
+  - name: "Clarity"
+    weight: 0.3
+    description: "How clearly the memo communicates its message"
+    scoring_guide:
+      1: "Unclear and confusing"
+      2: "Somewhat clear but needs improvement"
+      3: "Generally clear with minor issues"
+      4: "Clear and well-communicated"
+      5: "Exceptionally clear and compelling"
+
+frameworks:
+  framework_definitions:
+    - name: "Pyramid Principle"
+      description: "Structure ideas in a pyramid with the main point at the top, supported by logical arguments below"
+    - name: "SCQA Framework"
+      description: "Situation, Complication, Question, Answer framework for structured communication"
+    - name: "Healthcare Investment Framework"
+      description: "Market analysis framework for healthcare investment memos"
+  application_guidance:
+    - "Apply frameworks based on the content type and audience"
+    - "Consider the context and purpose of the memo"
+    - "Use frameworks to structure arguments logically"
+    - "Ensure framework application enhances clarity and impact"
+
+evaluation_framework:
+  strengths:
+    - "Identify specific strengths in the memo"
+    - "Highlight effective use of frameworks"
+    - "Recognize clear communication and logical structure"
+  opportunities:
+    - "Provide actionable improvement suggestions"
+    - "Focus on framework application opportunities"
+    - "Suggest specific enhancements for clarity and impact"
 
 ### 3.2 prompt.yaml
 Holds prompt templates and instruction lists used to query the LLM.

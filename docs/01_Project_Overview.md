@@ -76,11 +76,12 @@ The stack was selected to align with project principles of simplicity, transpare
 2. **Authentication**: Users authenticate through secure login with role-based access control.
 3. **Text Submission**: Users submit text through the authenticated Vue.js interface.
 4. **API Communication**: Frontend communicates with backend APIs using session tokens.
-5. **Evaluation Processing**: Backend processes evaluations and returns structured feedback.
+5. **Evaluation Processing**: Backend processes evaluations with dynamic framework injection and returns structured feedback.
 6. **Help Documentation**: Users can access comprehensive help and rubric documentation.
 7. **Admin Functions**: Administrators manage system monitoring, configuration validation, and user accounts.
-8. **System Monitoring**: Health endpoints provide system monitoring capabilities.
-9. **Debug Tools**: Administrators can access system diagnostics and development tools.
+8. **Last Evaluation Viewer**: Administrators can view raw LLM evaluation data for debugging and analysis.
+9. **System Monitoring**: Health endpoints provide system monitoring capabilities.
+10. **Debug Tools**: Administrators can access system diagnostics and development tools.
 
 ---
 
