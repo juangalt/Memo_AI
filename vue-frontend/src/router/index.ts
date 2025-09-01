@@ -37,6 +37,12 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
+    path: '/last-evaluation',
+    name: 'LastEvaluation',
+    component: () => import('@/views/LastEvaluation.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
     path: '/debug',
     name: 'Debug',
     component: () => import('@/views/Debug.vue'),

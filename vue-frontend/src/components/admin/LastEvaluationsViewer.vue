@@ -100,7 +100,7 @@
             <div class="flex justify-between items-center mb-2">
               <h5 class="font-semibold text-gray-900">Raw Prompt Sent to LLM</h5>
               <button
-                @click="copyToClipboard(rawData.evaluation.raw_prompt)"
+                @click="copyToClipboard(rawData.raw_prompt)"
                 class="text-blue-500 hover:text-blue-700 text-sm"
                 title="Copy to clipboard"
               >
@@ -108,7 +108,7 @@
               </button>
             </div>
             <CollapsibleText
-              :text="rawData.evaluation.raw_prompt"
+              :text="rawData.raw_prompt"
               :max-height="300"
               class="bg-gray-50 p-3 rounded text-sm font-mono"
             />
@@ -119,7 +119,7 @@
             <div class="flex justify-between items-center mb-2">
               <h5 class="font-semibold text-gray-900">Raw Response from LLM</h5>
               <button
-                @click="copyToClipboard(rawData.evaluation.raw_response)"
+                @click="copyToClipboard(rawData.raw_response)"
                 class="text-blue-500 hover:text-blue-700 text-sm"
                 title="Copy to clipboard"
               >
@@ -127,7 +127,7 @@
               </button>
             </div>
             <CollapsibleText
-              :text="rawData.evaluation.raw_response"
+              :text="rawData.raw_response"
               :max-height="300"
               class="bg-gray-50 p-3 rounded text-sm font-mono"
             />
@@ -168,18 +168,16 @@ interface Evaluation {
 }
 
 interface RawData {
-  evaluation: {
-    id: number
-    submission_id: number
-    overall_score: number
-    processing_time: number
-    created_at: string
-    llm_provider: string
-    llm_model: string
-    debug_enabled: boolean
-    raw_prompt: string
-    raw_response: string
-  }
+  id: number
+  submission_id: number
+  overall_score: number
+  processing_time: number
+  created_at: string
+  llm_provider: string
+  llm_model: string
+  debug_enabled: boolean
+  raw_prompt: string
+  raw_response: string
   submission: {
     id: number
     content: string
