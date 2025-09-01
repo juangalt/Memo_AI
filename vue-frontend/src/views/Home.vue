@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
     <!-- Header -->
     <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -15,7 +15,7 @@
     </header>
 
     <!-- Hero Section -->
-    <main class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <main class="flex-1 max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-16">
         <div class="mb-8">
           <div class="text-8xl mb-6">🚀</div>
@@ -34,7 +34,7 @@
             :to="isAuthenticated ? '/text-input' : '/login'"
             class="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
           >
-            🔑 Get Started
+            🔑 Log In
           </router-link>
           <button
             @click="scrollToFeatures"
@@ -72,11 +72,6 @@
         </div>
       </div>
 
-      <!-- Phase Tracking Section -->
-      <div class="mb-16">
-        <PhaseTracking />
-      </div>
-
       <!-- How It Works Section -->
       <div class="bg-white rounded-2xl p-8 shadow-lg mb-16">
         <h3 class="text-3xl font-bold text-gray-900 text-center mb-8">How It Works</h3>
@@ -105,19 +100,10 @@
         </div>
       </div>
 
-      <!-- Final CTA -->
-      <div class="text-center">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white">
-          <h3 class="text-3xl font-bold mb-4">Ready to Improve Your Writing?</h3>
-          <p class="text-xl mb-6 opacity-90">
-            Join professionals who are already using Memo AI Coach to enhance their communication skills.
-          </p>
-        </div>
-      </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-16">
+    <footer class="bg-white border-t border-gray-200 mt-auto">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div class="text-center">
           <p class="text-sm text-gray-500">
@@ -132,7 +118,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import PhaseTracking from '@/components/PhaseTracking.vue'
 
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
