@@ -103,64 +103,6 @@ class LLMService:
             logger.error(f"Failed to generate rubric content: {e}")
             return "Standard evaluation rubric"
     
-    def _get_frameworks_content(self) -> str:
-        """Generate frameworks content for prompts from rubric.yaml"""
-        try:
-            frameworks = self.rubric_config.get('frameworks', {})
-            framework_definitions = frameworks.get('framework_definitions', {})
-            application_guidance = frameworks.get('application_guidance', {})
-            
-            if not framework_definitions:
-                return "EVALUATION FRAMEWORKS:\nUse standard business communication frameworks for evaluation."
-            
-            frameworks_content = "EVALUATION FRAMEWORKS:\nUse these frameworks to guide your evaluation:\n\n"
-            
-            for framework_key, framework_data in framework_definitions.items():
-                name = framework_data.get('name', framework_key.upper())
-                description = framework_data.get('description', '')
-                application = framework_data.get('application', '')
-                
-                frameworks_content += f"{name}\n"
-                frameworks_content += f"Description: {description}\n"
-                if application:
-                    frameworks_content += f"Application: {application}\n"
-                frameworks_content += "\n"
-            
-            return frameworks_content
-            
-        except Exception as e:
-            logger.error(f"Failed to generate frameworks content: {e}")
-            return "EVALUATION FRAMEWORKS:\nUse standard business communication frameworks for evaluation."
-    
-    def _get_framework_application_guidance(self) -> str:
-        """Generate framework application guidance from rubric.yaml"""
-        try:
-            frameworks = self.rubric_config.get('frameworks', {})
-            application_guidance = frameworks.get('application_guidance', {})
-            
-            guidance_parts = []
-            
-            if application_guidance.get('overall_evaluation'):
-                guidance_parts.append(application_guidance['overall_evaluation'])
-            
-            if application_guidance.get('scoring_evaluation'):
-                guidance_parts.append(application_guidance['scoring_evaluation'])
-            
-            if application_guidance.get('segment_evaluation'):
-                guidance_parts.append(application_guidance['segment_evaluation'])
-            
-            if application_guidance.get('domain_focus'):
-                guidance_parts.append(f"Focus on: {application_guidance['domain_focus']}")
-            
-            if guidance_parts:
-                return " ".join(guidance_parts)
-            else:
-                return "Apply the provided frameworks to ensure comprehensive evaluation."
-                
-        except Exception as e:
-            logger.error(f"Failed to generate framework application guidance: {e}")
-            return "Apply the provided frameworks to ensure comprehensive evaluation."
-    
     def _generate_prompt(self, text_content: str) -> Tuple[str, str]:
         """
         Generate evaluation prompt from templates
@@ -184,16 +126,12 @@ class LLMService:
             # Generate rubric content
             rubric_content = self._get_rubric_content()
             
-            # Generate frameworks content dynamically
-            frameworks_section = self._get_frameworks_content()
-            framework_application_guidance = self._get_framework_application_guidance()
-            
             # Fill template variables
             user_message = user_template.format(
                 text_content=text_content,
                 rubric_content=rubric_content,
-                frameworks_section=frameworks_section,
-                framework_application_guidance=framework_application_guidance
+                frameworks_section="EVALUATION FRAMEWORKS:\nUse these frameworks to guide your evaluation:\n\n- Business Communication Framework\n- Healthcare Investment Analysis\n- Strategic Planning Framework",
+                framework_application_guidance="Apply the provided frameworks to ensure comprehensive evaluation."
             )
             
             return system_message, user_message
@@ -280,57 +218,106 @@ class LLMService:
             # Simple scoring logic based on text characteristics
             if text_length < 100:
                 overall_score = 2.0
-                strengths = ["Brief and concise"]
-                opportunities = ["Needs more detail and development"]
             elif text_length < 500:
                 overall_score = 3.0
-                strengths = ["Adequate length and structure"]
-                opportunities = ["Could benefit from more specific examples"]
+            elif text_length < 1000:
+                overall_score = 3.5
             else:
                 overall_score = 4.0
-                strengths = ["Comprehensive coverage", "Good length for detailed analysis"]
-                opportunities = ["Consider adding more quantitative data"]
+            
+            # Adjust score based on content quality indicators
+            if "executive summary" in text_content.lower():
+                overall_score += 0.5
+            if "roi" in text_content.lower() or "return on investment" in text_content.lower():
+                overall_score += 0.3
+            if "implementation" in text_content.lower():
+                overall_score += 0.2
+            
+            # Cap at 5.0
+            overall_score = min(5.0, overall_score)
             
             # Generate mock rubric scores
             rubric_scores = {
-                "structure_and_logic": {"score": 3, "justification": "Basic structure present"},
-                "arguments_and_evidence": {"score": 3, "justification": "Some evidence provided"},
-                "clarity_style_financial_metrics": {"score": 3, "justification": "Clear communication"},
-                "relevance_strategic_alignment": {"score": 3, "justification": "Relevant content"},
-                "clear_opportunity_ask": {"score": 3, "justification": "Opportunity identified"},
-                "risk_mitigation": {"score": 3, "justification": "Basic risk consideration"},
-                "feasibility_implementation": {"score": 3, "justification": "Feasible approach"}
+                "structure_and_logic": {"score": int(overall_score), "justification": "Mock evaluation based on text structure"},
+                "arguments_and_evidence": {"score": int(overall_score), "justification": "Mock evaluation based on content quality"},
+                "clarity_style_financial_metrics": {"score": int(overall_score), "justification": "Mock evaluation based on writing style"},
+                "relevance_strategic_alignment": {"score": int(overall_score), "justification": "Mock evaluation based on strategic focus"},
+                "clear_opportunity_ask": {"score": int(overall_score), "justification": "Mock evaluation based on opportunity clarity"},
+                "risk_mitigation": {"score": int(overall_score), "justification": "Mock evaluation based on risk awareness"},
+                "feasibility_implementation": {"score": int(overall_score), "justification": "Mock evaluation based on implementation planning"}
             }
             
-            # Generate mock segment feedback
-            segment_feedback = [
-                {
-                    "segment": text_content[:100] + "..." if len(text_content) > 100 else text_content,
-                    "comment": "This segment provides a good introduction to the topic",
-                    "questions": ["How could this be made more compelling?", "What additional context would help?"],
-                    "suggestions": ["Add specific examples", "Include quantitative data"]
-                }
+            # Generate mock strengths and opportunities
+            strengths = [
+                "The text demonstrates clear organization and logical flow",
+                "Content is relevant and well-structured",
+                "Good use of business terminology and concepts"
             ]
             
+            opportunities = [
+                "Consider adding more specific examples and data",
+                "Strengthen the conclusion with actionable next steps",
+                "Enhance risk mitigation strategies"
+            ]
+            
+            # Generate mock segment feedback
+            segments = text_content.split('\n\n')
+            segment_feedback = []
+            
+            for i, segment in enumerate(segments[:3]):  # Limit to first 3 segments
+                if segment.strip():
+                    segment_feedback.append({
+                        "segment": segment.strip()[:100] + "..." if len(segment) > 100 else segment.strip(),
+                        "comment": f"This segment is well-written and contributes to the overall message.",
+                        "questions": [
+                            "How could this segment be expanded with more detail?",
+                            "What additional evidence would strengthen this point?"
+                        ],
+                        "suggestions": [
+                            "Consider adding specific examples",
+                            "Include more quantitative data if available"
+                        ]
+                    })
+            
+            # Generate mock raw prompt and response
+            system_message, user_message = self._generate_prompt(text_content)
+            raw_prompt = f"System: {system_message}\n\nUser: {user_message}"
+            raw_response = f"""Mock LLM Response for text evaluation:
+
+Overall Score: {overall_score}
+
+Strengths:
+{chr(10).join(strengths)}
+
+Opportunities:
+{chr(10).join(opportunities)}
+
+Rubric Scores:
+{chr(10).join([f"{k}: {v['score']} - {v['justification']}" for k, v in rubric_scores.items()])}
+
+Segment Feedback:
+{chr(10).join([f"Segment {i+1}: {s['comment']}" for i, s in enumerate(segment_feedback)])}"""
+
             evaluation_data = {
-                "overall_score": overall_score,
+                "overall_score": round(overall_score, 1),
                 "strengths": strengths,
                 "opportunities": opportunities,
                 "rubric_scores": rubric_scores,
                 "segment_feedback": segment_feedback,
-                "processing_time": processing_time,
-                "llm_provider": "mock",
-                "llm_model": "mock-claude-3.5-sonnet",
-                "debug_enabled": True,
-                "raw_prompt": "Mock prompt for testing",
-                "raw_response": "Mock response for testing"
+                "processing_time": round(processing_time, 2),
+                "created_at": datetime.utcnow().isoformat(),
+                "model_used": "mock-claude-3-haiku-20240307",
+                "raw_prompt": raw_prompt,
+                "raw_response": raw_response
             }
+            
+            logger.info(f"Mock text evaluation completed successfully in {processing_time:.2f} seconds")
             
             return True, evaluation_data, None
             
         except Exception as e:
             logger.error(f"Mock evaluation failed: {e}")
-            return False, None, str(e)
+            return False, None, f"Mock evaluation error: {str(e)}"
     
     def evaluate_text(self, text_content: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
         """
@@ -345,22 +332,38 @@ class LLMService:
         start_time = time.time()
         
         try:
-            # Check if we have a client (API key available)
-            if not self.client:
+            # Validate input
+            if not text_content or len(text_content.strip()) == 0:
+                return False, None, "Text content is required"
+            
+            max_length = self.llm_config.get('request_settings', {}).get('max_text_length', 10000)
+            if len(text_content) > max_length:
+                return False, None, f"Text exceeds maximum length of {max_length} characters"
+            
+            # Check if we're in mock mode (either no client or debug settings enabled)
+            debug_mode = self.llm_config.get('debug_settings', {}).get('debug_mode', False)
+            mock_responses = self.llm_config.get('debug_settings', {}).get('mock_responses', False)
+            
+            if self.client is None or (debug_mode and mock_responses):
                 logger.info("Using mock evaluation mode")
                 return self._mock_evaluation(text_content, start_time)
             
             # Generate prompt
             system_message, user_message = self._generate_prompt(text_content)
-            
-            # Store raw prompt for debugging
             raw_prompt = f"System: {system_message}\n\nUser: {user_message}"
             
-            # Call Claude API
+            # Get model configuration
+            model = self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307')
+            max_tokens = self.llm_config.get('api_configuration', {}).get('max_tokens', 4000)
+            temperature = self.llm_config.get('api_configuration', {}).get('temperature', 0.7)
+            
+            # Make API call
+            logger.info(f"Making Claude API call for text evaluation (length: {len(text_content)})")
+            
             response = self.client.messages.create(
-                model=self.llm_config.get('model', 'claude-3-5-sonnet-20241022'),
-                max_tokens=self.llm_config.get('max_tokens', 4000),
-                temperature=self.llm_config.get('temperature', 0.1),
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
                 system=system_message,
                 messages=[
                     {
@@ -371,123 +374,128 @@ class LLMService:
             )
             
             # Extract response content
-            response_content = response.content[0].text if response.content else ""
+            response_text = response.content[0].text if response.content else ""
+            raw_response = response_text
             
-            # Store raw response for debugging
-            raw_response = response_content
+            if not response_text:
+                return False, None, "Empty response from Claude API"
             
             # Parse response
-            evaluation_data = self._parse_response(response_content)
+            evaluation_data = self._parse_response(response_text)
+            
+            # Add raw data to evaluation_data
+            evaluation_data['raw_prompt'] = raw_prompt
+            evaluation_data['raw_response'] = raw_response
             
             # Add metadata
-            evaluation_data.update({
-                "processing_time": time.time() - start_time,
-                "llm_provider": "anthropic",
-                "llm_model": self.llm_config.get('model', 'claude-3-5-sonnet-20241022'),
-                "debug_enabled": True,
-                "raw_prompt": raw_prompt,
-                "raw_response": raw_response
-            })
+            processing_time = time.time() - start_time
+            evaluation_data['processing_time'] = round(processing_time, 2)
+            evaluation_data['created_at'] = datetime.utcnow().isoformat()
+            evaluation_data['model_used'] = model
+            
+            logger.info(f"Text evaluation completed successfully in {processing_time:.2f} seconds")
             
             return True, evaluation_data, None
             
+        except anthropic.RateLimitError as e:
+            logger.error(f"Rate limit exceeded: {e}")
+            return False, None, "Rate limit exceeded. Please try again later."
+        
+        except anthropic.APIError as e:
+            logger.error(f"Claude API error: {e}")
+            return False, None, f"API error: {str(e)}"
+        
+        except anthropic.APITimeoutError as e:
+            logger.error(f"Claude API timeout: {e}")
+            return False, None, "Request timed out. Please try again."
+        
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error: {e}")
+            return False, None, "Authentication failed. Please check API key."
+        
+        except ValueError as e:
+            logger.error(f"Validation error: {e}")
+            return False, None, f"Validation error: {str(e)}"
+        
         except Exception as e:
-            logger.error(f"Text evaluation failed: {e}")
-            return False, None, str(e)
+            logger.error(f"Unexpected error during text evaluation: {e}")
+            return False, None, f"Unexpected error: {str(e)}"
     
     def health_check(self) -> Dict[str, Any]:
         """
-        Perform health check for the LLM service
+        Check LLM service health
         
         Returns:
-            Dictionary with health status information
+            Health status information
         """
         try:
-            # Check if configurations are loaded
-            if not self.llm_config or not self.prompt_config or not self.rubric_config:
-                return {
-                    "status": "unhealthy",
-                    "provider": "unknown",
-                    "model": "unknown",
-                    "api_accessible": False,
-                    "config_loaded": False,
-                    "debug_mode": True,
-                    "mock_mode": True,
-                    "error": "Configurations not loaded"
-                }
+            # Check if we're in mock mode (either no client or debug settings enabled)
+            debug_mode = self.llm_config.get('debug_settings', {}).get('debug_mode', False)
+            mock_responses = self.llm_config.get('debug_settings', {}).get('mock_responses', False)
             
-            # Check if we can generate a basic prompt (this tests framework injection)
-            try:
-                test_content = "Test content for health check"
-                rubric_content = self._get_rubric_content()
-                frameworks_content = self._get_frameworks_content()
-                guidance = self._get_framework_application_guidance()
-                
-                if not rubric_content or not frameworks_content or not guidance:
-                    return {
-                        "status": "unhealthy",
-                        "provider": "unknown",
-                        "model": "unknown",
-                        "api_accessible": False,
-                        "config_loaded": True,
-                        "debug_mode": True,
-                        "mock_mode": True,
-                        "error": "Content generation failed"
-                    }
-                
-                # Determine if we're in mock mode or real API mode
-                is_mock_mode = self.client is None
-                provider = "mock" if is_mock_mode else "anthropic"
-                model = "mock-claude-3.5-sonnet" if is_mock_mode else self.llm_config.get('model', 'claude-3-5-sonnet-20241022')
-                
+            if self.client is None or (debug_mode and mock_responses):
                 return {
                     "status": "healthy",
-                    "provider": provider,
-                    "model": model,
-                    "api_accessible": not is_mock_mode,
-                    "config_loaded": True,
-                    "debug_mode": True,
-                    "mock_mode": is_mock_mode,
-                    "error": None
-                }
-                
-            except Exception as e:
-                return {
-                    "status": "unhealthy",
-                    "provider": "unknown",
-                    "model": "unknown",
+                    "provider": self.llm_config.get('provider', {}).get('name', 'claude'),
+                    "model": self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307'),
                     "api_accessible": False,
                     "config_loaded": True,
-                    "debug_mode": True,
                     "mock_mode": True,
-                    "error": f"Content generation failed: {str(e)}"
+                    "debug_mode": debug_mode,
+                    "mock_responses": mock_responses,
+                    "last_check": datetime.utcnow().isoformat()
                 }
-                
+            
+            # Test API connection with a simple request
+            test_response = self.client.messages.create(
+                model=self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307'),
+                max_tokens=10,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Hello"
+                    }
+                ]
+            )
+            
+            return {
+                "status": "healthy",
+                "provider": self.llm_config.get('provider', {}).get('name', 'claude'),
+                "model": self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307'),
+                "api_accessible": True,
+                "config_loaded": True,
+                "mock_mode": False,
+                "debug_mode": debug_mode,
+                "mock_responses": mock_responses,
+                "last_check": datetime.utcnow().isoformat()
+            }
+            
         except Exception as e:
+            logger.error(f"LLM health check failed: {e}")
             return {
                 "status": "unhealthy",
-                "provider": "unknown",
-                "model": "unknown",
+                "provider": self.llm_config.get('provider', {}).get('name', 'claude'),
+                "model": self.llm_config.get('provider', {}).get('model', 'claude-3-haiku-20240307'),
                 "api_accessible": False,
-                "config_loaded": False,
-                "debug_mode": True,
-                "mock_mode": True,
-                "error": f"Health check failed: {str(e)}"
+                "config_loaded": True,
+                "mock_mode": False,
+                "error": str(e),
+                "last_check": datetime.utcnow().isoformat()
             }
 
 # Global LLM service instance
-_llm_service_instance = None
+llm_service = None
 
 def get_llm_service() -> LLMService:
-    """Get or create the global LLM service instance"""
-    global _llm_service_instance
-    if _llm_service_instance is None:
-        _llm_service_instance = LLMService()
-    return _llm_service_instance
+    """Get the global LLM service instance"""
+    global llm_service
+    if llm_service is None:
+        llm_service = LLMService()
+    return llm_service
 
 def evaluate_text_with_llm(text_content: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
     """
-    Evaluate text using the global LLM service
+    Evaluate text using LLM service
     
     Args:
         text_content: Text to evaluate
@@ -495,5 +503,5 @@ def evaluate_text_with_llm(text_content: str) -> Tuple[bool, Optional[Dict[str, 
     Returns:
         Tuple of (success, evaluation_data, error_message)
     """
-    llm_service = get_llm_service()
-    return llm_service.evaluate_text(text_content)
+    service = get_llm_service()
+    return service.evaluate_text(text_content)
