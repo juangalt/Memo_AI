@@ -3,7 +3,7 @@
 An instructional text evaluation system that provides AI-generated feedback for business memos
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com/)
 
@@ -33,14 +33,14 @@ Memo AI Coach is an **instructional text evaluation system** designed to help wr
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **Backend** | Python, FastAPI | REST API, LLM integration, business logic |
-| **Frontend** | Python, Streamlit | User interface, tabbed navigation |
+| **Frontend** | JavaScript, Vue.js 3, TypeScript | Modern reactive user interface |
 | **Database** | SQLite with WAL mode | Data persistence, supports 100+ concurrent users |
 | **LLM** | Anthropic Claude API | AI-powered text evaluation and feedback |
 | **Deployment** | Docker, Docker Compose, Traefik | Containerization, orchestration, reverse proxy |
 | **Configuration** | YAML files | Runtime behavior control |
 
 ### Component Overview
-- **Frontend (`frontend/app.py`)**: Streamlit application with tabbed interface
+- **Frontend (`vue-frontend/`)**: Vue.js 3 application with TypeScript and reactive interface
 - **Backend (`backend/main.py`)**: FastAPI service exposing REST endpoints
 - **Database (`backend/models/database.py`)**: SQLite with WAL mode for high concurrency
 - **LLM Service (`backend/services/llm_service.py`)**: Claude API integration
@@ -48,7 +48,7 @@ Memo AI Coach is an **instructional text evaluation system** designed to help wr
 - **Authentication Service**: Admin login and session validation
 
 ### Data Flow
-1. **User Submission** → Text submitted via Streamlit UI
+1. **User Submission** → Text submitted via Vue.js reactive interface
 2. **API Request** → Frontend calls backend `/api/v1/evaluations/submit`
 3. **Configuration Load** → Backend loads YAML configs (rubric, prompt, LLM, auth)
 4. **LLM Processing** → Sends prompt to Claude API with <15s timeout
@@ -61,7 +61,7 @@ Memo AI Coach is an **instructional text evaluation system** designed to help wr
 Client → Traefik (SSL/TLS) → Backend (FastAPI) → SQLite
                               ↘
                                LLM Service (Claude API)
-Frontend (Streamlit) ← Traefik
+Frontend (Vue.js) ← Traefik
 ```
 
 ## 🚀 Quick Start
@@ -127,7 +127,7 @@ module.exports = {
 3. **Required environment variables**:
    ```bash
    # Essential
-   DOMAIN=your-domain.com
+   DOMAIN=localhost  # Your domain name (defaults to localhost for development)
    LLM_API_KEY=your-claude-api-key  # or 'unset' for mock mode
 
    # Optional (for initial admin user setup)
@@ -202,11 +202,15 @@ memo_AI/
 │   ├── Dockerfile          # Backend container definition
 │   ├── requirements.txt    # Python dependencies
 │   └── validate_config.py  # Configuration validation
-├── frontend/                # Streamlit frontend application
-│   ├── app.py              # Streamlit application entry point
-│   ├── components/         # UI components and utilities
+├── vue-frontend/          # Vue.js frontend application
+│   ├── src/                # Source code
+│   │   ├── components/     # Vue components
+│   │   ├── views/          # Page views
+│   │   ├── services/       # API services
+│   │   └── stores/         # Pinia state management
+│   ├── public/             # Static assets
 │   ├── Dockerfile          # Frontend container definition
-│   └── requirements.txt    # Python dependencies
+│   └── package.json        # Node.js dependencies
 ├── config/                  # YAML configuration files
 │   ├── rubric.yaml         # Evaluation rubric and criteria
 │   ├── prompt.yaml         # LLM prompt templates
@@ -321,8 +325,7 @@ memo_AI/
 2. **Required production settings**:
    ```bash
    APP_ENV=production
-   DEBUG_MODE=false
-   DOMAIN=your-production-domain.com
+   DOMAIN=your-production-domain.com  # Replace with your actual production domain
    LLM_API_KEY=your-actual-claude-api-key
    # Optional: ADMIN_PASSWORD=your-secure-admin-password  # Only for initial admin setup
    ```
@@ -613,7 +616,7 @@ This project is developed for educational and demonstration purposes. Please ref
 
 ### Key Achievements
 - **FastAPI backend** with comprehensive REST API
-- **Streamlit frontend** with tabbed user interface
+- **Vue.js frontend** with modern reactive interface
 - **SQLite database** optimized for 100+ concurrent users
 - **Claude LLM integration** with <15 second response times
 - **YAML-based configuration** for complete runtime control

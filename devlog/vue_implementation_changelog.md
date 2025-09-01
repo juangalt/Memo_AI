@@ -34,6 +34,86 @@
 
 ## 🚀 Recent Changes
 
+### [2025-08-31] DOMAIN Configuration System - COMPLETED
+
+**Type**: Fixed/Enhanced
+**Impact**: Configuration Management & Security
+**Priority**: Critical
+
+**Status**: ✅ **COMPLETED** - Dynamic DOMAIN configuration system fully implemented and tested
+
+**Problem Identified**:
+- Hardcoded `memo.myisland.dev` instances throughout codebase
+- DOMAIN environment variable not being properly applied
+- HTTPS routing issues causing API failures
+- Debug logging not working in development environment
+
+**Root Cause Analysis**:
+- **Hardcoded Domains**: 50+ instances of `memo.myisland.dev` in code, config files, and tests
+- **Environment Variable Issues**: DOMAIN variable not being passed correctly to backend container
+- **Routing Problems**: HTTP requests not routing through Traefik (only HTTPS supported)
+- **Logging Configuration**: Debug logging not enabled for development environment
+
+**Comprehensive Solution Implemented**:
+
+**1. Dynamic DOMAIN Configuration System**:
+- ✅ Removed all 50+ hardcoded `memo.myisland.dev` instances
+- ✅ Implemented dynamic DOMAIN environment variable with `localhost` fallback
+- ✅ Updated all configuration files to use variable substitution
+- ✅ Created centralized domain management through environment variables
+
+**2. Environment Variable Infrastructure**:
+- ✅ Fixed DOMAIN variable passing to backend container
+- ✅ Updated docker-compose.yml with proper environment variable mapping
+- ✅ Verified container receives DOMAIN variable correctly
+- ✅ Implemented fallback to `localhost` when DOMAIN not set
+
+**3. HTTPS Routing Resolution**:
+- ✅ Identified Traefik routing issue (HTTPS-only backend router)
+- ✅ Updated Traefik configuration for flexible routing
+- ✅ Verified HTTPS requests route correctly through Traefik
+- ✅ Confirmed backend receives and processes requests properly
+
+**4. Debug Logging Implementation**:
+- ✅ Fixed logging configuration for development environment
+- ✅ Enabled DEBUG level logging with proper format
+- ✅ Added dynamic logging level based on APP_ENV
+- ✅ Verified debug messages appear in logs correctly
+
+**Files Updated (Critical Infrastructure)**:
+- ✅ `docker-compose.yml` - Updated DOMAIN variable mapping and Traefik routing
+- ✅ `config/deployment.yaml` - Removed hardcoded domain, uses dynamic configuration
+- ✅ `vue-frontend/src/services/config.ts` - Updated fallback to localhost
+- ✅ `backend/main.py` - Enhanced logging configuration and DOMAIN processing
+- ✅ `backend/services/config_service.py` - Fixed DOMAIN override logic
+- ✅ `mode.sh` - Updated to use dynamic DOMAIN
+- ✅ `test_phase9.sh` - Updated all test URLs to use DOMAIN variable
+
+**Testing Results**:
+- ✅ **Dynamic Domain Override**: `DOMAIN=memo.myisland.dev` → Backend URL: `https://memo.myisland.dev`
+- ✅ **HTTPS Routing**: API calls working correctly through Traefik
+- ✅ **Debug Logging**: DEBUG messages appearing in development environment
+- ✅ **Environment Variables**: DOMAIN and APP_ENV properly passed to containers
+- ✅ **Fallback Behavior**: Defaults to `localhost` when DOMAIN not specified
+- ✅ **Multiple Domains**: Tested with different DOMAIN values (localhost, test.example.com, memo.myisland.dev)
+
+**Security & Configuration Benefits**:
+- **No Hardcoded Secrets**: Eliminated all hardcoded domain references
+- **Environment-Driven**: Configuration controlled by environment variables
+- **Flexible Deployment**: Same codebase deployable to any domain
+- **Development-Friendly**: Proper debug logging for troubleshooting
+- **Production-Ready**: HTTPS routing working correctly
+
+**Technical Implementation Details**:
+- **Backend URL Construction**: `f"https://{os.environ.get('DOMAIN', 'localhost')}"`
+- **Traefik Routing**: `(Host(`${DOMAIN:-localhost}`) || Host(`localhost`))`
+- **Logging Configuration**: Dynamic level based on APP_ENV (DEBUG for development)
+- **Environment Variable Chain**: HOST → docker-compose.yml → container → application
+
+**Result**: ✅ **DOMAIN configuration system fully operational with dynamic domain support**
+
+---
+
 ### [2025-08-31] Environment Variables to YAML Configuration Refactoring - COMPLETED
 
 **Type**: Refactored  
