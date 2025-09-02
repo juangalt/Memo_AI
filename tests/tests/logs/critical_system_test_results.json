@@ -1,0 +1,191 @@
+{
+  "timestamp": "2025-09-02T00:09:18.517674",
+  "environment": "local_containers",
+  "tests": [
+    {
+      "test": "Container Status",
+      "status": "PASS",
+      "message": "All containers running: 3 containers",
+      "timestamp": "2025-09-02T00:09:18.627671",
+      "details": {
+        "running_containers": 3
+      }
+    },
+    {
+      "test": "API Health: Main health check",
+      "status": "WARN",
+      "message": "Endpoint /health returned status: unknown",
+      "timestamp": "2025-09-02T00:09:18.807569",
+      "details": {
+        "endpoint": "/health",
+        "status": "unknown"
+      }
+    },
+    {
+      "test": "API Health: Database health",
+      "status": "WARN",
+      "message": "Endpoint /health/database returned status: unknown",
+      "timestamp": "2025-09-02T00:09:18.961335",
+      "details": {
+        "endpoint": "/health/database",
+        "status": "unknown"
+      }
+    },
+    {
+      "test": "API Health: Configuration health",
+      "status": "WARN",
+      "message": "Endpoint /health/config returned status: unknown",
+      "timestamp": "2025-09-02T00:09:19.113007",
+      "details": {
+        "endpoint": "/health/config",
+        "status": "unknown"
+      }
+    },
+    {
+      "test": "API Health: LLM health",
+      "status": "WARN",
+      "message": "Endpoint /health/llm returned status: unknown",
+      "timestamp": "2025-09-02T00:09:19.273731",
+      "details": {
+        "endpoint": "/health/llm",
+        "status": "unknown"
+      }
+    },
+    {
+      "test": "API Health: Authentication health",
+      "status": "WARN",
+      "message": "Endpoint /health/auth returned status: unknown",
+      "timestamp": "2025-09-02T00:09:19.408033",
+      "details": {
+        "endpoint": "/health/auth",
+        "status": "unknown"
+      }
+    },
+    {
+      "test": "Session Creation",
+      "status": "PASS",
+      "message": "Session created successfully: KVxuLzxXRj...",
+      "timestamp": "2025-09-02T00:09:19.863498",
+      "details": {
+        "session_token": "KVxuLzxXRj..."
+      }
+    },
+    {
+      "test": "Session Validation",
+      "status": "PASS",
+      "message": "Session can be validated successfully",
+      "timestamp": "2025-09-02T00:09:20.017780",
+      "details": {
+        "session_token": "KVxuLzxXRj..."
+      }
+    },
+    {
+      "test": "Text Evaluation Submission",
+      "status": "PASS",
+      "message": "Evaluation completed successfully in 9.69s",
+      "timestamp": "2025-09-02T00:09:30.167653",
+      "details": {
+        "processing_time": 9.687264204025269,
+        "overall_score": 1.8,
+        "model_used": null
+      }
+    },
+    {
+      "test": "Evaluation Performance",
+      "status": "PASS",
+      "message": "Processing time 9.69s meets benchmark (< 15s)",
+      "timestamp": "2025-09-02T00:09:30.167701",
+      "details": {
+        "processing_time": 9.687264204025269
+      }
+    },
+    {
+      "test": "Database Tables",
+      "status": "FAIL",
+      "message": "Missing required database tables: ['users', 'sessions', 'submissions', 'evaluations']",
+      "timestamp": "2025-09-02T00:09:30.340287",
+      "details": {
+        "missing_tables": [
+          "users",
+          "sessions",
+          "submissions",
+          "evaluations"
+        ],
+        "present_tables": []
+      }
+    },
+    {
+      "test": "LLM Integration",
+      "status": "FAIL",
+      "message": "LLM integration issues: provider=unknown, model=unknown, api_accessible=False, config_loaded=False",
+      "timestamp": "2025-09-02T00:09:30.527408",
+      "details": {
+        "provider": "unknown",
+        "model": "unknown",
+        "api_accessible": false,
+        "config_loaded": false
+      }
+    },
+    {
+      "test": "Error Handling: Invalid Session ID",
+      "status": "PASS",
+      "message": "Correctly returned status 404",
+      "timestamp": "2025-09-02T00:09:30.682709",
+      "details": {
+        "expected": "404",
+        "actual": "404",
+        "response": "{\"detail\":\"Session not found\"}"
+      }
+    },
+    {
+      "test": "Error Handling: Invalid Evaluation Payload",
+      "status": "PASS",
+      "message": "Correctly returned status 401",
+      "timestamp": "2025-09-02T00:09:30.835816",
+      "details": {
+        "expected": "401",
+        "actual": "401",
+        "response": "{\"data\":null,\"meta\":{\"timestamp\":\"2025-09-02T04:09:30.826816\",\"request_id\":\"placeholder\"},\"errors\":["
+      }
+    },
+    {
+      "test": "Error Handling: Missing Text Content",
+      "status": "PASS",
+      "message": "Correctly returned status 401",
+      "timestamp": "2025-09-02T00:09:30.987619",
+      "details": {
+        "expected": "401",
+        "actual": "401",
+        "response": "{\"data\":null,\"meta\":{\"timestamp\":\"2025-09-02T04:09:30.976942\",\"request_id\":\"placeholder\"},\"errors\":["
+      }
+    },
+    {
+      "test": "Error Handling: Invalid Login Credentials",
+      "status": "PASS",
+      "message": "Correctly returned status 401",
+      "timestamp": "2025-09-02T00:09:31.172638",
+      "details": {
+        "expected": "401",
+        "actual": "401",
+        "response": "{\"data\":null,\"meta\":{\"timestamp\":\"2025-09-02T04:09:31.160396\",\"request_id\":\"placeholder\"},\"errors\":["
+      }
+    },
+    {
+      "test": "Error Handling: Missing Login Credentials",
+      "status": "PASS",
+      "message": "Correctly returned status 400",
+      "timestamp": "2025-09-02T00:09:31.344893",
+      "details": {
+        "expected": "400",
+        "actual": "400",
+        "response": "{\"data\":null,\"meta\":{\"timestamp\":\"2025-09-02T04:09:31.335027\",\"request_id\":\"placeholder\"},\"errors\":["
+      }
+    }
+  ],
+  "summary": {
+    "total": 17,
+    "passed": 10,
+    "failed": 2,
+    "warnings": 5
+  }
+}

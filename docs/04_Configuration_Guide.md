@@ -2,15 +2,15 @@
 ## Memo AI Coach
 
 **Document ID**: 04_Configuration_Guide.md
-**Document Version**: 1.0
-**Last Updated**: Phase 9
-**Status**: Draft
+**Document Version**: 2.0
+**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Status**: Active
 
 ---
 
 ## 1.0 Configuration Overview
 All runtime behavior is controlled by four YAML files in `config/`.
-Files are mounted read-only into containers at `/app/config/` and validated by `backend/validate_config.py`.
+Files are mounted read-only into containers at `/app/config/` and validated by Pydantic models in `backend/models/config_models.py`.
 Configuration edits made through the Admin interface create timestamped backups under `config/backups/` before any changes are written.
 
 ## 2.0 Environment Variables
@@ -24,86 +24,171 @@ Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`
 | `MAX_CONCURRENT_USERS` | Target concurrency for performance testing |
 | `SESSION_TIMEOUT` | Override for session expiration in minutes |
 
-## 2.0 Configuration Files
+## 3.0 Configuration Files
 
-### 2.1 `config/rubric.yaml`
-Defines the evaluation rubric and scoring criteria.
+### 3.1 `config/rubric.yaml`
+Defines the evaluation rubric and scoring criteria with dynamic structure support.
 
 **Structure**:
 ```yaml
-criteria:
-  - name: "Clarity"
-    weight: 0.3
-    description: "How clearly the memo communicates its message"
-    scoring_guide:
-      1: "Unclear and confusing"
-      2: "Somewhat clear but needs improvement"
-      3: "Generally clear with minor issues"
-      4: "Clear and well-communicated"
-      5: "Exceptionally clear and compelling"
+rubric:
+  name: "Business Memo Evaluation Rubric for Healthcare Investment Projects"
+  description: "This rubric is designed to evaluate business memos..."
+  total_weight: 100
+  scoring_scale: "1-5"  # 1: Poor, 2: Fair, 3: Good, 4: Very Good, 5: Excellent
 
-frameworks:
-  framework_definitions:
-    - name: "Pyramid Principle"
-      description: "Structure ideas in a pyramid with the main point at the top, supported by logical arguments below"
-    - name: "SCQA Framework"
-      description: "Situation, Complication, Question, Answer framework for structured communication"
-    - name: "Healthcare Investment Framework"
-      description: "Market analysis framework for healthcare investment memos"
-  application_guidance:
-    - "Apply frameworks based on the content type and audience"
-    - "Consider the context and purpose of the memo"
-    - "Use frameworks to structure arguments logically"
-    - "Ensure framework application enhances clarity and impact"
+  criteria:
+    - name: "Structure and Logic"
+      description: "Assesses the memo's organization..."
+      scoring_guidance:
+        1: "Severely disorganized..."
+        2: "Basic structure present but flawed..."
+        3: "Adequate organization..."
+        4: "Strong structure..."
+        5: "Exemplary structure..."
+      weight: 15
 
-evaluation_framework:
-  strengths:
-    - "Identify specific strengths in the memo"
-    - "Highlight effective use of frameworks"
-    - "Recognize clear communication and logical structure"
-  opportunities:
-    - "Provide actionable improvement suggestions"
-    - "Focus on framework application opportunities"
-    - "Suggest specific enhancements for clarity and impact"
+    - name: "Arguments and Evidence"
+      description: "Evaluates the strength of claims..."
+      scoring_guidance:
+        1: "Arguments are weak..."
+        2: "Some arguments supported..."
+        3: "Arguments are generally solid..."
+        4: "Strong, well-supported arguments..."
+        5: "Outstanding arguments..."
+      weight: 20
 
-### 3.2 prompt.yaml
-Holds prompt templates and instruction lists used to query the LLM.
-Important keys:
-- `templates.evaluation_prompt.system_message` and `user_template`.
-- `instructions` blocks for evaluation, scoring and segment feedback.
-- `prompt_variables` describing dynamic fields injected by backend.
-Example snippet showing variable substitution:
-```yaml
-templates:
-  evaluation_prompt:
-    user_template: |
-      Evaluate the following memo:
-      {{ submission_text }}
+    # Additional criteria with similar structure...
 ```
 
-### 3.3 llm.yaml
-Configures LLM provider and runtime limits.
-- `provider`: name, base URL, model, API version.
-- `api_configuration`: API key, timeouts, retries and token limits.
-- `request_settings` for text length and chunking.
-- `response_handling` and `error_handling` options.
-- `performance_optimization` enforcing <15s processing.
-- `fallback_configuration` for alternate providers.
-- `validation_rules` defining allowed ranges for key settings.
-Example configuration:
+**Key Features**:
+- **Dynamic Structure**: Criteria can be added, removed, or modified without code changes
+- **Weight Validation**: Pydantic ensures total weights equal 100%
+- **Flexible Scoring**: Supports any number of criteria with custom weights
+- **No Framework Dependencies**: Removed deprecated framework system for cleaner configuration
+
+### 3.2 `config/prompt.yaml`
+Holds language-specific prompt templates and instruction lists used to query the LLM.
+
+**New Structure**:
+```yaml
+languages:
+  en:
+    name: "English"
+    description: "English language prompts and instructions"
+    evaluation_prompt:
+      system_message: "You are an expert writing coach..."
+      user_template: |
+        Evaluate the following text using the provided rubric.
+        
+        TEXT TO EVALUATE:
+        {{ text_content }}
+        
+        EVALUATION RUBRIC:
+        {{ rubric_content }}
+        
+        Provide your evaluation in the following JSON format:
+        {{ response_format }}
+        
+        Focus on providing constructive, actionable feedback...
+    
+    instructions:
+      evaluation_guidelines:
+        - "Be constructive and encouraging in your feedback"
+        - "Provide specific examples and suggestions"
+        - "Focus on both strengths and areas for improvement"
+        - "Use clear, professional language"
+        - "Ensure feedback is actionable and specific"
+        - "Maintain objectivity and fairness"
+        - "Consider the writer's development level"
+        - "Encourage critical thinking and reflection"
+        - "Always respond with valid JSON format"
+        - "Ensure all scores are integers 1-5"
+        - "Calculate overall_score as weighted average of rubric scores"
+
+  es:
+    name: "Spanish"
+    description: "Spanish language prompts and instructions"
+    evaluation_prompt:
+      system_message: "Eres un coach experto en escritura..."
+      user_template: |
+        Evalúa el siguiente texto usando la rúbrica proporcionada.
+        
+        TEXTO A EVALUAR:
+        {{ text_content }}
+        
+        RÚBRICA DE EVALUACIÓN:
+        {{ rubric_content }}
+        
+        Proporciona tu evaluación en el siguiente formato JSON:
+        {{ response_format }}
+        
+        Enfócate en proporcionar retroalimentación constructiva...
+
+default_language: "en"
+confidence_threshold: 0.7
+```
+
+**Key Features**:
+- **Multi-Language Support**: Separate configurations for English and Spanish
+- **Jinja2 Templating**: Dynamic variable substitution with `{{ variable_name }}`
+- **Language Detection**: Automatic language identification with confidence scoring
+- **Template Variables**: Dynamic injection of rubric content and response formats
+- **No Framework Dependencies**: Clean, focused prompt structure
+
+### 3.3 `config/llm.yaml`
+Configures LLM provider and runtime limits with enhanced performance monitoring.
+
+**Structure**:
 ```yaml
 provider: anthropic
 api_configuration:
   model: claude-3-sonnet
   timeout: 15
+  max_retries: 3
+  token_limit: 4000
+
+request_settings:
+  max_text_length: 10000
+  chunking_enabled: true
+  chunk_size: 2000
+
+response_handling:
+  parse_json: true
+  validate_schema: true
+  timeout_seconds: 15
+
+performance_optimization:
+  max_processing_time: 15
+  caching_enabled: true
+  template_cache_size: 100
+
+language_detection:
+  enabled: true
+  methods: ["polyglot", "langdetect", "pycld2"]
+  fallback_threshold: 0.5
+  cache_results: true
 ```
 
-### 3.4 auth.yaml
+**Key Features**:
+- **Performance Monitoring**: Tracks response times and enforces <15s requirement
+- **Language Detection**: Configurable detection methods and fallback strategies
+- **Template Caching**: Improves performance with compiled Jinja2 templates
+- **Error Handling**: Comprehensive error handling with fallback options
+
+### 3.4 `config/auth.yaml`
 Configures authentication and security parameters. See `docs/02b_Authentication_Specifications.md` for complete authentication configuration details and examples.
 
-## 4.0 Validation
+## 4.0 Configuration Validation
 Run `python3 backend/validate_config.py` to ensure all configs exist and satisfy required fields.
-Failure details are logged and exit code signals success.
+The validation system uses Pydantic models to provide detailed error messages and ensure type safety.
+
+**Validation Features**:
+- **Type Safety**: All configuration values are validated against expected types
+- **Required Fields**: Missing required fields are clearly identified
+- **Value Ranges**: Numeric values are validated against acceptable ranges
+- **Cross-Reference Validation**: Related configuration values are validated for consistency
+- **Language Validation**: Language configurations are validated for completeness
 
 ## 5.0 Frontend Configuration
 The Vue.js frontend has specific configuration requirements:
@@ -145,9 +230,70 @@ module.exports = {
 RUN npm install  # Use npm install, not npm ci
 ```
 
-## 6.0 References
+## 6.0 New Configuration Features
+
+### 6.1 Language Detection Configuration
+```yaml
+# config/llm.yaml
+language_detection:
+  enabled: true
+  methods: ["polyglot", "langdetect", "pycld2"]
+  fallback_threshold: 0.5
+  cache_results: true
+  confidence_scoring: true
+  default_language: "en"
+```
+
+### 6.2 Dynamic Prompt Configuration
+```yaml
+# config/prompt.yaml
+templates:
+  evaluation_prompt:
+    system_message: "{{ system_message }}"
+    user_template: |
+      {{ user_template }}
+      
+      TEXT TO EVALUATE:
+      {{ text_content }}
+      
+      EVALUATION RUBRIC:
+      {{ rubric_content }}
+      
+      {{ additional_instructions }}
+```
+
+### 6.3 Performance Configuration
+```yaml
+# config/llm.yaml
+performance:
+  max_processing_time: 15
+  caching_enabled: true
+  template_cache_size: 100
+  language_detection_cache_size: 50
+  response_cache_size: 25
+```
+
+## 7.0 Configuration Migration
+
+### 7.1 From Framework System
+The new configuration system removes the deprecated framework system:
+- **Removed**: `frameworks` section from `rubric.yaml`
+- **Removed**: `evaluation_framework` section
+- **Removed**: `segment_evaluation` section
+- **Added**: Language-specific prompt configurations
+- **Added**: Dynamic rubric structure support
+
+### 7.2 Migration Steps
+1. **Backup**: Create backup of existing configuration files
+2. **Update**: Modify configuration files to use new structure
+3. **Validate**: Run configuration validation to ensure correctness
+4. **Test**: Verify system functionality with new configurations
+5. **Deploy**: Apply changes to production system
+
+## 8.0 References
 - `docs/02b_Authentication_Specifications.md` - Complete authentication configuration details
 - `config/*.yaml`
 - `backend/services/config_service.py`
 - `backend/services/config_manager.py`
-- `devlog/vue_frontend_implementation_plan.md` - Vue.js frontend implementation plan
+- `backend/models/config_models.py` - Pydantic configuration models
+- `devlog/prompt_refactor.md` - Prompt refactor implementation plan

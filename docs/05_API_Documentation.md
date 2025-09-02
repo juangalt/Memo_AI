@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 05_API_Documentation.md
-**Document Version**: 1.0
-**Last Updated**: Phase 9
-**Status**: Draft
+**Document Version**: 2.0
+**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Status**: Active
 
 ---
 
@@ -23,6 +23,7 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 | GET | `/health/config` | Configuration health |
 | GET | `/health/llm` | LLM service health |
 | GET | `/health/auth` | Authentication service health |
+| GET | `/health/language_detection` | Language detection service health |
 | GET | `/docs` | Swagger UI with OpenAPI schema |
 
 ### 2.2 Session Management
@@ -35,27 +36,18 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 ### 2.3 Evaluation
 | Method | Path | Description |
 |-------|------|-------------|
-| POST | `/api/v1/evaluations/submit` | Submit text for evaluation |
+| POST | `/api/v1/evaluations/submit` | Submit text for evaluation with automatic language detection |
 | GET | `/api/v1/evaluations/{evaluation_id}` | Retrieve evaluation result (placeholder) |
 | GET | `/api/v1/evaluations/session/{session_id}` | List evaluations for a session |
 
-**Dynamic Framework Injection**: The evaluation system dynamically injects framework content from `config/rubric.yaml` into LLM prompts. Framework definitions and application guidance are loaded at runtime and included in evaluation prompts for enhanced quality.
+**Dynamic Language Detection and Prompt Generation**: The evaluation system automatically detects text language using multiple detection methods and generates language-appropriate prompts using Jinja2 templates. The system supports English and Spanish with automatic fallback to default language when detection confidence is low.
 
-**Framework Content Structure**:
-```yaml
-# config/rubric.yaml
-frameworks:
-  framework_definitions:
-    - name: "Pyramid Principle"
-      description: "Structure ideas in a pyramid..."
-    - name: "SCQA Framework" 
-      description: "Situation, Complication, Question, Answer..."
-    - name: "Healthcare Investment Framework"
-      description: "Market analysis framework..."
-  application_guidance:
-    - "Apply frameworks based on content type..."
-    - "Consider audience and context..."
-```
+**Language Detection Process**:
+1. **Primary Detection**: Uses Polyglot, Langdetect, and Pycld2 methods
+2. **Confidence Scoring**: Calculates reliability of detection results
+3. **Fallback Strategy**: Falls back to default language if confidence is below threshold
+4. **Prompt Generation**: Creates language-specific prompts using Jinja2 templates
+5. **Dynamic Rubric**: Automatically adapts prompts to any rubric structure
 
 **Request Body for `/api/v1/evaluations/submit`:**
 ```json
@@ -64,6 +56,7 @@ frameworks:
   "session_id": "<string>"
 }
 ```
+
 **Success Response:**
 ```json
 {
@@ -76,6 +69,12 @@ frameworks:
       "segment_feedback": [
         {"segment": "text", "comment": "...", "questions": [], "suggestions": []}
       ],
+      "language_detection": {
+        "detected_language": "en",
+        "confidence": 0.95,
+        "detection_method": "polyglot",
+        "fallback_used": false
+      },
       "processing_time": 3.1,
       "created_at": "2024-01-01T00:00:00Z"
     }
@@ -84,6 +83,7 @@ frameworks:
   "errors": []
 }
 ```
+
 **Failure Response:**
 ```json
 {
@@ -93,7 +93,88 @@ frameworks:
 }
 ```
 
-### 2.4 Authentication
+### 2.4 Language Detection
+| Method | Path | Description |
+|-------|------|-------------|
+| POST | `/api/v1/language/detect` | Detect language of provided text |
+| GET | `/api/v1/language/supported` | List supported languages and detection methods |
+
+**Language Detection Request Body:**
+```json
+{
+  "text_content": "<string>",
+  "session_id": "<string>"
+}
+```
+
+**Language Detection Response:**
+```json
+{
+  "data": {
+    "language_detection": {
+      "detected_language": "en",
+      "confidence": 0.95,
+      "detection_method": "polyglot",
+      "alternative_methods": [
+        {"method": "langdetect", "language": "en", "confidence": 0.92},
+        {"method": "pycld2", "language": "en", "confidence": 0.89}
+      ],
+      "fallback_used": false,
+      "processing_time": 0.15
+    }
+  },
+  "meta": {"timestamp": "...", "request_id": "..."},
+  "errors": []
+}
+```
+
+**Supported Languages Response:**
+```json
+{
+  "data": {
+    "supported_languages": [
+      {
+        "code": "en",
+        "name": "English",
+        "description": "English language support",
+        "enabled": true
+      },
+      {
+        "code": "es",
+        "name": "Spanish",
+        "description": "Spanish language support",
+        "enabled": true
+      }
+    ],
+    "detection_methods": [
+      {
+        "name": "polyglot",
+        "description": "Polyglot language detection library",
+        "enabled": true,
+        "priority": 1
+      },
+      {
+        "name": "langdetect",
+        "description": "Google's language detection library",
+        "enabled": true,
+        "priority": 2
+      },
+      {
+        "name": "pycld2",
+        "description": "Compact Language Detector 2",
+        "enabled": true,
+        "priority": 3
+      }
+    ],
+    "default_language": "en",
+    "confidence_threshold": 0.7
+  },
+  "meta": {"timestamp": "...", "request_id": "..."},
+  "errors": []
+}
+```
+
+### 2.5 Authentication
 | Method | Path | Description |
 |-------|------|-------------|
 | POST | `/api/v1/auth/login` | Unified login for all users (admins and regular users) |
@@ -125,11 +206,9 @@ frameworks:
 }
 ```
 
-
-
 All authentication endpoints require proper credentials and return session tokens. See `docs/02b_Authentication_Specifications.md` for complete authentication details.
 
-### 2.5 User Management (Admin)
+### 2.6 User Management (Admin)
 | Method | Path | Description |
 |-------|------|-------------|
 | POST | `/api/v1/admin/users/create` | Create new user account |
@@ -141,56 +220,6 @@ All authentication endpoints require proper credentials and return session token
 {
   "username": "newuser",
   "password": "securepassword123"
-}
-```
-
-### 2.6 Configuration Management (Admin)
-| Method | Path | Description |
-|-------|------|-------------|
-| GET | `/api/v1/admin/config/{config_name}` | Get configuration file content |
-| PUT | `/api/v1/admin/config/{config_name}` | Update configuration file content |
-
-**Supported Configuration Files:**
-- `rubric.yaml` - Evaluation rubric and scoring criteria
-- `prompt.yaml` - LLM prompt templates and instructions
-- `llm.yaml` - LLM provider configuration and settings
-- `auth.yaml` - Authentication and security settings
-
-**Get Config Response:**
-```json
-{
-  "data": {
-    "config_name": "rubric.yaml",
-    "content": "# Configuration file content..."
-  },
-  "meta": {
-    "timestamp": "2024-01-01T00:00:00Z",
-    "request_id": "placeholder"
-  },
-  "errors": []
-}
-```
-
-**Update Config Request Body:**
-```json
-{
-  "content": "# Updated configuration file content..."
-}
-```
-
-**Update Config Response:**
-```json
-{
-  "data": {
-    "config_name": "rubric.yaml",
-    "message": "Configuration updated successfully",
-    "backup_created": "config/backups/rubric_20240101_120000.yaml"
-  },
-  "meta": {
-    "timestamp": "2024-01-01T00:00:00Z",
-    "request_id": "placeholder"
-  },
-  "errors": []
 }
 ```
 

@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 08_Development_Guide.md
-**Document Version**: 1.0
-**Last Updated**: Phase 9
-**Status**: Draft
+**Document Version**: 2.0
+**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Status**: Active
 
 ---
 
@@ -13,25 +13,135 @@ Derived from project AGENTS guidelines:
 - Favor simplicity and readability over abstraction.
 - Each module serves a single responsibility.
 - Provide docstrings and inline comments for educational clarity.
-- Avoid editing `devspecs/` documents; `docs/` now acts as source of truth.
+- Use Pydantic models for configuration validation and type safety.
+- Implement Jinja2 templating for dynamic prompt generation.
 - Follow PEP 8 style with 4-space indentation and descriptive variable names.
 
 ## 2.0 Repository Structure
 ```
-backend/       FastAPI service
-vue-frontend/  Vue.js reactive interface
-config/        YAML configuration files
-tests/         Test suites
+backend/       FastAPI service with enhanced LLM processing
+vue-frontend/  Vue.js reactive interface with dynamic components
+config/        YAML configuration files with Pydantic validation
+tests/         Test suites including language detection and prompt generation
 docs/          Comprehensive project documentation
 ```
 
 ## 3.0 Backend Development
 - Entry point: `backend/main.py`.
 - Data models in `backend/models/entities.py` reflect tables created by `init_db.py`.
-- Services in `backend/services/` handle configuration, authentication and LLM integration.
-- Use `evaluate_text_with_llm` for all evaluations; it handles prompt generation and error management.
+- **Configuration models** in `backend/models/config_models.py` provide Pydantic validation.
+- Services in `backend/services/` handle configuration, authentication, LLM integration, and language detection.
+- **Language detection service** (`backend/services/language_detection.py`) provides robust multi-language identification.
+- Use `evaluate_text_with_llm` for all evaluations; it handles prompt generation, language detection, and error management.
 - Error responses should use the standard `{data: null, meta, errors}` schema defined in API documentation.
 - Add new endpoints by extending `backend/main.py` and documenting them in `docs/05_API_Documentation.md`.
+
+### 3.1 New Architecture Components
+
+#### 3.1.1 Configuration Models (`backend/models/config_models.py`)
+```python
+from pydantic import BaseModel, Field, validator
+from enum import Enum
+from typing import Dict, List, Optional
+
+class Language(str, Enum):
+    EN = "en"
+    ES = "es"
+
+class RubricCriterion(BaseModel):
+    name: str
+    description: str
+    weight: int = Field(..., ge=1, le=100)
+    scoring_guidance: Dict[int, str]
+    
+    @validator('weight')
+    def validate_weight(cls, v):
+        if v < 1 or v > 100:
+            raise ValueError('Weight must be between 1 and 100')
+        return v
+
+class PromptLanguageConfig(BaseModel):
+    name: str
+    description: str
+    evaluation_prompt: Dict[str, str]
+    instructions: Dict[str, List[str]]
+
+class PromptConfig(BaseModel):
+    languages: Dict[Language, PromptLanguageConfig]
+    default_language: Language = Language.EN
+    confidence_threshold: float = Field(0.7, ge=0.0, le=1.0)
+```
+
+#### 3.1.2 Language Detection Service (`backend/services/language_detection.py`)
+```python
+from typing import Dict, List, Optional
+import polyglot
+import langdetect
+import pycld2
+
+class RobustLanguageDetector:
+    def __init__(self, methods: List[str] = None):
+        self.methods = methods or ["polyglot", "langdetect", "pycld2"]
+    
+    def detect_language(self, text: str) -> Dict:
+        """Detect language using multiple methods with fallback strategies."""
+        results = {}
+        
+        for method in self.methods:
+            try:
+                if method == "polyglot":
+                    results[method] = self._detect_polyglot(text)
+                elif method == "langdetect":
+                    results[method] = self._detect_langdetect(text)
+                elif method == "pycld2":
+                    results[method] = self._detect_pycld2(text)
+            except Exception as e:
+                results[method] = {"error": str(e)}
+        
+        return self._aggregate_results(results, text)
+    
+    def _aggregate_results(self, results: Dict, text: str) -> Dict:
+        """Aggregate results from multiple detection methods."""
+        # Implementation details...
+        pass
+```
+
+#### 3.1.3 Enhanced LLM Service (`backend/services/llm_service.py`)
+```python
+from jinja2 import Environment, FileSystemLoader
+from services.language_detection import RobustLanguageDetector
+from models.config_models import PromptConfig
+
+class EnhancedLLMService:
+    def __init__(self):
+        self.language_detector = RobustLanguageDetector()
+        self.jinja_env = Environment(loader=FileSystemLoader('backend/templates'))
+        self.template_cache = {}
+    
+    def generate_prompt(self, text: str, rubric: Dict) -> str:
+        """Generate language-appropriate prompt using Jinja2 templates."""
+        # Detect language
+        language_result = self.language_detector.detect_language(text)
+        language = language_result.get('detected_language', 'en')
+        
+        # Load language-specific configuration
+        prompt_config = self._load_prompt_config(language)
+        
+        # Render template
+        template = self._get_template('evaluation_prompt.j2')
+        return template.render(
+            text_content=text,
+            rubric_content=rubric,
+            language_config=prompt_config,
+            **language_result
+        )
+    
+    def _get_template(self, template_name: str):
+        """Get compiled Jinja2 template with caching."""
+        if template_name not in self.template_cache:
+            self.template_cache[template_name] = self.jinja_env.get_template(template_name)
+        return self.template_cache[template_name]
+```
 
 ## 4.0 Frontend Development
 - Entry point: `vue-frontend/src/main.js`.
@@ -46,7 +156,134 @@ docs/          Comprehensive project documentation
 - **Authentication Flow**: Login redirects to `/text-input`, logout redirects to `/`.
 - **Admin Access**: Conditional menu items based on `isAdmin` status.
 
-### 4.1 Debug and Admin Component Development
+### 4.1 New Frontend Components
+
+#### 4.1.1 Dynamic Rubric Scores (`vue-frontend/src/components/DynamicRubricScores.vue`)
+```vue
+<template>
+  <div class="rubric-scores">
+    <h3 class="text-lg font-semibold mb-4">Rubric Scores</h3>
+    <div class="space-y-4">
+      <div 
+        v-for="(criterion, key) in rubricScores" 
+        :key="key"
+        class="criterion-item p-4 bg-white rounded-lg border"
+      >
+        <div class="flex justify-between items-center mb-2">
+          <h4 class="font-medium text-gray-900">
+            {{ formatCriterionName(key) }}
+          </h4>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-500">
+              Weight: {{ getCriterionWeight(key) }}%
+            </span>
+            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+              Score: {{ criterion.score }}/5
+            </span>
+          </div>
+        </div>
+        <p class="text-gray-600 text-sm">{{ criterion.justification }}</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  rubricScores: {
+    type: Object,
+    required: true
+  },
+  rubricConfig: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+const formatCriterionName = (key) => {
+  return key.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ')
+}
+
+const getCriterionWeight = (key) => {
+  const criterion = props.rubricConfig.criteria?.find(c => 
+    c.name.toLowerCase().replace(/\s+/g, '_') === key
+  )
+  return criterion?.weight || 0
+}
+</script>
+```
+
+#### 4.1.2 Language Detection Display (`vue-frontend/src/components/LanguageDetectionDisplay.vue`)
+```vue
+<template>
+  <div class="language-detection">
+    <div class="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg">
+      <div class="flex-shrink-0">
+        <img 
+          :src="getLanguageFlag(languageInfo.detected_language)" 
+          :alt="languageInfo.detected_language"
+          class="w-6 h-6 rounded"
+        />
+      </div>
+      <div class="flex-1">
+        <h4 class="text-sm font-medium text-gray-900">
+          Detected Language: {{ getLanguageName(languageInfo.detected_language) }}
+        </h4>
+        <div class="flex items-center space-x-2 mt-1">
+          <div class="flex-1 bg-gray-200 rounded-full h-2">
+            <div 
+              class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              :style="{ width: `${languageInfo.confidence * 100}%` }"
+            ></div>
+          </div>
+          <span class="text-xs text-gray-500">
+            {{ Math.round(languageInfo.confidence * 100) }}% confidence
+          </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+          Method: {{ languageInfo.detection_method }}
+          <span v-if="languageInfo.fallback_used" class="text-orange-600">
+            (fallback used)
+          </span>
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  languageInfo: {
+    type: Object,
+    required: true
+  }
+})
+
+const getLanguageFlag = (langCode) => {
+  const flags = {
+    'en': '/flags/en.png',
+    'es': '/flags/es.png'
+  }
+  return flags[langCode] || flags['en']
+}
+
+const getLanguageName = (langCode) => {
+  const names = {
+    'en': 'English',
+    'es': 'Spanish'
+  }
+  return names[langCode] || 'Unknown'
+}
+</script>
+```
+
+### 4.2 Debug and Admin Component Development
 Debug and admin components follow specific patterns for consistency and maintainability:
 
 #### Component Structure
@@ -73,16 +310,19 @@ Debug and admin components follow specific patterns for consistency and maintain
 - **SystemDiagnostics**: System health monitoring with real-time updates
 - **PerformanceMonitoring**: Response time tracking and system resource monitoring
 - **DevelopmentTools**: Various debugging utilities and development aids
+- **LanguageDetectionTesting**: Test language detection with various text samples
 
 #### Admin Component Features
 - **HealthStatus**: System health overview and service status monitoring
-- **ConfigValidator**: YAML configuration file management with validation
+- **ConfigValidator**: YAML configuration file management with Pydantic validation
 - **UserManagement**: User account creation, management, and role assignment
 - **SessionManagement**: Session creation, refresh, and management
+- **PromptTemplateEditor**: Edit Jinja2 templates with live preview
+- **LanguageConfiguration**: Configure language detection settings and thresholds
 
 #### Last Evaluation Page Development
 - **Location**: `vue-frontend/src/views/LastEvaluation.vue`
-- **Purpose**: Dedicated page for viewing raw LLM evaluation data
+- **Purpose**: Dedicated page for viewing raw LLM evaluation data with language detection metadata
 - **Access Control**: Admin-only access with proper route protection
 - **Component Integration**: Hosts LastEvaluationsViewer component with Layout wrapper
 - **Navigation**: Integrated with main navigation menu for admin users
@@ -95,125 +335,88 @@ Debug and admin components follow specific patterns for consistency and maintain
 - **Responsive Design**: Footer adapts to different page layouts and screen sizes
 - **Accessibility**: Uses semantic HTML `<footer>` tag for screen readers
 
-#### Dynamic Framework Injection Development
-- **Backend Integration**: Framework content dynamically loaded from `config/rubric.yaml`
-- **LLM Service Methods**: `_get_frameworks_content()` and `_get_framework_application_guidance()`
-- **Prompt Enhancement**: Framework content injected into LLM prompts at runtime
-- **Configuration-Driven**: Framework changes take effect immediately without restarts
-- **Validation**: Framework content validated during prompt generation
-- **Fallback Handling**: Graceful handling if framework content is missing
-
-#### Testing Requirements
-- **Manual Testing**: All debug and admin components require manual testing
-- **Authentication Testing**: Verify proper admin access control
-- **Error Simulation**: Test error handling and display functionality
-- **Performance Testing**: Verify response time tracking and monitoring
-- **UI Testing**: Test responsive design and user interactions
+### 4.3 Dynamic Prompt Generation Development
+- **Backend Integration**: Language detection and Jinja2 templating for dynamic prompt generation
+- **LLM Service Methods**: `generate_prompt()`, `_get_template()`, and `_load_prompt_config()`
+- **Template Management**: Jinja2 templates stored in `backend/templates/` with caching
+- **Language Support**: Automatic adaptation to detected language with fallback strategies
+- **Configuration Validation**: Pydantic models ensure prompt configuration integrity
 
 ## 5.0 Configuration & Secrets
-- Never commit API keys or passwords. Use environment variables or `.env`.
-- Configuration editing should go through admin API or `config_manager.py` to ensure validation and backups.
-- When adding new configuration keys, update both `docs/04_Configuration_Guide.md` and validation logic.
+- Never commit API keys or passwords
+- Use environment variables or `.env` for sensitive data
+- Configuration editing through admin API or `config_manager.py`
+- **Pydantic Validation**: All configurations validated against type-safe models
+- **Template Security**: Jinja2 templates use safe rendering with limited variable access
+- Update documentation when adding new config keys
 
-## 5.1 Frontend Configuration
-- **Tailwind CSS**: Use v3.4.17 (stable) for production. Avoid v4.x (beta) versions.
-- **PostCSS**: Configure with `tailwindcss` plugin (not `@tailwindcss/postcss`).
-- **Build Process**: Use `npm install` instead of `npm ci` for better dependency management.
-- **CSS Classes**: All components use Tailwind classes for consistent styling.
+## 6.0 New Development Patterns
 
-## 6.0 Testing
-- Tests reside in `tests/` and cover environment, integration, performance and security.
-- `tests/run_quick_tests.py` runs fast checks; `tests/run_production_tests.py` includes performance suite.
-- New features require corresponding unit or integration tests.
-- Test files mirror module paths to simplify discovery.
-
-## 7.0 Changelog Standards
-
-### 7.1 Changelog File Location
-- **Primary Changelog**: `devlog/vue_implementation_changelog.md`
-- **Purpose**: Track all significant changes, fixes, and enhancements to the Vue frontend implementation
-- **Audience**: Developers, stakeholders, and future maintainers
-
-### 7.2 Structure Standards
-- **Reverse Chronological Order**: Most recent changes first
-- **Consistent Date Format**: `[YYYY-MM-DD]` for all entries
-- **Clear Entry Types**: Use standardized prefixes (Added, Changed, Deprecated, Removed, Fixed, Security)
-- **Concise Headlines**: One-line summaries that clearly describe the change
-- **Detailed Descriptions**: Provide context, impact, and technical details when needed
-
-### 7.3 Content Guidelines
-- **User-Focused**: Explain what changed from the user's perspective
-- **Technical Accuracy**: Include specific file paths, code examples, and technical details
-- **Impact Assessment**: Describe the effect on functionality, performance, or user experience
-- **Testing Information**: Document verification steps and test results
-- **Breaking Changes**: Clearly mark and explain any breaking changes
-
-### 7.4 Entry Format Template
-```markdown
-### [YYYY-MM-DD] Brief Description of Change
-
-**Type**: Fixed/Added/Changed/Deprecated/Removed/Security  
-**Impact**: User Experience/UI/UX/Security/Performance/Developer Experience  
-**Priority**: High/Medium/Low  
-
-**Issue**: Clear description of the problem or enhancement need.
-
-**Root Cause**: Technical explanation of why the issue occurred (for fixes).
-
-**Solution**: Detailed description of the implemented solution.
-
-**Files Modified**:
-- `path/to/file.ext` - Specific change made
-
-**Testing**: Description of verification steps and results.
-
-**Code Change** (if applicable):
-```javascript
-// Before: Previous implementation
-oldCode();
-
-// After: New implementation
-newCode();
-```
+### 6.1 Language Detection Development
+```python
+# Testing language detection
+def test_language_detection():
+    detector = RobustLanguageDetector()
+    
+    # Test English
+    result = detector.detect_language("This is English text")
+    assert result['detected_language'] == 'en'
+    assert result['confidence'] > 0.8
+    
+    # Test Spanish
+    result = detector.detect_language("Este es texto en español")
+    assert result['detected_language'] == 'es'
+    assert result['confidence'] > 0.8
+    
+    # Test fallback
+    result = detector.detect_language("12345")
+    assert result['fallback_used'] == True
 ```
 
-### 7.5 Formatting Standards
-- **Consistent Markdown**: Use proper heading hierarchy and formatting
-- **Code Blocks**: Include relevant code examples with syntax highlighting
-- **File References**: Use backticks for file paths and technical terms
-- **Status Indicators**: Use ✅/❌/🔧/🔍 symbols for quick visual scanning
-- **Categorization**: Group related changes and use clear section headers
+### 6.2 Jinja2 Template Development
+```jinja2
+{# backend/templates/evaluation_prompt.j2 #}
+{{ language_config.evaluation_prompt.system_message }}
 
-### 7.6 Quality Criteria
-- **Completeness**: Include all significant changes with sufficient detail
-- **Clarity**: Write in clear, professional language
-- **Traceability**: Link changes to issues, phases, or requirements
-- **Maintainability**: Structure for easy updates and navigation
-- **Historical Value**: Preserve context for future reference
+{{ language_config.evaluation_prompt.user_template }}
 
-### 7.7 When to Update Changelog
-- **All bug fixes** with clear issue description and solution
-- **New features** with user impact and technical details
-- **UI/UX changes** affecting user experience
-- **Security updates** with impact assessment
-- **Performance improvements** with measurable results
-- **Breaking changes** with migration guidance
-- **Configuration changes** affecting deployment or behavior
+TEXT TO EVALUATE:
+{{ text_content }}
 
-### 7.8 Changelog Maintenance
-- **Regular Updates**: Update changelog with each significant change
-- **Version Tracking**: Maintain document history and version numbers
-- **Cross-References**: Link to related documentation, issues, or pull requests
-- **Review Process**: Ensure accuracy and completeness before finalizing entries
+EVALUATION RUBRIC:
+{% for criterion in rubric.criteria %}
+{{ criterion.name }} (Weight: {{ criterion.weight }}%)
+{{ criterion.description }}
 
-## 8.0 Contribution Workflow
-1. Review relevant docs in this directory before coding.
-2. Implement changes in small, well-documented commits.
-3. Update changelog in `devlog/vue_implementation_changelog.md` following the standards in section 7.0.
-4. Add or update tests when modifying behavior.
-5. Run appropriate test suites and document results in pull requests.
+Scoring Guide:
+{% for score, description in criterion.scoring_guidance.items() %}
+{{ score }}: {{ description }}
+{% endfor %}
 
-## 9.0 References
-- `AGENTS.md`
-- `tests/README.md`
-- `devlog/vue_implementation_changelog.md`
+{% endfor %}
+
+RESPONSE FORMAT:
+{{ language_config.response_format }}
+```
+
+### 6.3 Pydantic Configuration Development
+```python
+# Validating configuration
+def validate_config():
+    try:
+        config = PromptConfig(**yaml.safe_load(open('config/prompt.yaml')))
+        print("Configuration valid")
+        return config
+    except ValidationError as e:
+        print(f"Configuration validation failed: {e}")
+        return None
+```
+
+## 7.0 References
+- `docs/02b_Authentication_Specifications.md` - Complete authentication specifications
+- `devlog/prompt_refactor.md` - Prompt refactor implementation plan
+- `backend/models/config_models.py` - Pydantic configuration models
+- `backend/services/language_detection.py` - Language detection service
+- `backend/templates/` - Jinja2 template directory
+- `vue-frontend/src/components/DynamicRubricScores.vue` - Dynamic rubric component
+- `vue-frontend/src/components/LanguageDetectionDisplay.vue` - Language detection component
