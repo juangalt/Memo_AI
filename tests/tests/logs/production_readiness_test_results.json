@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-09-02T00:09:35.887719",
+  "environment": "production_ready",
+  "tests": [
+    {
+      "test": "Container Accessibility",
+      "status": "PASS",
+      "message": "All containers accessible: 3 containers running",
+      "timestamp": "2025-09-02T00:09:35.999252",
+      "details": {
+        "running_containers": 3
+      }
+    },
+    {
+      "test": "Backend Accessibility",
+      "status": "FAIL",
+      "message": "Backend not healthy: None",
+      "timestamp": "2025-09-02T00:09:36.171410"
+    },
+    {
+      "test": "Configuration Security",
+      "status": "PASS",
+      "message": "Configuration files have appropriate permissions",
+      "timestamp": "2025-09-02T00:09:36.319505"
+    },
+    {
+      "test": "Container Security",
+      "status": "PASS",
+      "message": "Container running as non-root user: appuser",
+      "timestamp": "2025-09-02T00:09:36.487727"
+    },
+    {
+      "test": "Test Execution: test_functionality_verification",
+      "status": "FAIL",
+      "message": "Test execution failed: 'NoneType' object has no attribute 'get'",
+      "timestamp": "2025-09-02T00:09:36.639915"
+    },
+    {
+      "test": "Monitoring: Main health",
+      "status": "WARN",
+      "message": "Health endpoint /health not healthy: None",
+      "timestamp": "2025-09-02T00:09:36.806201"
+    },
+    {
+      "test": "Monitoring: Database health",
+      "status": "WARN",
+      "message": "Health endpoint /health/database not healthy: None",
+      "timestamp": "2025-09-02T00:09:36.997996"
+    },
+    {
+      "test": "Monitoring: Configuration health",
+      "status": "WARN",
+      "message": "Health endpoint /health/config not healthy: None",
+      "timestamp": "2025-09-02T00:09:37.168983"
+    },
+    {
+      "test": "Monitoring: LLM health",
+      "status": "WARN",
+      "message": "Health endpoint /health/llm not healthy: None",
+      "timestamp": "2025-09-02T00:09:37.377494"
+    },
+    {
+      "test": "Monitoring: Authentication health",
+      "status": "WARN",
+      "message": "Health endpoint /health/auth not healthy: None",
+      "timestamp": "2025-09-02T00:09:37.584176"
+    },
+    {
+      "test": "Database Backup",
+      "status": "PASS",
+      "message": "Database file exists and accessible",
+      "timestamp": "2025-09-02T00:09:37.743805"
+    },
+    {
+      "test": "Configuration Backup",
+      "status": "PASS",
+      "message": "Configuration backups directory exists",
+      "timestamp": "2025-09-02T00:09:37.898024"
+    },
+    {
+      "test": "Test Execution: test_performance_under_load",
+      "status": "FAIL",
+      "message": "Test execution failed: 'NoneType' object has no attribute 'get'",
+      "timestamp": "2025-09-02T00:09:38.049891"
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "passed": 5,
+    "failed": 3,
+    "warnings": 5
+  }
+}
