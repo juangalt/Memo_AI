@@ -16,8 +16,10 @@ This document outlines the comprehensive implementation plan for refactoring the
 - Replace basic string formatting with Jinja2 templating for dynamic prompt generation
 - Implement Pydantic validation with flexible, progressive schema enforcement
 - Create robust language detection using multiple libraries with intelligent fallback
-- Remove deprecated framework system and legacy configuration patterns
-- Establish multi-language support with extensible language configuration
+- **NEW**: Simplify rubric structure to 4 core criteria with clear weights and descriptions
+- **NEW**: Move all rubric content into prompt.yaml, deprecate rubric.yaml entirely
+- **NEW**: Use context/request/rubric structure for cleaner prompt generation
+- Establish multi-language support with extensible language configuration (English/Spanish)
 - Build frontend adaptability to dynamic rubric structures without hardcoding
 - Implement comprehensive validation coordination across all system layers
 
@@ -25,10 +27,83 @@ This document outlines the comprehensive implementation plan for refactoring the
 - 100% configuration validation through coordinated Pydantic and service validation
 - 95%+ language detection accuracy with graceful degradation
 - Zero hardcoded prompt logic in Python code
+- **NEW**: Simplified 4-criteria rubric structure with clear weights and descriptions
+- **NEW**: All rubric content contained within prompt.yaml (no separate rubric.yaml)
+- **NEW**: Context/request/rubric structure for cleaner, more maintainable prompts
 - Frontend automatically adapts to rubric changes without code modifications
 - Support for English and Spanish with seamless language addition process
 - Configuration hot-reload capability without service restarts
 - Comprehensive error handling and user feedback at all validation levels
+
+---
+
+## **NEW: Simplified Rubric Structure**
+
+### **New Rubric Design**
+The new rubric structure simplifies evaluation to 4 core criteria, all contained within `prompt.yaml`:
+
+```yaml
+languages:
+  en:
+    context:
+      context_text: "You are an expert writing coach evaluating business memos..."
+    request:
+      request_text: "Evaluate the following business memo using the rubric below..."
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Structure"
+          description: "pyramid principle, SCQA, clarity of opportunity, ask"
+          weight: 25
+        arguments_and_evidence:
+          name: "Arguments and Evidence"
+          description: "logic, financial metrics"
+          weight: 30
+        strategic_alignment:
+          name: "Strategic Alignment"
+          description: "help achieve strategic goals 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementation and Risks"
+          description: "feasibility, risk assessment, implementation plan"
+          weight: 20
+  es:
+    context:
+      context_text: "Eres un coach de escritura experto evaluando memorandos..."
+    request:
+      request_text: "Evalúa el siguiente memorando comercial usando la rúbrica..."
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Estructura"
+          description: "principio de pirámide, SCQA, claridad de oportunidad, solicitud"
+          weight: 25
+        arguments_and_evidence:
+          name: "Argumentos y Evidencia"
+          description: "lógica, métricas financieras"
+          weight: 30
+        strategic_alignment:
+          name: "Alineación Estratégica"
+          description: "ayudar a lograr objetivos estratégicos 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementación y Riesgos"
+          description: "viabilidad, evaluación de riesgos, plan de implementación"
+          weight: 20
+```
+
+### **Key Benefits**
+- **Simplified**: Only 4 criteria instead of complex nested structures
+- **Clear Weights**: Total adds to 100% with logical distribution
+- **Language-Specific**: Full English and Spanish support
+- **Self-Contained**: All rubric content in one file
+- **Maintainable**: Easy to modify criteria, weights, and descriptions
 
 ---
 
@@ -209,10 +284,12 @@ python3 backend/scripts/verify_dependencies.py
 
 **Implementation**:
 - Create `Language` enum (EN, ES)
-- Create `RubricCriterion` model with validation
-- Create `RubricConfig` model with weight validation
-- Create `PromptLanguageConfig` model
+- Create `RubricCriterion` model with weight validation (total must equal 100%)
+- Create `RubricConfig` model with 4 criteria and scoring range validation
+- Create `PromptLanguageConfig` model with context/request/rubric structure
 - Create `PromptConfig` model with language validation
+- **NEW**: Validate that criteria weights sum to exactly 100%
+- **NEW**: Validate scoring range (min: 1, max: 5)
 
 **Tests**:
 ```python
@@ -221,6 +298,45 @@ python3 -c "
 from models.config_models import *
 config = PromptConfig(languages={'en': PromptLanguageConfig(...)})
 print('Validation successful')
+"
+
+# Test weight validation (must equal 100%)
+python3 -c "
+from models.config_models import *
+# Test valid weights
+valid_config = PromptConfig(languages={'en': PromptLanguageConfig(
+    context={'context_text': 'test'},
+    request={'request_text': 'test'},
+    rubric={
+        'scores': {'min': 1, 'max': 5},
+        'criteria': {
+            'structure': {'name': 'Structure', 'description': 'test', 'weight': 25},
+            'arguments_and_evidence': {'name': 'Arguments', 'description': 'test', 'weight': 30},
+            'strategic_alignment': {'name': 'Strategy', 'description': 'test', 'weight': 25},
+            'implementation_and_risks': {'name': 'Implementation', 'description': 'test', 'weight': 20}
+        }
+    }
+)})
+print('✓ Valid weights (100%) validation successful')
+
+# Test invalid weights (should fail)
+try:
+    invalid_config = PromptConfig(languages={'en': PromptLanguageConfig(
+        context={'context_text': 'test'},
+        request={'request_text': 'test'},
+        rubric={
+            'scores': {'min': 1, 'max': 5},
+            'criteria': {
+                'structure': {'name': 'Structure', 'description': 'test', 'weight': 30},
+                'arguments_and_evidence': {'name': 'Arguments', 'description': 'test', 'weight': 30},
+                'strategic_alignment': {'name': 'Strategy', 'description': 'test', 'weight': 30},
+                'implementation_and_risks': {'name': 'Implementation', 'description': 'test', 'weight': 30}
+            }
+        }
+    )})
+    print('✗ Invalid weights (120%) should have failed')
+except Exception as e:
+    print('✓ Invalid weights correctly rejected:', str(e))
 "
 ```
 
@@ -276,11 +392,12 @@ print('Spanish detection:', result)
 **Files to Modify**: `config/prompt.yaml`
 
 **Implementation**:
-- Remove deprecated `frameworks` section
-- Add `languages` section with EN/ES configurations
+- **NEW**: Implement context/request/rubric structure for each language
+- **NEW**: Add 4 core criteria with clear weights (total = 100%)
+- **NEW**: Include scoring range (min: 1, max: 5) for each language
 - Add `default_language` and `confidence_threshold` settings
-- Restructure rubric criteria for each language
-- Remove framework-specific content
+- Remove deprecated `frameworks` section and framework-specific content
+- **NEW**: Ensure both English and Spanish have identical structure and weights
 
 **Tests**:
 ```bash
@@ -294,6 +411,42 @@ import yaml
 config = PromptConfig(**yaml.safe_load(open('config/prompt.yaml')))
 print('Configuration valid')
 "
+
+# Test weight validation (must equal 100%)
+python3 -c "
+from models.config_models import PromptConfig
+import yaml
+config = PromptConfig(**yaml.safe_load(open('config/prompt.yaml')))
+
+# Verify English weights sum to 100%
+en_weights = sum(criterion.weight for criterion in config.languages['en'].rubric.criteria.values())
+print(f'English weights sum: {en_weights}%')
+assert en_weights == 100, f'English weights must equal 100%, got {en_weights}%'
+
+# Verify Spanish weights sum to 100%
+es_weights = sum(criterion.weight for criterion in config.languages['es'].rubric.criteria.values())
+print(f'Spanish weights sum: {es_weights}%')
+assert es_weights == 100, f'Spanish weights must equal 100%, got {es_weights}%'
+
+# Verify scoring range
+en_scores = config.languages['en'].rubric.scores
+assert en_scores.min == 1, f'English min score must be 1, got {en_scores.min}'
+assert en_scores.max == 5, f'English max score must be 5, got {en_scores.max}'
+
+es_scores = config.languages['es'].rubric.scores
+assert es_scores.min == 1, f'Spanish min score must be 1, got {es_scores.min}'
+assert es_scores.max == 5, f'Spanish max score must be 5, got {es_scores.max}'
+
+print('✓ All validation tests passed')
+"
+
+# Test that rubric.yaml is no longer referenced
+python3 -c "
+import yaml
+prompt_config = yaml.safe_load(open('config/prompt.yaml'))
+assert 'frameworks' not in prompt_config, 'Frameworks section should be removed'
+print('✓ Frameworks section successfully removed')
+"
 ```
 
 **Human Test**:
@@ -303,18 +456,52 @@ print('Configuration valid')
 - Verify both English and Spanish sections exist
 
 **Files No Longer Used**: 
+- `config/rubric.yaml` (entire file deprecated - all content moved to prompt.yaml)
 - `config/rubric.yaml` (frameworks section deprecated)
 
 ---
 
-### **Step 2.2: Create Jinja2 Template System**
+### **Step 2.2: Deprecate rubric.yaml**
+
+**Files to Modify**: `config/rubric.yaml`
+
+**Implementation**:
+- **NEW**: Mark entire file as deprecated
+- **NEW**: Add deprecation notice at top of file
+- **NEW**: Remove all content except deprecation notice
+- **NEW**: Ensure no other files reference this configuration
+- **NEW**: Update validation scripts to ignore this file
+
+**Tests**:
+```bash
+# Verify deprecation notice exists
+grep -q "DEPRECATED" config/rubric.yaml && echo "✓ Deprecation notice found" || echo "✗ Deprecation notice missing"
+
+# Verify no other files reference rubric.yaml
+grep -r "rubric.yaml" backend/ --exclude="*.pyc" --exclude="__pycache__" && echo "✗ References to rubric.yaml found" || echo "✓ No references to rubric.yaml found"
+
+# Verify validation script ignores rubric.yaml
+python3 backend/validate_config.py 2>&1 | grep -q "rubric.yaml.*deprecated" && echo "✓ Validation script correctly handles deprecated file" || echo "✗ Validation script may still reference rubric.yaml"
+```
+
+**Human Test**:
+- Open `config/rubric.yaml` and verify deprecation notice
+- Check that no other configuration files reference rubric.yaml
+- Verify that the application still functions without rubric.yaml
+- Confirm that all rubric content is now in prompt.yaml
+
+---
+
+### **Step 2.3: Create Jinja2 Template System**
 
 **Files to Create**: `backend/templates/evaluation_prompt.j2`
 
 **Implementation**:
-- Create base evaluation prompt template
-- Add dynamic rubric criteria rendering
-- Include language-specific context and request
+- **NEW**: Create context/request/rubric template structure
+- **NEW**: Add dynamic 4-criteria rendering with weights
+- **NEW**: Include language-specific context and request text
+- **NEW**: Add scoring range validation (1-5 scale)
+- **NEW**: Include weight-based scoring instructions
 - Add required response format specification
 - Include validation instructions
 
@@ -325,8 +512,42 @@ python3 -c "
 from jinja2 import Environment, FileSystemLoader
 env = Environment(loader=FileSystemLoader('backend/templates'))
 template = env.get_template('evaluation_prompt.j2')
-result = template.render(context='Test', request='Test', rubric={}, text_content='Test')
-print('Template renders successfully')
+
+# Test with new rubric structure
+test_context = {
+    'context_text': 'You are an expert writing coach...',
+    'request_text': 'Evaluate the following business memo...',
+    'rubric': {
+        'scores': {'min': 1, 'max': 5},
+        'criteria': {
+            'structure': {'name': 'Structure', 'description': 'pyramid principle, SCQA, clarity of opportunity, ask', 'weight': 25},
+            'arguments_and_evidence': {'name': 'Arguments and Evidence', 'description': 'logic, financial metrics', 'weight': 30},
+            'strategic_alignment': {'name': 'Strategic Alignment', 'description': 'help achieve strategic goals 1, 2, 3', 'weight': 25},
+            'implementation_and_risks': {'name': 'Implementation and Risks', 'description': 'feasibility, risk assessment, implementation plan', 'weight': 20}
+        }
+    }
+}
+
+result = template.render(
+    context=test_context['context_text'],
+    request=test_context['request_text'],
+    rubric=test_context['rubric'],
+    text_content='Test business memo content',
+    language='en'
+)
+
+print('✓ Template renders successfully')
+
+# Verify template contains expected content
+assert 'Structure' in result, 'Structure criterion missing'
+assert 'Arguments and Evidence' in result, 'Arguments criterion missing'
+assert 'Strategic Alignment' in result, 'Strategic Alignment criterion missing'
+assert 'Implementation and Risks' in result, 'Implementation criterion missing'
+assert '25%' in result, 'Structure weight missing'
+assert '30%' in result, 'Arguments weight missing'
+assert '1-5' in result, 'Scoring range missing'
+
+print('✓ All expected content found in template')
 "
 ```
 
@@ -374,6 +595,93 @@ print('Prompt generation successful')
 **Files No Longer Used**: 
 - `backend/services/llm_service_backup.py` (DEPRECATED - DELETE)
 - `backend/services/llm_service_improved.py` (DEPRECATED - DELETE)
+
+---
+
+### **Step 3.3: Comprehensive Testing of Enhanced LLM Service**
+
+**Objective**: Verify that the enhanced LLM service works correctly with the new rubric structure.
+
+**Tests**:
+```python
+# Test complete evaluation workflow with new rubric
+python3 -c "
+from services.llm_service import EnhancedLLMService
+import json
+
+# Initialize service
+service = EnhancedLLMService()
+print('✓ Service initialized successfully')
+
+# Test English evaluation
+en_result = service.evaluate_text_with_llm('This is a test business memo in English.')
+print('✓ English evaluation completed')
+
+# Verify English result structure
+assert 'metadata' in en_result, 'Metadata missing from English result'
+assert 'language_detection' in en_result['metadata'], 'Language detection missing'
+assert en_result['metadata']['language_detection']['detected_language'] == 'en', 'English not detected'
+assert 'rubric_scores' in en_result, 'Rubric scores missing'
+
+# Verify 4 criteria are present
+en_criteria = en_result['rubric_scores']
+expected_criteria = ['structure', 'arguments_and_evidence', 'strategic_alignment', 'implementation_and_risks']
+for criterion in expected_criteria:
+    assert criterion in en_criteria, f'Criterion {criterion} missing from English result'
+
+print('✓ English evaluation structure correct')
+
+# Test Spanish evaluation
+es_result = service.evaluate_text_with_llm('Este es un memorando comercial de prueba en español.')
+print('✓ Spanish evaluation completed')
+
+# Verify Spanish result structure
+assert 'metadata' in es_result, 'Metadata missing from Spanish result'
+assert 'language_detection' in es_result['metadata'], 'Language detection missing'
+assert es_result['metadata']['language_detection']['detected_language'] == 'es', 'Spanish not detected'
+assert 'rubric_scores' in es_result, 'Rubric scores missing'
+
+# Verify 4 criteria are present
+es_criteria = es_result['rubric_scores']
+for criterion in expected_criteria:
+    assert criterion in es_criteria, f'Criterion {criterion} missing from Spanish result'
+
+print('✓ Spanish evaluation structure correct')
+
+# Test weight calculation
+def calculate_weighted_score(scores, weights):
+    total_score = 0
+    for criterion, score_data in scores.items():
+        if isinstance(score_data, dict) and 'score' in score_data:
+            score = score_data['score']
+            weight = weights.get(criterion, 0) / 100.0
+            total_score += score * weight
+    return round(total_score, 2)
+
+# Test with known weights
+test_weights = {
+    'structure': 25,
+    'arguments_and_evidence': 30,
+    'strategic_alignment': 25,
+    'implementation_and_risks': 20
+}
+
+# Test weight validation
+total_weight = sum(test_weights.values())
+assert total_weight == 100, f'Total weight must be 100%, got {total_weight}%'
+print('✓ Weight validation passed')
+
+print('✓ All tests passed successfully')
+"
+```
+
+**Human Test**:
+- Submit English business memo for evaluation
+- Submit Spanish business memo for evaluation
+- Verify that both evaluations use the correct 4-criteria rubric
+- Check that language detection works correctly
+- Verify that weights are properly applied in scoring
+- Confirm that the response structure matches the new rubric
 
 ---
 
@@ -435,6 +743,70 @@ console.log('Types valid')
 
 **Files No Longer Used**: 
 - Any framework-related type definitions
+
+---
+
+### **Step 4.4: Comprehensive Testing of Frontend Components**
+
+**Objective**: Verify that frontend components work correctly with the new 4-criteria rubric structure.
+
+**Tests**:
+```bash
+# Test frontend compilation
+cd vue-frontend
+npm run build
+
+# Test component compilation individually
+npm run build -- --target lib --name DynamicRubricScores src/components/DynamicRubricScores.vue
+npm run build -- --target lib --name LanguageDetectionDisplay src/components/LanguageDetectionDisplay.vue
+```
+
+**Component Testing**:
+```typescript
+// Test DynamicRubricScores component with new rubric structure
+import { mount } from '@vue/test-utils'
+import DynamicRubricScores from '@/components/DynamicRubricScores.vue'
+
+const testEvaluation = {
+  rubric_scores: {
+    structure: { score: 4, justification: 'Good structure' },
+    arguments_and_evidence: { score: 5, justification: 'Excellent arguments' },
+    strategic_alignment: { score: 4, justification: 'Good alignment' },
+    implementation_and_risks: { score: 3, justification: 'Basic implementation' }
+  },
+  overall_score: 4.0
+}
+
+const wrapper = mount(DynamicRubricScores, {
+  props: { evaluation: testEvaluation }
+})
+
+// Verify all 4 criteria are displayed
+expect(wrapper.text()).toContain('Structure')
+expect(wrapper.text()).toContain('Arguments and Evidence')
+expect(wrapper.text()).toContain('Strategic Alignment')
+expect(wrapper.text()).toContain('Implementation and Risks')
+
+// Verify scores are displayed
+expect(wrapper.text()).toContain('4')
+expect(wrapper.text()).toContain('5')
+expect(wrapper.text()).toContain('3')
+
+// Verify overall score is calculated correctly
+const expectedScore = (4 * 0.25) + (5 * 0.30) + (4 * 0.25) + (3 * 0.20)
+expect(wrapper.text()).toContain(expectedScore.toFixed(1))
+
+console.log('✓ DynamicRubricScores component tests passed')
+```
+
+**Human Test**:
+- Navigate to Overall Feedback page
+- Verify that all 4 criteria are displayed with correct names
+- Check that weights are visible (25%, 30%, 25%, 20%)
+- Verify that scores are displayed correctly
+- Confirm that overall score calculation uses the new weights
+- Test with different evaluation results
+- Verify responsive design on mobile and desktop
 
 ---
 
@@ -651,12 +1023,14 @@ npm run test
 
 ---
 
-### **Step 6.3: End-to-End Testing**
+### **Step 6.3: End-to-End Testing with New Rubric Structure**
 
 **Files to Create**: `tests/e2e/test_language_detection.py`
 
 **Implementation**:
-- Test complete evaluation workflow
+- **NEW**: Test complete evaluation workflow with 4-criteria rubric
+- **NEW**: Verify weight calculation and scoring accuracy
+- **NEW**: Test both English and Spanish evaluation paths
 - Test language detection accuracy
 - Test prompt generation quality
 - Test response parsing and display
@@ -668,16 +1042,145 @@ npm run test
 cd tests/e2e
 python3 test_language_detection.py
 # Verify all tests pass
+
+# Test new rubric structure specifically
+python3 -c "
+import requests
+import json
+
+# Test configuration
+base_url = 'http://localhost:8000'
+test_texts = {
+    'en': 'This is a test business memo in English. It demonstrates good structure and clear arguments.',
+    'es': 'Este es un memorando comercial de prueba en español. Demuestra buena estructura y argumentos claros.'
+}
+
+def test_new_rubric_structure():
+    print('Testing new 4-criteria rubric structure...')
+    
+    # Test English evaluation
+    en_response = requests.post(f'{base_url}/api/v1/evaluations/submit', 
+                               json={'text_content': test_texts['en']},
+                               headers={'Content-Type': 'application/json'})
+    
+    assert en_response.status_code == 200, f'English evaluation failed: {en_response.status_code}'
+    en_result = en_response.json()
+    
+    # Verify 4 criteria are present
+    en_criteria = en_result['data']['evaluation']['rubric_scores']
+    expected_criteria = ['structure', 'arguments_and_evidence', 'strategic_alignment', 'implementation_and_risks']
+    for criterion in expected_criteria:
+        assert criterion in en_criteria, f'Criterion {criterion} missing from English result'
+    
+    print('✓ English evaluation uses new rubric structure')
+    
+    # Test Spanish evaluation
+    es_response = requests.post(f'{base_url}/api/v1/evaluations/submit', 
+                               json={'text_content': test_texts['es']},
+                               headers={'Content-Type': 'application/json'})
+    
+    assert es_response.status_code == 200, f'Spanish evaluation failed: {es_response.status_code}'
+    es_result = es_response.json()
+    
+    # Verify 4 criteria are present
+    es_criteria = es_result['data']['evaluation']['rubric_scores']
+    for criterion in expected_criteria:
+        assert criterion in es_criteria, f'Criterion {criterion} missing from Spanish result'
+    
+    print('✓ Spanish evaluation uses new rubric structure')
+    
+    # Test weight validation
+    expected_weights = {
+        'structure': 25,
+        'arguments_and_evidence': 30,
+        'strategic_alignment': 25,
+        'implementation_and_risks': 20
+    }
+    
+    total_weight = sum(expected_weights.values())
+    assert total_weight == 100, f'Total weight must be 100%, got {total_weight}%'
+    print('✓ Weight validation passed (100%)')
+    
+    print('✓ All new rubric structure tests passed!')
+
+# Run tests
+test_new_rubric_structure()
+"
 ```
 
 **Human Test**:
-- Complete full evaluation workflow
+- **NEW**: Complete full evaluation workflow with new 4-criteria rubric
+- **NEW**: Verify that all 4 criteria are displayed correctly
+- **NEW**: Check that weights (25%, 30%, 25%, 20%) are applied properly
 - Test with English and Spanish text
 - Verify appropriate language prompts
 - Check response quality and accuracy
 - Test error scenarios
 
 **Files No Longer Used**: None (new test files)
+
+---
+
+## **Phase 6.5: Comprehensive Testing Summary**
+
+### **Testing Checklist for New Rubric Structure**
+
+**Backend Testing**:
+- [ ] Pydantic models validate new rubric structure correctly
+- [ ] Weight validation ensures total equals 100%
+- [ ] Scoring range validation (1-5 scale) works correctly
+- [ ] Language detection works for both English and Spanish
+- [ ] Jinja2 templates render new rubric structure properly
+- [ ] Enhanced LLM service processes new rubric correctly
+- [ ] API endpoints return new rubric structure
+- [ ] Weight calculation produces correct overall scores
+
+**Frontend Testing**:
+- [ ] DynamicRubricScores component displays 4 criteria correctly
+- [ ] Weights are visible and accurate (25%, 30%, 25%, 20%)
+- [ ] Scores are displayed correctly for each criterion
+- [ ] Overall score calculation uses new weights
+- [ ] LanguageDetectionDisplay component works correctly
+- [ ] Responsive design works on all devices
+- [ ] Error handling works gracefully
+
+**Integration Testing**:
+- [ ] Complete evaluation workflow works end-to-end
+- [ ] Both English and Spanish evaluations complete successfully
+- [ ] New rubric structure is consistent across all components
+- [ ] Performance meets requirements (<15 seconds)
+- [ ] Error scenarios are handled properly
+- [ ] Configuration changes take effect without restarts
+
+**Configuration Testing**:
+- [ ] prompt.yaml contains new rubric structure
+- [ ] rubric.yaml is properly deprecated
+- [ ] No references to old rubric structure exist
+- [ ] Validation scripts work with new structure
+- [ ] Hot-reload capability works correctly
+
+**Run All Tests**:
+```bash
+# Backend tests
+cd backend
+python3 -m pytest tests/ -v
+
+# Frontend tests
+cd ../vue-frontend
+npm run test
+
+# Integration tests
+cd ../tests/integration
+python3 test_enhanced_llm.py
+
+# End-to-end tests
+cd ../tests/e2e
+python3 test_language_detection.py
+
+# Configuration validation
+cd ../../backend
+python3 validate_config.py
+```
 
 ---
 
@@ -1166,6 +1669,7 @@ security_tests = [
 - `vue-frontend/src/components/RubricScores.vue` - Replaced by DynamicRubricScores.vue
 
 **Configuration Files**:
+- **NEW**: `config/rubric.yaml` - Entire file deprecated, all content moved to prompt.yaml
 - Remove `frameworks` section from `config/rubric.yaml` (deprecated content)
 
 **Implementation**:
@@ -1181,6 +1685,11 @@ rm -rf deprecated/devspecs/
 # Remove deprecated frontend components
 rm vue-frontend/src/components/RubricScores.vue
 
+# **NEW**: Deprecate rubric.yaml (move content to prompt.yaml first)
+echo "# DEPRECATED: This file is no longer used. All rubric content has been moved to prompt.yaml" > config/rubric.yaml
+echo "# The new rubric structure uses 4 criteria with weights totaling 100%" >> config/rubric.yaml
+echo "# See prompt.yaml for the current rubric configuration" >> config/rubric.yaml
+
 # Clean up empty directories
 rmdir deprecated/ 2>/dev/null || true
 ```
@@ -1191,6 +1700,21 @@ rmdir deprecated/ 2>/dev/null || true
 ls backend/services/llm_service_backup.py 2>/dev/null && echo "ERROR: File still exists" || echo "File removed successfully"
 ls backend/services/llm_service_improved.py 2>/dev/null && echo "ERROR: File still exists" || echo "File removed successfully"
 ls deprecated/devspecs/ 2>/dev/null && echo "ERROR: Directory still exists" || echo "Directory removed successfully"
+
+# **NEW**: Verify rubric.yaml is properly deprecated
+grep -q "DEPRECATED" config/rubric.yaml && echo "✓ rubric.yaml properly deprecated" || echo "✗ rubric.yaml not properly deprecated"
+
+# **NEW**: Verify no references to old rubric structure exist
+grep -r "frameworks" backend/ --exclude="*.pyc" --exclude="__pycache__" && echo "✗ References to frameworks found" || echo "✓ No references to frameworks found"
+grep -r "evaluation_framework" backend/ --exclude="*.pyc" --exclude="__pycache__" && echo "✗ References to evaluation_framework found" || echo "✓ No references to evaluation_framework found"
+
+# **NEW**: Verify new rubric structure is accessible
+python3 -c "
+from models.config_models import PromptConfig
+import yaml
+config = PromptConfig(**yaml.safe_load(open('config/prompt.yaml')))
+print('✓ New rubric structure accessible')
+"
 ```
 
 **Human Test**:
