@@ -120,25 +120,28 @@ class ConfigService:
             raise
     
     def _validate_rubric_config(self, config: Dict[str, Any]) -> None:
-        """Validate rubric configuration"""
-        required_fields = ['rubric', 'scoring_categories']
-        for field in required_fields:
-            if field not in config:
-                raise ValueError(f"Missing required field '{field}' in rubric.yaml")
-        
-        # Validate rubric section
-        rubric = config['rubric']
-        required_rubric_fields = ['name', 'description', 'total_weight', 'scoring_scale', 'criteria']
-        for field in required_rubric_fields:
-            if field not in rubric:
-                raise ValueError(f"Missing required field '{field}' in rubric section")
+        """Validate rubric configuration - now deprecated and skipped"""
+        logger.info("✓ rubric.yaml - Deprecated file, skipping validation")
+        return
     
     def _validate_prompt_config(self, config: Dict[str, Any]) -> None:
-        """Validate prompt configuration"""
-        required_fields = ['templates', 'instructions']
+        """Validate prompt configuration with new structure"""
+        required_fields = ['languages', 'default_language', 'confidence_threshold']
         for field in required_fields:
             if field not in config:
                 raise ValueError(f"Missing required field '{field}' in prompt.yaml")
+        
+        # Check required languages
+        if 'languages' in config:
+            required_languages = ['en', 'es']
+            for lang in required_languages:
+                if lang not in config['languages']:
+                    raise ValueError(f"Missing required language: {lang}")
+                
+                lang_config = config['languages'][lang]
+                for section in ['context', 'request', 'rubric']:
+                    if section not in lang_config:
+                        raise ValueError(f"Missing {section} section in {lang} language")
     
     def _validate_llm_config(self, config: Dict[str, Any]) -> None:
         """Validate LLM configuration"""

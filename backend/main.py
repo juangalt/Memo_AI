@@ -20,8 +20,6 @@ from models import db_manager, Session, Submission, Evaluation
 # Import services
 from services import (
     config_service, 
-    get_llm_service, 
-    evaluate_text_with_llm,
     get_auth_service,
     authenticate,
     validate_session,
@@ -33,6 +31,9 @@ from services import (
     list_users,
     delete_user
 )
+
+# Import new enhanced LLM service
+from services.llm_service import EnhancedLLMService
 
 # Configure logging (will be updated after config loading)
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(name)s:%(message)s')
@@ -139,9 +140,9 @@ async def health_check():
         
         # Check LLM health
         try:
-            llm_service = get_llm_service()
-            llm_health = llm_service.health_check()
-            llm_status = llm_health["status"]
+            llm_service = EnhancedLLMService()
+            llm_health = llm_service.validate_configuration()
+            llm_status = "healthy" if llm_health["valid"] else "unhealthy"
         except Exception as e:
             logger.error(f"LLM health check failed: {e}")
             llm_status = "unhealthy"
@@ -192,12 +193,12 @@ async def health_check():
         # Add LLM details if available
         if llm_status == "healthy":
             health_status["llm_details"] = {
-                "provider": llm_health.get("provider", ""),
-                "model": llm_health.get("model", ""),
-                "api_accessible": llm_health.get("api_accessible", False),
-                "config_loaded": llm_health.get("config_loaded", False),
-                "debug_mode": llm_health.get("debug_mode", False),
-                "mock_mode": llm_health.get("mock_mode", False)
+                "provider": "anthropic",
+                "model": "claude-3-sonnet-20240229",
+                "api_accessible": llm_health.get("components", {}).get("claude_client", False),
+                "config_loaded": llm_health.get("components", {}).get("prompt_config", False),
+                "supported_languages": llm_health.get("supported_languages", []),
+                "default_language": llm_health.get("default_language", "en")
             }
         else:
             health_status["llm_error"] = llm_health.get("error", "Unknown error")
@@ -294,16 +295,16 @@ async def config_health_check():
 async def llm_health_check():
     """LLM service health check endpoint"""
     try:
-        llm_service = get_llm_service()
-        llm_health = llm_service.health_check()
+        llm_service = EnhancedLLMService()
+        llm_health = llm_service.validate_configuration()
         
         response_data = {
-            "status": llm_health["status"],
+            "status": "healthy" if llm_health["valid"] else "unhealthy",
             "timestamp": datetime.utcnow().isoformat(),
             "llm": llm_health
         }
         
-        if llm_health["status"] == "healthy":
+        if llm_health["valid"]:
             return create_standardized_response(response_data)
         else:
             return JSONResponse(
@@ -1401,10 +1402,11 @@ async def submit_evaluation(request: Request):
         # Create submission record
         submission = Submission.create(text_content, session_data['session_id'])
         
-        # Use LLM service for text evaluation
-        success, evaluation_result, error = evaluate_text_with_llm(text_content)
-        
-        if not success:
+        # Use enhanced LLM service for text evaluation
+        try:
+            llm_service = EnhancedLLMService()
+            evaluation_result = llm_service.evaluate_text_with_llm(text_content)
+        except Exception as e:
             return JSONResponse(
                 status_code=500,
                 content={
@@ -1417,12 +1419,12 @@ async def submit_evaluation(request: Request):
                         "code": "LLM_ERROR",
                         "message": "Evaluation processing failed",
                         "field": None,
-                        "details": error
+                        "details": str(e)
                     }]
                 }
             )
         
-        # Create evaluation record with raw data
+        # Create evaluation record with raw data and language detection metadata
         evaluation = Evaluation.create(
             submission_id=submission.id,
             overall_score=evaluation_result['overall_score'],
@@ -1431,11 +1433,11 @@ async def submit_evaluation(request: Request):
             rubric_scores=json.dumps(evaluation_result['rubric_scores']),
             segment_feedback=json.dumps(evaluation_result['segment_feedback']),
             llm_provider='claude',
-            llm_model=evaluation_result.get('model_used', 'claude-3-haiku-20240307'),
-            raw_prompt=evaluation_result.get('raw_prompt'),
-            raw_response=evaluation_result.get('raw_response'),
+            llm_model='claude-3-sonnet-20240229',
+            raw_prompt=evaluation_result.get('metadata', {}).get('prompt_length', 0),
+            raw_response=evaluation_result.get('metadata', {}).get('response_length', 0),
             debug_enabled=True,  # Enable debug mode
-            processing_time=evaluation_result.get('processing_time')
+            processing_time=evaluation_result.get('metadata', {}).get('processing_time', 0)
         )
         
         return {

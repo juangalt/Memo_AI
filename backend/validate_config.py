@@ -1,6 +1,6 @@
 """
 Configuration validation script for Memo AI Coach
-Validates all 4 essential YAML configuration files
+Validates all 4 essential YAML configuration files with new structure
 """
 
 import yaml
@@ -37,50 +37,64 @@ def validate_yaml_file(file_path, required_fields=None):
         return False
 
 def validate_rubric_config(config):
-    """Validate rubric.yaml specific configuration"""
+    """Validate rubric.yaml - now deprecated but should contain deprecation notice"""
     try:
-        # Check rubric section
-        if 'rubric' not in config:
-            return False, "Missing rubric section"
-        
-        rubric = config['rubric']
-        
-        # Check required rubric fields
-        required_rubric_fields = ['name', 'description', 'total_weight', 'scoring_scale', 'criteria']
-        for field in required_rubric_fields:
-            if field not in rubric:
-                return False, f"Missing required field '{field}' in rubric section"
-        
-        # Check scoring categories
-        if 'scoring_categories' not in config:
-            return False, "Missing scoring_categories section"
-        
-        # Validate each scoring category
-        for category in config['scoring_categories']:
-            required_fields = ['name', 'max_score', 'weight']
-            for field in required_fields:
-                if field not in category:
-                    return False, f"Missing required field '{field}' in scoring category"
-        
-        return True, "Valid"
+        # Check if file contains deprecation notice or status field
+        if 'DEPRECATED' in str(config) or config.get('status') == 'deprecated':
+            logger.info("✓ rubric.yaml - Properly deprecated")
+            return True, "Deprecated file - no longer used"
+        else:
+            return False, "File should contain deprecation notice or status field"
         
     except Exception as e:
         return False, str(e)
 
 def validate_prompt_config(config):
-    """Validate prompt.yaml specific configuration"""
+    """Validate prompt.yaml with new context/request/rubric structure"""
     try:
-        # Check templates
-        if 'templates' not in config:
-            return False, "Missing templates section"
+        # Check languages section
+        if 'languages' not in config:
+            return False, "Missing languages section"
         
-        # Check instructions
-        if 'instructions' not in config:
-            return False, "Missing instructions section"
+        # Check required languages
+        required_languages = ['en', 'es']
+        for lang in required_languages:
+            if lang not in config['languages']:
+                return False, f"Missing required language: {lang}"
+            
+            lang_config = config['languages'][lang]
+            
+            # Check context, request, and rubric sections
+            for section in ['context', 'request', 'rubric']:
+                if section not in lang_config:
+                    return False, f"Missing {section} section in {lang} language"
+            
+            # Check rubric structure
+            rubric = lang_config['rubric']
+            if 'scores' not in rubric or 'criteria' not in rubric:
+                return False, f"Missing scores or criteria in {lang} rubric"
+            
+            # Check scoring range
+            scores = rubric['scores']
+            if scores.get('min') != 1 or scores.get('max') != 5:
+                return False, f"Invalid scoring range in {lang} rubric (should be 1-5)"
+            
+            # Check criteria count and weights
+            criteria = rubric['criteria']
+            if len(criteria) != 4:
+                return False, f"Invalid criteria count in {lang} rubric (should be 4)"
+            
+            # Check weights sum to 100%
+            total_weight = sum(criterion['weight'] for criterion in criteria.values())
+            if total_weight != 100:
+                return False, f"Invalid total weight in {lang} rubric (should be 100%, got {total_weight}%)"
         
-        # Validate evaluation prompt template
-        if 'evaluation_prompt' not in config['templates']:
-            return False, "Missing evaluation_prompt template"
+        # Check default language and confidence threshold
+        if 'default_language' not in config:
+            return False, "Missing default_language"
+        
+        if 'confidence_threshold' not in config:
+            return False, "Missing confidence_threshold"
         
         return True, "Valid"
         
@@ -98,12 +112,9 @@ def validate_llm_config(config):
         if 'api_configuration' not in config:
             return False, "Missing api_configuration section"
         
-        # Validate provider settings
-        provider = config['provider']
-        required_provider_fields = ['name', 'api_base_url', 'model']
-        for field in required_provider_fields:
-            if field not in provider:
-                return False, f"Missing required field '{field}' in provider section"
+        # Check performance optimization
+        if 'performance_optimization' not in config:
+            return False, "Missing performance_optimization section"
         
         return True, "Valid"
         
@@ -139,18 +150,18 @@ def validate_all_configs():
     """Validate all 4 essential configuration files"""
     config_dir = os.getenv('CONFIG_DIR', '/app/config')
     if not os.path.exists(config_dir):
-        config_dir = './config'  # Fallback for local development
+        config_dir = '../config'  # Fallback for local development from backend directory
     
     logger.info(f"Validating configuration files in: {config_dir}")
     
     # Define required configuration files and their validation functions
     config_files = {
         'rubric.yaml': {
-            'required_fields': ['rubric', 'scoring_categories'],
+            'required_fields': [],  # No required fields for deprecated file
             'validator': validate_rubric_config
         },
         'prompt.yaml': {
-            'required_fields': ['templates', 'instructions'],
+            'required_fields': ['languages', 'default_language', 'confidence_threshold'],
             'validator': validate_prompt_config
         },
         'llm.yaml': {
@@ -221,7 +232,7 @@ def check_configuration_files():
     """Check if all required configuration files exist"""
     config_dir = os.getenv('CONFIG_DIR', '/app/config')
     if not os.path.exists(config_dir):
-        config_dir = './config'  # Fallback for local development
+        config_dir = '../config'  # Fallback for local development from backend directory
     
     required_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
     missing_files = []

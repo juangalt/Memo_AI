@@ -1,122 +1,170 @@
 # LLM Prompt Templates and Instruction Formats
 # Memo AI Coach - Prompt Configuration
+# NEW: Context/Request/Rubric structure with 4 core criteria
 
-templates:
-  evaluation_prompt:
-    system_message: |
-      You are an expert writing coach and evaluator. Your role is to provide comprehensive, constructive feedback on written text using a structured evaluation framework. You will analyze the text, provide detailed rubric-based scoring, and offer feedback for the different segments of the text. You will divide the text in relevant segments and quote each of them below. Always respond with valid JSON format.
+languages:
+  en:
+    context:
+      context_text: |
+        You are an expert writing coach evaluating business memos. Your role is to provide comprehensive, constructive feedback using a structured evaluation framework. You will analyze the text, provide detailed rubric-based scoring, and offer feedback for different segments of the text. Always respond with valid JSON format.
+    
+    request:
+      request_text: |
+        Evaluate the following business memo using the rubric below. Provide comprehensive feedback including strengths, opportunities, rubric scores, and segment-level analysis.
+        
+        TEXT TO EVALUATE:
+        {{ text_content }}
+        
+        EVALUATION RUBRIC:
+        {{ rubric_content }}
+        
+        Provide your evaluation in the following JSON format:
+        
+        {
+          "overall_score": 4.2,
+          "strengths": [
+            "Clear executive summary with logical structure",
+            "Strong evidence-based arguments with credible sources",
+            "Effective use of financial metrics"
+          ],
+          "opportunities": [
+            "Strengthen risk mitigation strategies",
+            "Add more specific implementation timeline",
+            "Enhance strategic alignment section"
+          ],
+          "rubric_scores": {
+            "structure": {"score": 4, "justification": "Clear organization with logical flow"},
+            "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
+            "strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
+            "implementation_and_risks": {"score": 3, "justification": "Basic implementation plan"}
+          },
+          "segment_feedback": [
+            {
+              "segment": "The executive summary effectively...",
+              "comment": "Strong opening that clearly states the investment opportunity",
+              "questions": [
+                "How could this summary be even more compelling?",
+                "What additional context would strengthen the case?"
+              ],
+              "suggestions": [
+                "Consider adding a brief market context",
+                "Include a clear timeline for implementation"
+              ]
+            }
+          ]
+        }
+        
+        Focus on providing constructive, actionable feedback. Ensure all scores are integers 1-5 and the overall_score is calculated as the weighted average of rubric scores.
+    
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Structure"
+          description: "pyramid principle, SCQA, clarity of opportunity, ask"
+          weight: 25
+        arguments_and_evidence:
+          name: "Arguments and Evidence"
+          description: "logic, financial metrics"
+          weight: 30
+        strategic_alignment:
+          name: "Strategic Alignment"
+          description: "help achieve strategic goals 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementation and Risks"
+          description: "feasibility, risk assessment, implementation plan"
+          weight: 20
 
-    user_template: |
-      Evaluate the following text using the provided rubric and evaluation framework.
+  es:
+    context:
+      context_text: |
+        Eres un coach de escritura experto evaluando memorandos comerciales. Tu rol es proporcionar retroalimentación integral y constructiva usando un marco de evaluación estructurado. Analizarás el texto, proporcionarás puntuación detallada basada en rúbrica y ofrecerás retroalimentación para diferentes segmentos del texto. Siempre responde con formato JSON válido.
+    
+    request:
+      request_text: |
+        Evalúa el siguiente memorando comercial usando la rúbrica de abajo. Proporciona retroalimentación integral incluyendo fortalezas, oportunidades, puntuaciones de rúbrica y análisis a nivel de segmento.
+        
+        TEXTO A EVALUAR:
+        {{ text_content }}
+        
+        RÚBRICA DE EVALUACIÓN:
+        {{ rubric_content }}
+        
+        Proporciona tu evaluación en el siguiente formato JSON:
+        
+        {
+          "overall_score": 4.2,
+          "strengths": [
+            "Resumen ejecutivo claro con estructura lógica",
+            "Argumentos sólidos basados en evidencia con fuentes creíbles",
+            "Uso efectivo de métricas financieras"
+          ],
+          "opportunities": [
+            "Fortalecer estrategias de mitigación de riesgos",
+            "Agregar cronograma de implementación más específico",
+            "Mejorar sección de alineación estratégica"
+          ],
+          "rubric_scores": {
+            "structure": {"score": 4, "justification": "Organización clara con flujo lógico"},
+            "arguments_and_evidence": {"score": 5, "justification": "Evidencia sólida de fuentes creíbles"},
+            "strategic_alignment": {"score": 4, "justification": "Buena alineación estratégica"},
+            "implementation_and_risks": {"score": 3, "justification": "Plan de implementación básico"}
+          },
+          "segment_feedback": [
+            {
+              "segment": "El resumen ejecutivo efectivamente...",
+              "comment": "Apertura sólida que claramente establece la oportunidad de inversión",
+              "questions": [
+                "¿Cómo podría ser este resumen aún más convincente?",
+                "¿Qué contexto adicional fortalecería el caso?"
+              ],
+              "suggestions": [
+                "Considera agregar un breve contexto de mercado",
+                "Incluye un cronograma claro para la implementación"
+              ]
+            }
+          ]
+        }
+        
+        Enfócate en proporcionar retroalimentación constructiva y accionable. Asegúrate de que todas las puntuaciones sean enteros 1-5 y que la puntuación general se calcule como el promedio ponderado de las puntuaciones de rúbrica.
+    
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Estructura"
+          description: "principio de pirámide, SCQA, claridad de oportunidad, solicitud"
+          weight: 25
+        arguments_and_evidence:
+          name: "Argumentos y Evidencia"
+          description: "lógica, métricas financieras"
+          weight: 30
+        strategic_alignment:
+          name: "Alineación Estratégica"
+          description: "ayudar a lograr objetivos estratégicos 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementación y Riesgos"
+          description: "viabilidad, evaluación de riesgos, plan de implementación"
+          weight: 20
 
-      TEXT TO EVALUATE:
-      {text_content}
+default_language: "en"
+confidence_threshold: 0.7
 
-      EVALUATION RUBRIC:
-      {rubric_content}
+# Response format specification
+response_format:
+  overall_score: "decimal (1.0-5.0)"
+  strengths: "list of strings"
+  opportunities: "list of strings"
+  rubric_scores: "object with score (integer 1-5) and justification (string) for each rubric criterion"
+  segment_feedback: "list of objects with segment, comment, questions, and suggestions"
 
-      {frameworks_section}
-
-      Provide your evaluation in the following JSON format:
-
-      {{
-        "overall_score": 4.2,
-        "strengths": [
-          "Clear executive summary with logical structure",
-          "Strong evidence-based arguments with credible sources",
-          "Effective use of financial metrics"
-        ],
-        "opportunities": [
-          "Strengthen risk mitigation strategies",
-          "Add more specific implementation timeline",
-          "Enhance strategic alignment section"
-        ],
-        "rubric_scores": {{
-          "structure_and_logic": {{"score": 4, "justification": "Clear organization with logical flow"}},
-          "arguments_and_evidence": {{"score": 5, "justification": "Strong evidence from credible sources"}},
-          "clarity_style_financial_metrics": {{"score": 4, "justification": "Effective financial metrics integration"}},
-          "relevance_strategic_alignment": {{"score": 4, "justification": "Good strategic alignment"}},
-          "clear_opportunity_ask": {{"score": 4, "justification": "Clear opportunity presentation"}},
-          "risk_mitigation": {{"score": 3, "justification": "Basic risk identification"}},
-          "feasibility_implementation": {{"score": 4, "justification": "Practical implementation plan"}}
-        }},
-        "segment_feedback": [
-          {{
-            "segment": "The executive summary effectively...",
-            "comment": "Strong opening that clearly states the investment opportunity",
-            "questions": [
-              "How could this summary be even more compelling?",
-              "What additional context would strengthen the case?"
-            ],
-            "suggestions": [
-              "Consider adding a brief market context",
-              "Include a clear timeline for implementation"
-            ]
-          }}
-        ]
-      }}
-
-      Focus on providing constructive, actionable feedback that will help the writer improve their skills. Ensure all scores are integers 1-5 and the overall_score is a decimal calculated as the weighted average. For each significant segment of the text, provide targeted feedback including comments, thought-provoking questions, and specific suggestions for improvement. {framework_application_guidance}
-
-instructions:
-  evaluation_guidelines:
-    - "Be constructive and encouraging in your feedback"
-    - "Provide specific examples and suggestions"
-    - "Focus on both strengths and areas for improvement"
-    - "Use clear, professional language"
-    - "Ensure feedback is actionable and specific"
-    - "Maintain objectivity and fairness"
-    - "Consider the writer's development level"
-    - "Encourage critical thinking and reflection"
-    - "Always respond with valid JSON format"
-    - "Ensure all scores are integers 1-5"
-    - "Calculate overall_score as weighted average of rubric scores"
-    - "{framework_evaluation_guidelines}"
-
-  scoring_guidelines:
-    - "Use the full range of scores (1-5) appropriately"
-    - "Provide clear justification for each score"
-    - "Consider the relative importance of each criterion"
-    - "Be consistent in your scoring approach"
-    - "Focus on the quality of the writing, not personal preferences"
-    - "Ensure JSON format compliance for all responses"
-    - "{framework_scoring_guidelines}"
-
-  segment_feedback_guidelines:
-    - "Identify specific segments that need attention"
-    - "Provide targeted feedback for each segment"
-    - "Ask questions that promote deeper thinking"
-    - "Connect segment feedback to overall improvement"
-    - "Be specific about what works and what could be improved"
-    - "Maintain JSON format consistency"
-    - "Include specific suggestions for each segment"
-    - "Provide thought-provoking questions for each segment"
-    - "{framework_segment_guidelines}"
-
-response_schemas:
-  evaluation_response:
-    overall_score: "decimal"
-    strengths: "list of strings"
-    opportunities: "list of strings"
-    rubric_scores: "object with score (integer 1-5) and justification (string) for each rubric criterion"
-    segment_feedback:
-      - segment: "string"
-        comment: "string"
-        questions: "list of strings"
-        suggestions: "list of strings"
-
-prompt_variables:
-  text_content: "The user's submitted text for evaluation"
-  rubric_content: "The evaluation rubric and criteria"
-  topic_context: "Context about the topic or subject area"
-  evaluation_focus: "Specific aspect to focus evaluation on"
-  # Dynamic sections that will be populated by the backend
-  frameworks_section: "EVALUATION FRAMEWORKS:\nUse these frameworks to guide your evaluation:\n\n{framework_list}"
-  framework_application_guidance: "Apply the provided frameworks to ensure comprehensive evaluation."
-  framework_evaluation_guidelines: "Apply the provided frameworks for comprehensive evaluation."
-  framework_scoring_guidelines: "Apply the provided frameworks for scoring evaluation."
-  framework_segment_guidelines: "Apply the provided frameworks to segment analysis."
-
+# Error handling
 error_handling:
   invalid_text: "Please provide valid text content for evaluation"
   text_too_long: "Text exceeds maximum length limit"
