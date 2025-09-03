@@ -210,6 +210,7 @@ interface Endpoint {
   path: string
   description: string
   status: 'unknown' | 'healthy' | 'error' | 'testing'
+  requiresAuth?: boolean
   responseTime?: number
   error?: string
   response?: string
@@ -224,21 +225,22 @@ const lastTested = ref('Never')
 
 const endpoints = ref<Endpoint[]>([
   // Health endpoints
-  { name: 'System Health', method: 'GET', path: '/health', description: 'Overall system health', status: 'unknown' },
-  { name: 'Database Health', method: 'GET', path: '/health/database', description: 'Database health check', status: 'unknown' },
-  { name: 'Config Health', method: 'GET', path: '/health/config', description: 'Configuration health check', status: 'unknown' },
-  { name: 'LLM Health', method: 'GET', path: '/health/llm', description: 'LLM service health check', status: 'unknown' },
-  { name: 'Auth Health', method: 'GET', path: '/health/auth', description: 'Authentication service health check', status: 'unknown' },
+  { name: 'System Health (Public)', method: 'GET', path: '/health', description: 'Overall system health (public)', status: 'unknown', requiresAuth: false },
+  { name: 'System Health (Detailed)', method: 'GET', path: '/health/detailed', description: 'Detailed system health (admin)', status: 'unknown', requiresAuth: true },
+  { name: 'Database Health', method: 'GET', path: '/health/database', description: 'Database health check (admin)', status: 'unknown', requiresAuth: true },
+  { name: 'Config Health', method: 'GET', path: '/health/config', description: 'Configuration health check (admin)', status: 'unknown', requiresAuth: true },
+  { name: 'LLM Health', method: 'GET', path: '/health/llm', description: 'LLM service health check (admin)', status: 'unknown', requiresAuth: true },
+  { name: 'Auth Health', method: 'GET', path: '/health/auth', description: 'Authentication service health check (admin)', status: 'unknown', requiresAuth: true },
   
   // API endpoints
-  { name: 'Auth Validate', method: 'GET', path: '/api/v1/auth/validate', description: 'Validate session', status: 'unknown' },
-  { name: 'List Users', method: 'GET', path: '/api/v1/admin/users', description: 'List all users', status: 'unknown' },
+  { name: 'Auth Validate', method: 'GET', path: '/api/v1/auth/validate', description: 'Validate session', status: 'unknown', requiresAuth: true },
+  { name: 'List Users', method: 'GET', path: '/api/v1/admin/users', description: 'List all users', status: 'unknown', requiresAuth: true },
   
   // Config endpoints
   
-  { name: 'Config: Prompt', method: 'GET', path: '/api/v1/admin/config/prompt', description: 'Get prompt configuration', status: 'unknown' },
-  { name: 'Config: Auth', method: 'GET', path: '/api/v1/admin/config/auth', description: 'Get auth configuration', status: 'unknown' },
-  { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration', status: 'unknown' }
+  { name: 'Config: Prompt', method: 'GET', path: '/api/v1/admin/config/prompt', description: 'Get prompt configuration', status: 'unknown', requiresAuth: true },
+  { name: 'Config: Auth', method: 'GET', path: '/api/v1/admin/config/auth', description: 'Get auth configuration', status: 'unknown', requiresAuth: true },
+  { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration', status: 'unknown', requiresAuth: true }
 ])
 
 const healthyCount = computed(() => endpoints.value.filter(e => e.status === 'healthy').length)
@@ -299,9 +301,8 @@ const getDebugErrorInfo = (endpoint: Endpoint) => {
   const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
   const fullUrl = `${baseUrl}${endpoint.path}`
   
-  // Determine if endpoint requires authentication
-  const requiresAuth = endpoint.path.includes('/api/v1/admin/') ||
-                      endpoint.path.includes('/api/v1/sessions/')
+  // Use the requiresAuth field from the endpoint
+  const requiresAuth = endpoint.requiresAuth || false
   
   return `=== API ENDPOINT ERROR DEBUG INFO ===
 

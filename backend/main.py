@@ -35,6 +35,9 @@ from services import (
 # Import new enhanced LLM service
 from services.llm_service import EnhancedLLMService
 
+# Import authentication decorators
+from decorators import require_auth
+
 # Configure logging (will be updated after config loading)
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(name)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -170,6 +173,73 @@ async def health_check():
             }
         }
         
+        # Note: Detailed health information moved to authenticated endpoints
+        # This public endpoint provides only basic service status
+        
+        # Check if any service is unhealthy
+        if any(status != "healthy" for status in health_status["services"].values()):
+            health_status["status"] = "unhealthy"
+            return JSONResponse(
+                status_code=503, 
+                content=create_standardized_response(health_status)
+            )
+        
+        return create_standardized_response(health_status)
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content=create_error_response(
+                "HEALTH_CHECK_FAILED",
+                "Health check failed",
+                details=str(e)
+            )
+        )
+
+@app.get("/health/detailed")
+@require_auth(admin_only=True)
+async def detailed_health_check(request: Request):
+    """Detailed health check endpoint - admin only with full system information"""
+    try:
+        # Check database health
+        db_health = db_manager.health_check()
+        
+        # Check configuration health
+        config_health = config_service.health_check()
+        
+        # Check LLM health
+        try:
+            llm_service = EnhancedLLMService()
+            llm_health = llm_service.validate_configuration()
+            llm_status = "healthy" if llm_health["valid"] else "unhealthy"
+        except Exception as e:
+            logger.error(f"LLM health check failed: {e}")
+            llm_status = "unhealthy"
+        
+        # Check authentication health
+        try:
+            auth_service = get_auth_service()
+            auth_health = auth_service.health_check()
+            auth_status = auth_health["status"]
+        except Exception as e:
+            logger.error(f"Auth health check failed: {e}")
+            auth_status = "unhealthy"
+        
+        # Detailed health check with full information
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0.0",
+            "services": {
+                "api": "healthy",
+                "database": db_health["status"],
+                "configuration": config_health["status"],
+                "llm": llm_status,
+                "auth": auth_status
+            }
+        }
+        
         # Add database details if available
         if db_health["status"] == "healthy":
             health_status["database_details"] = {
@@ -239,19 +309,20 @@ async def health_check():
         return create_standardized_response(health_status)
         
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
+        logger.error(f"Detailed health check failed: {e}")
         return JSONResponse(
             status_code=503,
             content=create_error_response(
                 "HEALTH_CHECK_FAILED",
-                "Health check failed",
+                "Detailed health check failed",
                 details=str(e)
             )
         )
 
 @app.get("/health/database")
-async def database_health_check():
-    """Database-specific health check endpoint"""
+@require_auth(admin_only=True)
+async def database_health_check(request: Request):
+    """Database-specific health check endpoint - admin only"""
     try:
         db_health = db_manager.health_check()
         return create_standardized_response({
@@ -271,15 +342,24 @@ async def database_health_check():
         )
 
 @app.get("/health/config")
-async def config_health_check():
-    """Configuration-specific health check endpoint"""
+@require_auth(admin_only=True)
+async def config_health_check(request: Request):
+    """Configuration-specific health check endpoint - admin only"""
     try:
         config_health = config_service.health_check()
-        return create_standardized_response({
-            "status": config_health["status"],
-            "timestamp": datetime.utcnow().isoformat(),
-            "configuration": config_health
-        })
+        return create_standardized_response(
+            {
+                "status": config_health["status"],
+                "timestamp": datetime.utcnow().isoformat(),
+                "configuration": {
+                    "status": config_health["status"],
+                    "configs_loaded": config_health.get("configs_loaded", []),
+                    "last_loaded": config_health.get("last_loaded", ""),
+                    # Remove sensitive config_dir path
+                    "config_count": len(config_health.get("configs_loaded", []))
+                }
+            }
+        )
     except Exception as e:
         logger.error(f"Configuration health check failed: {e}")
         return JSONResponse(
@@ -292,16 +372,26 @@ async def config_health_check():
         )
 
 @app.get("/health/llm")
-async def llm_health_check():
-    """LLM service health check endpoint"""
+@require_auth(admin_only=True)
+async def llm_health_check(request: Request):
+    """LLM service health check endpoint - admin only"""
     try:
         llm_service = EnhancedLLMService()
         llm_health = llm_service.validate_configuration()
         
+        # Sanitize sensitive information
+        sanitized_llm_health = {
+            "valid": llm_health["valid"],
+            "components": llm_health.get("components", {}),
+            "supported_languages": llm_health.get("supported_languages", []),
+            "default_language": llm_health.get("default_language", "en"),
+            "model": llm_health.get("model", "unknown")
+        }
+        
         response_data = {
             "status": "healthy" if llm_health["valid"] else "unhealthy",
             "timestamp": datetime.utcnow().isoformat(),
-            "llm": llm_health
+            "llm": sanitized_llm_health
         }
         
         if llm_health["valid"]:
@@ -323,16 +413,28 @@ async def llm_health_check():
         )
 
 @app.get("/health/auth")
-async def auth_health_check():
-    """Authentication service health check endpoint"""
+@require_auth(admin_only=True)
+async def auth_health_check(request: Request):
+    """Authentication service health check endpoint - admin only"""
     try:
         auth_service = get_auth_service()
         auth_health = auth_service.health_check()
         
+        # Sanitize sensitive authentication information
+        sanitized_auth_health = {
+            "status": auth_health["status"],
+            "service": auth_health.get("service", "authentication"),
+            "config_loaded": auth_health.get("config_loaded", False),
+            "active_sessions": auth_health.get("active_sessions", 0),
+            "brute_force_protection": auth_health.get("brute_force_protection", False),
+            "session_expiry_hours": auth_health.get("session_expiry_hours", 24),
+            "session_token_length": auth_health.get("session_token_length", 32)
+        }
+        
         response_data = {
             "status": auth_health["status"],
             "timestamp": datetime.utcnow().isoformat(),
-            "auth": auth_health
+            "auth": sanitized_auth_health
         }
         
         if auth_health["status"] == "healthy":

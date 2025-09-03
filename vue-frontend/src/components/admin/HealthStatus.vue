@@ -154,7 +154,8 @@ const getStatusClass = (status?: string) => {
 const checkHealth = async () => {
   isLoading.value = true
   try {
-    const result = await apiClient.get<HealthResponse>('/health')
+    // Use the detailed health endpoint for admin users
+    const result = await apiClient.get<HealthResponse>('/health/detailed')
     
     if (result.success && result.data) {
       const health = result.data
@@ -202,11 +203,28 @@ const checkHealth = async () => {
     }
   } catch (error) {
     console.error('Failed to check health status:', error)
-    healthData.value = {
-      database: { status: 'unknown' },
-      config: { status: 'unknown' },
-      llm: { status: 'unknown' },
-      auth: { status: 'unknown' }
+    // If detailed health fails, fall back to basic health
+    try {
+      const basicResult = await apiClient.get<HealthResponse>('/health')
+      if (basicResult.success && basicResult.data) {
+        const health = basicResult.data
+        if (health.services) {
+          healthData.value = {
+            database: { status: health.services.database || 'unknown' },
+            config: { status: health.services.configuration || 'unknown' },
+            llm: { status: health.services.llm || 'unknown' },
+            auth: { status: health.services.auth || 'unknown' }
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.error('Fallback health check also failed:', fallbackError)
+      healthData.value = {
+        database: { status: 'unknown' },
+        config: { status: 'unknown' },
+        llm: { status: 'unknown' },
+        auth: { status: 'unknown' }
+      }
     }
   } finally {
     isLoading.value = false
