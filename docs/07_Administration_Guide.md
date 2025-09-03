@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 07_Administration_Guide.md
-**Document Version**: 1.2
-**Last Updated**: Phase 9
-**Status**: Draft
+**Document Version**: 2.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
+**Status**: Active
 
 ---
 
@@ -20,7 +20,7 @@ See `docs/02b_Authentication_Specifications.md` for complete authentication deta
 
 ## 2.0 Admin Dashboard
 The Admin page provides (administrators only):
-- **Health Monitoring**: calls `/health` endpoint and displays service statuses including database, configuration, auth and LLM.
+- **Health Monitoring**: calls `/health/detailed` endpoint (admin-only) and displays comprehensive service statuses including database, configuration, auth and LLM with detailed metrics.
 - **Configuration Validation**: verify YAML configuration files and settings.
 - **User Management**: add, edit, delete, and manage user accounts and roles.
 - **Session Management**: view current session ID, create or refresh sessions.
@@ -30,11 +30,12 @@ The Admin page provides (administrators only):
 The Admin dashboard consists of the following components:
 
 #### HealthStatus Component
-- **System Health Overview**: Displays overall system status from `/health` endpoint
-- **Service Status**: Shows individual service health (API, Database, Config, LLM, Auth)
-- **Database Details**: Connection status, table count, journal mode, user count
-- **Real-time Updates**: Automatic refresh of health status
+- **System Health Overview**: Displays overall system status from `/health/detailed` endpoint (admin-only)
+- **Service Status**: Shows individual service health (API, Database, Config, LLM, Auth) with detailed metrics
+- **Database Details**: Connection status, table count, journal mode, user count, and performance metrics
+- **Real-time Updates**: Automatic refresh of health status with fallback to basic `/health` if detailed access fails
 - **Error Display**: Shows detailed error information for unhealthy services
+- **Security**: Only accessible to authenticated admin users
 
 #### ConfigValidator Component
 - **Configuration File Management**: View and edit all 4 YAML configuration files

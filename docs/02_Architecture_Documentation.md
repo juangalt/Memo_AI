@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 02_Architecture_Documentation.md
-**Document Version**: 2.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Document Version**: 3.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Status**: Active
 
 ---
@@ -14,11 +14,12 @@
 - **Frontend**: Vue.js application (`vue-frontend/`) providing a modern reactive interface with authentication-gated access and dynamic rubric display.
 - **Backend**: FastAPI service (`backend/main.py`) exposing REST endpoints with authentication middleware and enhanced LLM processing.
 - **Database**: SQLite accessed through `backend/models/database.py` using WAL mode.
-- **LLM Service**: `backend/services/llm_service.py` for Claude API interaction with Jinja2 templating and language detection.
+- **LLM Service**: `backend/services/llm_service.py` for Claude API interaction with Jinja2 templating, language detection, and Pydantic validation.
 - **Configuration Service**: `backend/services/config_service.py` and `config_manager.py` for loading and editing YAML configs with Pydantic validation.
 - **Authentication Service**: `backend/services/auth_service.py` providing user and admin login, session validation, and role-based access control.
 - **Language Detection Service**: `backend/services/language_detection.py` for robust multi-language text identification.
 - **Configuration Models**: `backend/models/config_models.py` with Pydantic models for type-safe configuration validation.
+- **Authentication Decorators**: `backend/decorators.py` with `@require_auth` decorator for endpoint protection.
 
 Each component follows single-responsibility design so that updates to one area minimally impact others. Communication occurs through well defined interfaces and explicit data contracts. The new architecture adds robust language detection, dynamic prompt generation, and comprehensive configuration validation.
 

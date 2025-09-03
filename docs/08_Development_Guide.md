@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 08_Development_Guide.md
-**Document Version**: 2.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Document Version**: 3.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Status**: Active
 
 ---
@@ -38,7 +38,30 @@ docs/          Comprehensive project documentation
 
 ### 3.1 New Architecture Components
 
+#### 3.1.0 Authentication Decorators (`backend/decorators.py`)
+```python
+from decorators import require_auth
+
+@require_auth(admin_only=True)
+async def protected_endpoint(request: Request):
+    """Endpoint that requires admin authentication."""
+    # Access session data from request.state.session_data
+    session_data = request.state.session_data
+    user_id = session_data.get('user_id')
+    is_admin = session_data.get('is_admin', False)
+    
+    # Your endpoint logic here
+    return {"message": "Admin access granted"}
+```
+
+**Usage**:
+- `@require_auth()` - Requires any authenticated user
+- `@require_auth(admin_only=True)` - Requires admin user
+- Session data available in `request.state.session_data`
+- Automatic 401/403 responses for unauthorized access
+
 #### 3.1.1 Configuration Models (`backend/models/config_models.py`)
+
 ```python
 from pydantic import BaseModel, Field, validator
 from enum import Enum
@@ -47,12 +70,12 @@ from typing import Dict, List, Optional
 class Language(str, Enum):
     EN = "en"
     ES = "es"
+    UNKNOWN = "unknown"  # For fallback scenarios
 
 class RubricCriterion(BaseModel):
     name: str
     description: str
     weight: int = Field(..., ge=1, le=100)
-    scoring_guidance: Dict[int, str]
     
     @validator('weight')
     def validate_weight(cls, v):
@@ -60,14 +83,28 @@ class RubricCriterion(BaseModel):
             raise ValueError('Weight must be between 1 and 100')
         return v
 
+class RubricScores(BaseModel):
+    min: int = Field(1, ge=1, le=5)
+    max: int = Field(5, ge=1, le=5)
+
+class RubricConfig(BaseModel):
+    scores: RubricScores
+    criteria: Dict[str, RubricCriterion]
+    
+    @validator('criteria')
+    def validate_total_weight(cls, v):
+        total_weight = sum(criterion.weight for criterion in v.values())
+        if total_weight != 100:
+            raise ValueError(f'Total criteria weights must equal 100%, got {total_weight}%')
+        return v
+
 class PromptLanguageConfig(BaseModel):
-    name: str
-    description: str
-    evaluation_prompt: Dict[str, str]
-    instructions: Dict[str, List[str]]
+    context: Dict[str, str]
+    request: Dict[str, str]
+    rubric: RubricConfig
 
 class PromptConfig(BaseModel):
-    languages: Dict[Language, PromptLanguageConfig]
+    languages: Dict[str, PromptLanguageConfig]
     default_language: Language = Language.EN
     confidence_threshold: float = Field(0.7, ge=0.0, le=1.0)
 ```

@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 04_Configuration_Guide.md
-**Document Version**: 2.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Document Version**: 3.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Status**: Active
 
 ---
@@ -26,78 +26,90 @@ Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`
 
 ## 3.0 Configuration Files
 
-### 3.1 `config/rubric.yaml`
-Defines the evaluation rubric and scoring criteria with dynamic structure support.
+### 3.1 `config/rubric.yaml` (DEPRECATED)
+**Status**: This file is deprecated and no longer used. All rubric content has been moved to `prompt.yaml`.
 
-**Structure**:
+**Deprecation Notice**:
 ```yaml
-rubric:
-  name: "Business Memo Evaluation Rubric for Healthcare Investment Projects"
-  description: "This rubric is designed to evaluate business memos..."
-  total_weight: 100
-  scoring_scale: "1-5"  # 1: Poor, 2: Fair, 3: Good, 4: Very Good, 5: Excellent
-
-  criteria:
-    - name: "Structure and Logic"
-      description: "Assesses the memo's organization..."
-      scoring_guidance:
-        1: "Severely disorganized..."
-        2: "Basic structure present but flawed..."
-        3: "Adequate organization..."
-        4: "Strong structure..."
-        5: "Exemplary structure..."
-      weight: 15
-
-    - name: "Arguments and Evidence"
-      description: "Evaluates the strength of claims..."
-      scoring_guidance:
-        1: "Arguments are weak..."
-        2: "Some arguments supported..."
-        3: "Arguments are generally solid..."
-        4: "Strong, well-supported arguments..."
-        5: "Outstanding arguments..."
-      weight: 20
-
-    # Additional criteria with similar structure...
+status: "deprecated"
+message: "This file is no longer used. All rubric content has been moved to prompt.yaml"
+deprecation_date: "2024-01-01"
+replacement_file: "prompt.yaml"
 ```
 
-**Key Features**:
-- **Dynamic Structure**: Criteria can be added, removed, or modified without code changes
-- **Weight Validation**: Pydantic ensures total weights equal 100%
-- **Flexible Scoring**: Supports any number of criteria with custom weights
-- **No Framework Dependencies**: Removed deprecated framework system for cleaner configuration
+**Note**: The old rubric structure with individual criteria definitions has been replaced by the new integrated structure in `prompt.yaml`. This file is maintained only for backward compatibility and will be removed in future versions.
 
 ### 3.2 `config/prompt.yaml`
-Holds language-specific prompt templates and instruction lists used to query the LLM.
+Holds language-specific prompt templates, instructions, and rubric definitions used to query the LLM.
 
-**New Structure**:
+**New Integrated Structure**:
 ```yaml
 languages:
   en:
-    name: "English"
-    description: "English language prompts and instructions"
-    evaluation_prompt:
-      system_message: "You are an expert writing coach..."
-      user_template: |
-        Evaluate the following text using the provided rubric.
-        
-        TEXT TO EVALUATE:
-        {{ text_content }}
-        
-        EVALUATION RUBRIC:
-        {{ rubric_content }}
-        
-        Provide your evaluation in the following JSON format:
-        {{ response_format }}
-        
-        Focus on providing constructive, actionable feedback...
-    
-    instructions:
-      evaluation_guidelines:
-        - "Be constructive and encouraging in your feedback"
-        - "Provide specific examples and suggestions"
-        - "Focus on both strengths and areas for improvement"
-        - "Use clear, professional language"
+    context:
+      context_text: "You are an expert writing coach evaluating business memos..."
+    request:
+      request_text: "Evaluate the following business memo using the rubric below..."
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Structure"
+          description: "pyramid principle, SCQA, clarity of opportunity, ask"
+          weight: 25
+        arguments_and_evidence:
+          name: "Arguments and Evidence"
+          description: "logic, financial metrics"
+          weight: 30
+        strategic_alignment:
+          name: "Strategic Alignment"
+          description: "help achieve strategic goals 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementation and Risks"
+          description: "feasibility, risk assessment, implementation plan"
+          weight: 20
+
+  es:
+    context:
+      context_text: "Eres un coach de escritura experto evaluando memorandos..."
+    request:
+      request_text: "Evalúa el siguiente memorando comercial usando la rúbrica..."
+    rubric:
+      scores:
+        min: 1
+        max: 5
+      criteria:
+        structure:
+          name: "Estructura"
+          description: "principio de pirámide, SCQA, claridad de oportunidad, solicitud"
+          weight: 25
+        arguments_and_evidence:
+          name: "Argumentos y Evidencia"
+          description: "lógica, métricas financieras"
+          weight: 30
+        strategic_alignment:
+          name: "Alineación Estratégica"
+          description: "ayudar a lograr objetivos estratégicos 1, 2, 3"
+          weight: 25
+        implementation_and_risks:
+          name: "Implementación y Riesgos"
+          description: "viabilidad, evaluación de riesgos, plan de implementación"
+          weight: 20
+
+default_language: "en"
+confidence_threshold: 0.7
+```
+
+**Key Features**:
+- **Integrated Rubric**: Rubric definitions now included within each language section
+- **4-Criteria Structure**: Simplified to 4 core criteria with clear weights (total 100%)
+- **Language-Specific Content**: Full English and Spanish support with identical structure
+- **Dynamic Weights**: Pydantic validation ensures weights sum to exactly 100%
+- **Scoring Range**: Consistent 1-5 scoring scale across all languages
+- **Context/Request Separation**: Clear separation of system context and user requests
         - "Ensure feedback is actionable and specific"
         - "Maintain objectivity and fairness"
         - "Consider the writer's development level"

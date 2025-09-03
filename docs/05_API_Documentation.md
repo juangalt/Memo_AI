@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 05_API_Documentation.md
-**Document Version**: 2.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Document Version**: 3.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Status**: Active
 
 ---
@@ -18,22 +18,26 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 | Method | Path | Description |
 |-------|------|-------------|
 | GET | `/` | Root information |
-| GET | `/health` | Aggregate health status |
-| GET | `/health/database` | Database health |
-| GET | `/health/config` | Configuration health |
-| GET | `/health/llm` | LLM service health |
-| GET | `/health/auth` | Authentication service health |
-| GET | `/health/language_detection` | Language detection service health |
+| GET | `/health` | Basic system health status (minimal information) |
 | GET | `/docs` | Swagger UI with OpenAPI schema |
 
-### 2.2 Session Management
+### 2.2 Protected Health Endpoints (Admin Authentication Required)
+| Method | Path | Description | Authentication |
+|-------|------|-------------|----------------|
+| GET | `/health/detailed` | Comprehensive system health with detailed metrics | Admin Only |
+| GET | `/health/database` | Database health with table counts and user statistics | Admin Only |
+| GET | `/health/config` | Configuration health with loaded files and validation status | Admin Only |
+| GET | `/health/llm` | LLM service health with model info and language support | Admin Only |
+| GET | `/health/auth` | Authentication service health with session statistics | Admin Only |
+
+### 2.3 Session Management
 | Method | Path | Description |
 |-------|------|-------------|
 | POST | `/api/v1/sessions/create` | Create authenticated session (requires login first) |
 | GET | `/api/v1/sessions/{session_id}` | Retrieve session details |
 | DELETE | `/api/v1/sessions/{session_id}` | End a session and remove related data |
 
-### 2.3 Evaluation
+### 2.4 Evaluation
 | Method | Path | Description |
 |-------|------|-------------|
 | POST | `/api/v1/evaluations/submit` | Submit text for evaluation with automatic language detection |
@@ -93,11 +97,46 @@ All endpoints return JSON objects with `data`, `meta`, and `errors` keys.
 }
 ```
 
-### 2.4 Language Detection
+### 2.5 Language Detection
 | Method | Path | Description |
 |-------|------|-------------|
 | POST | `/api/v1/language/detect` | Detect language of provided text |
 | GET | `/api/v1/language/supported` | List supported languages and detection methods |
+
+### 2.6 Authentication and Security
+**Protected Endpoints**: All detailed health endpoints and admin functions require authentication using the `X-Session-Token` header.
+
+**Authentication Decorator**: The system uses a custom `@require_auth(admin_only=True)` decorator for protecting sensitive endpoints.
+
+**Example Protected Request**:
+```bash
+curl -X GET http://localhost:8000/health/detailed \
+  -H "X-Session-Token: your_session_token_here"
+```
+
+**Authentication Error Response**:
+```json
+{
+  "detail": {
+    "code": "AUTHENTICATION_ERROR",
+    "message": "Authentication required",
+    "field": "session_token",
+    "details": "Please log in to access this endpoint"
+  }
+}
+```
+
+**Authorization Error Response** (for admin-only endpoints):
+```json
+{
+  "detail": {
+    "code": "AUTHORIZATION_ERROR",
+    "message": "Admin access required",
+    "field": null,
+    "details": "This endpoint requires administrator privileges"
+  }
+}
+```
 
 **Language Detection Request Body:**
 ```json

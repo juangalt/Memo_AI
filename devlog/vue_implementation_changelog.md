@@ -34,6 +34,140 @@
 
 ## 🚀 Recent Changes
 
+### [2025-09-03] Health Endpoint Security Implementation - COMPLETED
+
+**Type**: Security Enhancement  
+**Impact**: System Security & Admin Access Control  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - All health endpoints properly secured with authentication requirements
+
+**Implementation Summary**:
+- **Public Health Endpoint**: `/health` now provides minimal information only (basic service status)
+- **Protected Health Endpoints**: All detailed endpoints require admin authentication
+- **Authentication Decorator**: Created `@require_auth(admin_only=True)` decorator for endpoint protection
+- **Information Sanitization**: Removed sensitive data from public API responses
+- **Admin-Only Access**: Detailed health information restricted to authenticated admin users
+
+**Security Features Implemented**:
+- **Public `/health`**: Shows only basic service status (healthy/unhealthy)
+- **Protected `/health/detailed`**: Full system health with admin authentication required
+- **Protected `/health/database`**: Database details with admin authentication required
+- **Protected `/health/config`**: Configuration details with admin authentication required
+- **Protected `/health/llm`**: LLM service details with admin authentication required
+- **Protected `/health/auth`**: Authentication service details with admin authentication required
+
+**Technical Implementation**:
+- **New Decorator**: Created `backend/decorators.py` with `require_auth` function
+- **Endpoint Updates**: Applied `@require_auth(admin_only=True)` to all detailed health endpoints
+- **Response Sanitization**: Removed sensitive paths and detailed information from public responses
+- **Error Handling**: Proper 401/403 responses for unauthorized access attempts
+
+**Frontend Component Updates**:
+- **Admin HealthStatus**: Updated to use `/health/detailed` endpoint with fallback to `/health`
+- **Debug ApiHealthTesting**: Updated to show authentication requirements for protected endpoints
+- **Component Security**: All health-related components now properly handle authentication
+
+**Testing Results**:
+- ✅ **Public Endpoint**: `/health` accessible without authentication, minimal information only
+- ✅ **Protected Endpoints**: All detailed endpoints properly reject unauthorized access
+- ✅ **Admin Access**: Authenticated admin users can access detailed health information
+- ✅ **Error Handling**: Clear authentication error messages for unauthorized requests
+- ✅ **Subdomain Security**: Security measures work correctly across different domains
+
+**Files Modified**:
+- `backend/decorators.py` - **NEW** - Authentication decorators for endpoint protection
+- `backend/main.py` - Updated health endpoints with authentication and response sanitization
+- `vue-frontend/src/components/admin/HealthStatus.vue` - Updated to use detailed health endpoint
+- `vue-frontend/src/components/debug/ApiHealthTesting.vue` - Updated to show authentication requirements
+
+**Security Benefits**:
+- **Information Protection**: Sensitive system details no longer exposed publicly
+- **Access Control**: Detailed health information restricted to authorized administrators
+- **Audit Trail**: All health endpoint access properly authenticated and logged
+- **Production Ready**: Security measures suitable for production deployment
+
+**Result**: ✅ **Health endpoints fully secured with proper authentication and access control**
+
+---
+
+### [2025-09-03] LLM Service Refactor Implementation - COMPLETED
+
+**Type**: Major Refactor  
+**Impact**: LLM Evaluation System & Configuration Management  
+**Priority**: Critical  
+
+**Status**: ✅ **COMPLETED** - Comprehensive LLM service refactor with Pydantic validation, Jinja2 templating, and robust language detection
+
+**Implementation Summary** (Based on `prompt_refactor.md`):
+- **Pydantic Integration**: Replaced string formatting with robust Pydantic configuration validation
+- **Jinja2 Templating**: Implemented dynamic template generation for prompts
+- **Language Detection**: Multi-layered language detection system with intelligent fallback
+- **Rubric Simplification**: Consolidated to 4 core criteria with clear weights (total 100%)
+- **Configuration Consolidation**: Moved all rubric content into `prompt.yaml`, deprecated `rubric.yaml`
+- **Multi-Language Support**: Full English/Spanish support with extensible language configuration
+
+**Key Technical Changes**:
+- **Enhanced LLM Service**: Renamed `LLMService` to `EnhancedLLMService` with new architecture
+- **Configuration Models**: Pydantic models for type-safe configuration validation
+- **Template System**: Jinja2 templates for dynamic prompt generation
+- **Language Detection**: RobustLanguageDetector with Polyglot, Langdetect, and Pycld2 fallbacks
+- **Dynamic Configuration**: LLM model, tokens, and temperature now read from configuration files
+
+**New Rubric Structure**:
+- **Structure** (25%): Pyramid principle, SCQA, clarity of opportunity, ask
+- **Arguments and Evidence** (30%): Logic, financial metrics
+- **Strategic Alignment** (25%): Help achieve strategic goals
+- **Implementation and Risks** (20%): Feasibility, risk assessment, implementation plan
+
+**Configuration Changes**:
+- **prompt.yaml**: New `languages` structure with context/request/rubric sections
+- **rubric.yaml**: Deprecated with deprecation notice
+- **llm.yaml**: Enhanced with dynamic model configuration
+- **Validation**: Updated configuration validation for new structures
+
+**Frontend Updates**:
+- **DynamicRubricScores**: New component replacing hardcoded RubricScores
+- **Component Cleanup**: Removed old rubric components and references
+- **Admin Interface**: Updated to reflect new configuration structure
+- **Debug Tools**: Updated to show new endpoint authentication requirements
+
+**Critical Implementation Learnings**:
+- **Configuration Validation**: Must update existing validation functions before new features
+- **YAML Content**: Deprecated files must contain valid YAML, not just comments
+- **Language Enum**: Single definition required to avoid duplication errors
+- **Template Paths**: Must use correct relative paths for Jinja2 templates
+- **Container Rebuilds**: Python code changes require container rebuilds, not just restarts
+
+**Files Modified**:
+- `backend/models/config_models.py` - **NEW** - Pydantic configuration models
+- `backend/services/language_detection.py` - **NEW** - Robust language detection service
+- `backend/services/llm_service.py` - Major refactor to EnhancedLLMService
+- `backend/templates/evaluation_prompt.j2` - **NEW** - Jinja2 prompt template
+- `config/prompt.yaml` - Complete restructure with new rubric format
+- `config/rubric.yaml` - Deprecated with deprecation notice
+- `vue-frontend/src/components/DynamicRubricScores.vue` - **NEW** - Dynamic rubric display
+- `vue-frontend/src/components/RubricScores.vue` - **DELETED** - Replaced by DynamicRubricScores
+
+**Testing Results**:
+- ✅ **Configuration Validation**: All YAML files validate correctly with new structure
+- ✅ **Language Detection**: English/Spanish detection working with high accuracy
+- ✅ **Prompt Generation**: Jinja2 templates render correctly with dynamic content
+- ✅ **LLM Integration**: Claude API integration working with dynamic configuration
+- ✅ **Frontend Display**: New rubric structure displays correctly with weights and scores
+- ✅ **Performance**: Evaluation responses within <15 second requirement
+
+**Benefits Achieved**:
+- **Maintainability**: Configuration-driven prompts easy to modify without code changes
+- **Flexibility**: Support for multiple languages and rubric structures
+- **Type Safety**: Pydantic validation prevents configuration errors
+- **Performance**: Dynamic configuration and caching improve response times
+- **Extensibility**: Easy to add new languages and modify rubric criteria
+
+**Result**: ✅ **LLM service fully refactored with enhanced configuration, templating, and language detection**
+
+---
+
 ### [2025-09-01] Copyright Footer Implementation - COMPLETED
 
 **Type**: Added  

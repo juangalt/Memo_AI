@@ -103,7 +103,6 @@ services:
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
-      - ./vue_implementation_changelog.md:/app/changelog.md:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health"]

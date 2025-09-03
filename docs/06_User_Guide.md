@@ -2,9 +2,9 @@
 ## Memo AI Coach
 
 **Document ID**: 06_User_Guide.md
-**Document Version**: 1.1
-**Last Updated**: Phase 9
-**Status**: Draft
+**Document Version**: 2.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
+**Status**: Active
 
 ---
 
@@ -57,9 +57,14 @@ Tooltips on each input explain expected format. Navigation links at the top allo
 - Provides elapsed processing time and timestamp for auditing.
 
 ### Detailed Feedback Page
-- Presents rubric criteria with individual scores and justifications.
+- Presents the new 4-criteria rubric with individual scores and justifications:
+  - **Structure** (25%): Pyramid principle, SCQA, clarity of opportunity, ask
+  - **Arguments and Evidence** (30%): Logic, financial metrics
+  - **Strategic Alignment** (25%): Help achieve strategic goals
+  - **Implementation and Risks** (20%): Feasibility, risk assessment, implementation plan
 - Lists segment feedback objects containing comments, questions and suggestions.
 - Allows collapsing or expanding each criterion for readability.
+- **Dynamic Rubric Display**: Automatically adapts to any rubric structure without code changes.
 
 ### Help Page
 - **Comprehensive Documentation**: Complete guide to using the application.

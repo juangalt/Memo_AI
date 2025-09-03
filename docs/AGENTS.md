@@ -1,8 +1,8 @@
 # AI Agent Guidelines
 ## Memo AI Coach Project
 
-**Version**: 4.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Version**: 5.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Purpose**: Comprehensive guidance for AI agents working on the Memo AI Coach project
 
 ---
@@ -64,12 +64,15 @@ Memo AI Coach is an **instructional text evaluation system** that provides AI-ge
 - **Dynamic Prompt Generation** – Jinja2-based templates that adapt to any rubric structure
 - **Configuration Validation** – Pydantic models ensure all configurations are valid and consistent
 - **Secure Authentication** – session-based authentication with role-based access control
+- **Health Endpoint Security** – All detailed health endpoints require admin authentication
+- **Authentication Decorators** – Custom `@require_auth` decorator for endpoint protection
 - **Beautiful Welcome Page** – Professional landing page with application overview
 - **Help Documentation** – Comprehensive user guide and rubric explanation
 - **Conditional Admin Access** – Admin features only visible to admin users
 - **Responsive Design** – Mobile and desktop compatible interface
 - **Tailwind CSS** – Modern styling with v3.4.17 (stable) configuration
 - Admin interface for configuration, user management, and prompt template editing
+- Debug interface for system diagnostics and API testing
 - Comprehensive testing and deployment scripts
 - Detailed documentation replacing legacy `devspecs/` files as the primary source of truth
 
@@ -84,6 +87,7 @@ Memo AI Coach is an **instructional text evaluation system** that provides AI-ge
 | Deployment | Docker, docker-compose, Traefik |
 | Configuration | YAML files with Pydantic validation |
 | Authentication | Session-based with role management |
+| Security | Custom authentication decorators |
 | Styling | Tailwind CSS v3.4.17 |
 
 ### **Performance Requirements:**

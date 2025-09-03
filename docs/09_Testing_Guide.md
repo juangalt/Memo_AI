@@ -2,8 +2,8 @@
 ## Memo AI Coach
 
 **Document ID**: 09_Testing_Guide.md
-**Document Version**: 2.0
-**Last Updated**: Phase 10 - Prompt Refactor Implementation
+**Document Version**: 3.0
+**Last Updated**: Phase 11 - LLM Refactor & Health Security Implementation
 **Status**: Active
 
 ---
@@ -36,6 +36,10 @@ The testing suite covers all aspects of the Memo AI Coach system including the n
 - Input validation and sanitization
 - Template security and variable access control
 - Configuration validation security
+- **Health endpoint authentication testing**
+- **Admin-only endpoint access control**
+- **Authentication decorator functionality**
+- **Response sanitization validation**
 
 ### 2.5 Language Detection Tests
 - Accuracy testing with multiple languages
@@ -104,7 +108,26 @@ python3 tests/quality/test_prompt_generation.py --template=evaluation
 python3 tests/quality/test_prompt_generation.py --language=en
 ```
 
-### 3.5 Frontend Tests
+### 3.5 Security and Authentication Tests
+```bash
+# Test health endpoint security
+python3 tests/security/test_health_endpoints.py
+
+# Test authentication decorators
+python3 tests/security/test_auth_decorators.py
+
+# Test admin-only access control
+python3 tests/security/test_admin_access.py
+```
+
+**Security Test Scenarios**:
+- **Public Health Endpoint**: Verify only minimal information is exposed
+- **Protected Health Endpoints**: Verify authentication is required
+- **Admin Access Control**: Verify admin-only endpoints reject non-admin users
+- **Response Sanitization**: Verify sensitive data is not exposed in public endpoints
+- **Authentication Decorators**: Verify `@require_auth` decorator works correctly
+
+### 3.6 Frontend Tests
 ```bash
 # Run frontend component tests
 cd vue-frontend
