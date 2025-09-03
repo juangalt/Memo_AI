@@ -3,16 +3,15 @@ Language Detection Service for Memo AI Coach
 Robust multi-method language detection with fallback strategies
 """
 
-import logging
 from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 
 # Import Language enum from config models to ensure consistency
 from models.config_models import Language
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class DetectionMethod(str, Enum):
     """Language detection methods"""
