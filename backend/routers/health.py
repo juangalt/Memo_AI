@@ -21,8 +21,17 @@ _llm_service = EnhancedLLMService()
 
 def _collect_service_status():
     """Gather status for core services."""
-    db_health = db_manager.health_check()
-    config_health = config_service.health_check()
+    try:
+        db_health = db_manager.health_check()
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"Database health check failed: {e}")
+        db_health = {"status": "unhealthy", "error": str(e)}
+
+    try:
+        config_health = config_service.health_check()
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"Config health check failed: {e}")
+        config_health = {"status": "unhealthy", "error": str(e)}
 
     try:
         llm_health = _llm_service.validate_configuration()
