@@ -4,12 +4,14 @@ Configuration management service for Memo AI Coach
 
 import yaml
 import os
-import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
 
-logger = logging.getLogger(__name__)
+from utils.config import get_config_path
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class ConfigService:
     """Configuration management service with validation and environment overrides"""
@@ -17,13 +19,8 @@ class ConfigService:
     def __init__(self, config_dir: Optional[str] = None):
         """Initialize configuration service"""
         if config_dir is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_dir = '/app/config'
-            else:
-                config_dir = os.getenv('CONFIG_DIR', '../config')
-        
+            config_dir = get_config_path()
+
         self.config_dir = Path(config_dir)
         self.configs = {}
         self.last_loaded = None

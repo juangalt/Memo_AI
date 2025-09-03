@@ -7,9 +7,10 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from services.auth_service import validate_session
 from typing import Optional, Callable, Any
-import logging
 
-logger = logging.getLogger(__name__)
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 def require_auth(admin_only: bool = False):
     """
@@ -68,19 +69,3 @@ def require_auth(admin_only: bool = False):
         
         return wrapper
     return decorator
-
-def create_error_response(code: str, message: str, field: Optional[str] = None, details: Optional[str] = None) -> dict:
-    """Create standardized error response"""
-    return {
-        "data": None,
-        "meta": {
-            "timestamp": "2024-01-01T00:00:00Z",  # Will be overridden by actual timestamp
-            "request_id": "placeholder"
-        },
-        "errors": [{
-            "code": code,
-            "message": message,
-            "field": field,
-            "details": details
-        }]
-    }

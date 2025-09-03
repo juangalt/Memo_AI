@@ -3,12 +3,13 @@ Database entity models for Memo AI Coach
 """
 
 import sqlite3
-import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from .database import db_manager
 
-logger = logging.getLogger(__name__)
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class User:
     """User entity model"""
@@ -134,8 +135,7 @@ class Session:
         """Create a new session"""
         try:
             # Get session timeout from configuration service
-            from services.config_service import ConfigService
-            config_service = ConfigService()
+            from services import config_service
             auth_config = config_service.get_auth_config()
             
             # Default to 1 hour if configuration is not available

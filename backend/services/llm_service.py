@@ -6,7 +6,6 @@ Handles Claude API integration with Jinja2 templating, language detection, and P
 import os
 import json
 import time
-import logging
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 import anthropic
@@ -18,9 +17,10 @@ from jinja2 import Environment, FileSystemLoader, Template
 from models.config_models import PromptConfig, LLMConfig, Language
 from services.language_detection import RobustLanguageDetector, DetectionResult
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from utils.config import get_config_path
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class EnhancedLLMService:
     """Enhanced LLM service with Jinja2 templating, language detection, and Pydantic validation"""
@@ -28,13 +28,8 @@ class EnhancedLLMService:
     def __init__(self, config_path: str = None):
         """Initialize enhanced LLM service with automatic path detection"""
         if config_path is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_path = '/app/config'
-            else:
-                config_path = '../config'
-        
+            config_path = str(get_config_path())
+
         self.config_path = config_path
         self.client = None
         self.prompt_config = None
