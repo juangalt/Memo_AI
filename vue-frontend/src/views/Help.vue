@@ -54,7 +54,7 @@
               <h3 class="text-lg font-semibold text-gray-900 mb-3">⚙️ Admin Features</h3>
               <p class="text-gray-600 mb-3">Configuration and system management for administrators.</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li>• Rubric configuration</li>
+                <li>• Rubric configuration (integrated in prompt.yaml)</li>
                 <li>• System settings</li>
                 <li>• User management</li>
               </ul>

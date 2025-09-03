@@ -197,7 +197,10 @@ class EnhancedLLMService:
                     },
                     "processing_time": processing_time,
                     "prompt_length": len(prompt),
-                    "response_length": len(response) if response else 0
+                    "response_length": len(response) if response else 0,
+                    "llm_model": self.llm_config.provider.get('model', 'claude-3-haiku-20240307') if self.llm_config else 'unknown',
+                    "raw_prompt": prompt,
+                    "raw_response": response if response else ""
                 }
             }
             
@@ -362,7 +365,8 @@ class EnhancedLLMService:
                     "claude_client": client_valid
                 },
                 "supported_languages": [lang.value for lang in self.prompt_config.languages.keys()] if self.prompt_config else [],
-                "default_language": self.prompt_config.default_language.value if self.prompt_config else None
+                "default_language": self.prompt_config.default_language.value if self.prompt_config else None,
+                "model": self.llm_config.provider.get('model', 'claude-3-haiku-20240307') if self.llm_config else 'unknown'
             }
             
         except Exception as e:

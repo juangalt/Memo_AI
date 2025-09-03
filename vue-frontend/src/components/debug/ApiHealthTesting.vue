@@ -235,7 +235,7 @@ const endpoints = ref<Endpoint[]>([
   { name: 'List Users', method: 'GET', path: '/api/v1/admin/users', description: 'List all users', status: 'unknown' },
   
   // Config endpoints
-  { name: 'Config: Rubric', method: 'GET', path: '/api/v1/admin/config/rubric', description: 'Get rubric configuration', status: 'unknown' },
+  
   { name: 'Config: Prompt', method: 'GET', path: '/api/v1/admin/config/prompt', description: 'Get prompt configuration', status: 'unknown' },
   { name: 'Config: Auth', method: 'GET', path: '/api/v1/admin/config/auth', description: 'Get auth configuration', status: 'unknown' },
   { name: 'Config: LLM', method: 'GET', path: '/api/v1/admin/config/llm', description: 'Get LLM configuration', status: 'unknown' }

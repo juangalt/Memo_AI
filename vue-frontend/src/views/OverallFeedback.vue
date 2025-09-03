@@ -49,7 +49,7 @@
             </div>
           </div>
 
-          <RubricScores :scores="rubricScores" />
+          <DynamicRubricScores :scores="rubricScores" :overall-score="overallScore" />
 
           <div class="bg-gray-50 rounded-lg p-4">
             <div class="flex justify-between items-center text-sm text-gray-600">
@@ -102,7 +102,7 @@
 import { computed } from 'vue'
 import { useEvaluationStore } from '@/stores/evaluation'
 import Layout from '@/components/Layout.vue'
-import RubricScores from '@/components/RubricScores.vue'
+import DynamicRubricScores from '@/components/DynamicRubricScores.vue'
 
 const evaluationStore = useEvaluationStore()
 

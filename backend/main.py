@@ -194,7 +194,7 @@ async def health_check():
         if llm_status == "healthy":
             health_status["llm_details"] = {
                 "provider": "anthropic",
-                "model": "claude-3-sonnet-20240229",
+                "model": llm_health.get("model", "claude-3-haiku-20240307"),
                 "api_accessible": llm_health.get("components", {}).get("claude_client", False),
                 "config_loaded": llm_health.get("components", {}).get("prompt_config", False),
                 "supported_languages": llm_health.get("supported_languages", []),
@@ -1433,9 +1433,9 @@ async def submit_evaluation(request: Request):
             rubric_scores=json.dumps(evaluation_result['rubric_scores']),
             segment_feedback=json.dumps(evaluation_result['segment_feedback']),
             llm_provider='claude',
-            llm_model='claude-3-sonnet-20240229',
-            raw_prompt=evaluation_result.get('metadata', {}).get('prompt_length', 0),
-            raw_response=evaluation_result.get('metadata', {}).get('response_length', 0),
+            llm_model=evaluation_result.get('metadata', {}).get('llm_model', 'claude-3-haiku-20240307'),
+            raw_prompt=evaluation_result.get('metadata', {}).get('raw_prompt', ''),
+            raw_response=evaluation_result.get('metadata', {}).get('raw_response', ''),
             debug_enabled=True,  # Enable debug mode
             processing_time=evaluation_result.get('metadata', {}).get('processing_time', 0)
         )

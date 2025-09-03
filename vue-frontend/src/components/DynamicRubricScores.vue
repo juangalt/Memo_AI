@@ -23,11 +23,29 @@
           <h4 style="font-weight: 500; color: #111827; text-transform: capitalize; margin: 0;">
             {{ formatCriterionName(criterion) }}
           </h4>
+          <span 
+            v-if="getCriterionWeight(criterion)"
+            style="padding: 0.25rem 0.5rem; background-color: #e0e7ff; color: #3730a3; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 500;"
+          >
+            {{ getCriterionWeight(criterion) }}%
+          </span>
         </div>
 
         <p v-if="score.justification" style="font-size: 0.875rem; color: #6b7280;">
           {{ score.justification }}
         </p>
+      </div>
+    </div>
+
+    <!-- Overall Score Display -->
+    <div v-if="overallScore" style="margin-top: 1.5rem; padding: 1rem; background-color: #f0f9ff; border-radius: 0.5rem; border: 1px solid #0ea5e9;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 1.5rem; font-weight: 700; color: #0c4a6e;">
+          {{ overallScore.toFixed(1) }}/5.0
+        </span>
+        <span style="font-size: 1rem; color: #0c4a6e;">
+          Overall Score
+        </span>
       </div>
     </div>
   </div>
@@ -36,9 +54,18 @@
 <script setup lang="ts">
 interface Props {
   scores: Record<string, any>
+  overallScore?: number
 }
 
 defineProps<Props>()
+
+// Criterion weights for the new 4-criteria rubric structure
+const criterionWeights: Record<string, number> = {
+  'structure': 25,
+  'arguments_and_evidence': 30,
+  'strategic_alignment': 25,
+  'implementation_and_risks': 20
+}
 
 const formatCriterionName = (criterion: string): string => {
   return criterion
@@ -46,5 +73,8 @@ const formatCriterionName = (criterion: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
-</script>
 
+const getCriterionWeight = (criterion: string): number | null => {
+  return criterionWeights[criterion] || null
+}
+</script>

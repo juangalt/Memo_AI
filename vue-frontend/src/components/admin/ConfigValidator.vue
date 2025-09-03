@@ -93,7 +93,6 @@ interface ConfigFile {
 
 const isLoading = ref(false)
 const configFiles = ref<ConfigFile[]>([
-  { name: 'rubric.yaml', status: 'unknown' },
   { name: 'prompt.yaml', status: 'unknown' },
   { name: 'llm.yaml', status: 'unknown' },
   { name: 'auth.yaml', status: 'unknown' }
