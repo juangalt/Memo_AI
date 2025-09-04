@@ -69,18 +69,5 @@ def require_auth(admin_only: bool = False):
         return wrapper
     return decorator
 
-def create_error_response(code: str, message: str, field: Optional[str] = None, details: Optional[str] = None) -> dict:
-    """Create standardized error response"""
-    return {
-        "data": None,
-        "meta": {
-            "timestamp": "2024-01-01T00:00:00Z",  # Will be overridden by actual timestamp
-            "request_id": "placeholder"
-        },
-        "errors": [{
-            "code": code,
-            "message": message,
-            "field": field,
-            "details": details
-        }]
-    }
+# Import centralized response helpers
+from utils.responses import create_error_response
