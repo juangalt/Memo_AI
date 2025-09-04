@@ -2,44 +2,8 @@
 
 {{ request }}
 
-TEXT TO EVALUATE:
 {{ text_content }}
 
-EVALUATION RUBRIC:
 {{ rubric_content }}
 
-Provide your evaluation in the following JSON format:
-
-{
-  "overall_score": 4.2,
-  "strengths": [
-    "Clear executive summary with logical structure",
-    "Strong evidence-based arguments with credible sources",
-    "Effective use of financial metrics"
-  ],
-  "opportunities": [
-    "Strengthen risk mitigation strategies",
-    "Add more specific implementation timeline",
-    "Enhance strategic alignment section"
-  ],
-  "rubric_scores": {
-    "structure": {"score": 4, "justification": "Clear organization with logical flow"},
-    "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
-    "strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
-    "implementation_and_risks": {"score": 3, "justification": "Basic implementation plan"}
-  },
-  "segment_feedback": [
-    {
-      "segment": "The executive summary effectively...",
-      "comment": "Strong opening that clearly states the investment opportunity",
-      "questions": [
-        "How could this summary be even more compelling?",
-        "What additional context would strengthen the case?"
-      ],
-      "suggestions": [
-        "Consider adding a brief market context",
-        "Include a clear timeline for implementation"
-      ]
-    }
-  ]
-}
+{{ response_template }}

@@ -39,6 +39,7 @@ class EnhancedLLMService:
         self.llm_config = None
         self.language_detector = None
         self.jinja_env = None
+        self.response_templates = {}
         
         # Load configurations with Pydantic validation
         self._load_configurations()
@@ -60,6 +61,21 @@ class EnhancedLLMService:
                 llm_data = yaml.safe_load(f)
                 self.llm_config = LLMConfig(**llm_data)
                 logger.info("LLM configuration loaded and validated successfully")
+
+            # Load response template configuration (simple YAML)
+            try:
+                with open(f"{self.config_path}/response_template.yaml", 'r') as f:
+                    rt_data = yaml.safe_load(f) or {}
+                    langs = (rt_data.get('languages') or {})
+                    # Normalize to a flat dict { 'en': template_str, 'es': template_str }
+                    self.response_templates = {
+                        k: (v.get('response_format') if isinstance(v, dict) else str(v))
+                        for k, v in langs.items()
+                        if v is not None
+                    }
+                    logger.info("Response templates loaded successfully")
+            except FileNotFoundError:
+                logger.warning("response_template.yaml not found; using empty response templates")
                 
         except Exception as e:
             logger.error(f"Failed to load configurations: {e}")
@@ -73,8 +89,10 @@ class EnhancedLLMService:
             self.language_detector = RobustLanguageDetector(confidence_threshold)
             logger.info("Language detector initialized successfully")
             
-            # Initialize Jinja2 environment
-            self.jinja_env = Environment(loader=FileSystemLoader('templates'))
+            # Initialize Jinja2 environment with a stable path
+            base_dir = os.path.dirname(os.path.dirname(__file__))  # backend/
+            templates_dir = os.path.join(base_dir, 'templates')
+            self.jinja_env = Environment(loader=FileSystemLoader(templates_dir))
             logger.info("Jinja2 environment initialized successfully")
             
             # Initialize Claude client
@@ -101,12 +119,19 @@ class EnhancedLLMService:
             raise
     
     def _get_rubric_content(self, language: Language) -> str:
-        """Generate rubric content for prompts using new structure"""
+        """Generate rubric content for prompts using new structure.
+
+        Prepends a configurable title from `prompt.yaml` (rubric_title) to allow
+        language-specific section headers without hardcoding them in templates.
+        """
         try:
             lang_config = self.prompt_config.languages[language]
             rubric = lang_config.rubric
             
-            rubric_content = f"Rubric: Business Memo Evaluation\n\n"
+            # Title from config (falls back to a sensible default)
+            rubric_title = getattr(rubric, 'rubric_title', None) or "EVALUATION RUBRIC"
+
+            rubric_content = f"{rubric_title}\n"
             rubric_content += f"Scoring Scale: {rubric.scores.min}-{rubric.scores.max}\n\n"
             rubric_content += "Evaluation Criteria:\n"
             
@@ -131,7 +156,8 @@ class EnhancedLLMService:
                 'context': lang_config.context.context_text,
                 'request': lang_config.request.request_text,
                 'text_content': text_content,
-                'rubric_content': self._get_rubric_content(language)
+                'rubric_content': self._get_rubric_content(language),
+                'response_template': self._get_response_template(language)
             }
             
             # Render template
@@ -144,6 +170,23 @@ class EnhancedLLMService:
         except Exception as e:
             logger.error(f"Error generating prompt: {e}")
             raise
+
+    def _get_response_template(self, language: Language) -> str:
+        """Return the response JSON example/template for the given language.
+
+        Falls back to English if the specific language is not present, and
+        to an empty JSON object if nothing is configured.
+        """
+        try:
+            lang_key = getattr(language, 'value', None) or str(language)
+            if lang_key in self.response_templates:
+                return self.response_templates[lang_key]
+            if 'en' in self.response_templates:
+                return self.response_templates['en']
+            return "{}"
+        except Exception as e:
+            logger.error(f"Failed to obtain response template: {e}")
+            return "{}"
     
     def evaluate_text_with_llm(self, text_content: str) -> Dict[str, Any]:
         """

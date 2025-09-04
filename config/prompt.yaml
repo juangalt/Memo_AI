@@ -6,57 +6,17 @@ languages:
   en:
     context:
       context_text: |
+        CONTEXT
         You are an expert writing coach evaluating business memos. Your role is to provide comprehensive, constructive feedback using a structured evaluation framework. You will analyze the text, provide detailed rubric-based scoring, and offer feedback for different segments of the text. Always respond with valid JSON format.
     
     request:
       request_text: |
-        Evaluate the following business memo using the rubric below. Provide comprehensive feedback including strengths, opportunities, rubric scores, and segment-level analysis.
-        
-        TEXT TO EVALUATE:
-        {{ text_content }}
-        
-        EVALUATION RUBRIC:
-        {{ rubric_content }}
-        
-        Provide your evaluation in the following JSON format:
-        
-        {
-          "overall_score": 4.2,
-          "strengths": [
-            "Clear executive summary with logical structure",
-            "Strong evidence-based arguments with credible sources",
-            "Effective use of financial metrics"
-          ],
-          "opportunities": [
-            "Strengthen risk mitigation strategies",
-            "Add more specific implementation timeline",
-            "Enhance strategic alignment section"
-          ],
-          "rubric_scores": {
-            "structure": {"score": 4, "justification": "Clear organization with logical flow"},
-            "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
-            "strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
-            "implementation_and_risks": {"score": 3, "justification": "Basic implementation plan"}
-          },
-          "segment_feedback": [
-            {
-              "segment": "The executive summary effectively...",
-              "comment": "Strong opening that clearly states the investment opportunity",
-              "questions": [
-                "How could this summary be even more compelling?",
-                "What additional context would strengthen the case?"
-              ],
-              "suggestions": [
-                "Consider adding a brief market context",
-                "Include a clear timeline for implementation"
-              ]
-            }
-          ]
-        }
-        
+        REQUEST
+        Evaluate the following business memo using the rubric below. Provide comprehensive feedback including strengths, opportunities, rubric scores, and segment-level analysis.        
         Focus on providing constructive, actionable feedback. Ensure all scores are integers 1-5 and the overall_score is calculated as the weighted average of rubric scores.
     
     rubric:
+      rubric_title: "EVALUATION RUBRIC"
       scores:
         min: 1
         max: 5
@@ -81,57 +41,17 @@ languages:
   es:
     context:
       context_text: |
+        CONTEXTO
         Eres un coach de escritura experto evaluando memorandos comerciales. Tu rol es proporcionar retroalimentación integral y constructiva usando un marco de evaluación estructurado. Analizarás el texto, proporcionarás puntuación detallada basada en rúbrica y ofrecerás retroalimentación para diferentes segmentos del texto. Siempre responde con formato JSON válido.
     
     request:
       request_text: |
-        Evalúa el siguiente memorando comercial usando la rúbrica de abajo. Proporciona retroalimentación integral incluyendo fortalezas, oportunidades, puntuaciones de rúbrica y análisis a nivel de segmento.
-        
-        TEXTO A EVALUAR:
-        {{ text_content }}
-        
-        RÚBRICA DE EVALUACIÓN:
-        {{ rubric_content }}
-        
-        Proporciona tu evaluación en el siguiente formato JSON:
-        
-        {
-          "overall_score": 4.2,
-          "strengths": [
-            "Resumen ejecutivo claro con estructura lógica",
-            "Argumentos sólidos basados en evidencia con fuentes creíbles",
-            "Uso efectivo de métricas financieras"
-          ],
-          "opportunities": [
-            "Fortalecer estrategias de mitigación de riesgos",
-            "Agregar cronograma de implementación más específico",
-            "Mejorar sección de alineación estratégica"
-          ],
-          "rubric_scores": {
-            "structure": {"score": 4, "justification": "Organización clara con flujo lógico"},
-            "arguments_and_evidence": {"score": 5, "justification": "Evidencia sólida de fuentes creíbles"},
-            "strategic_alignment": {"score": 4, "justification": "Buena alineación estratégica"},
-            "implementation_and_risks": {"score": 3, "justification": "Plan de implementación básico"}
-          },
-          "segment_feedback": [
-            {
-              "segment": "El resumen ejecutivo efectivamente...",
-              "comment": "Apertura sólida que claramente establece la oportunidad de inversión",
-              "questions": [
-                "¿Cómo podría ser este resumen aún más convincente?",
-                "¿Qué contexto adicional fortalecería el caso?"
-              ],
-              "suggestions": [
-                "Considera agregar un breve contexto de mercado",
-                "Incluye un cronograma claro para la implementación"
-              ]
-            }
-          ]
-        }
-        
+        SOLICITUD
+        Evalúa el siguiente memorando comercial usando la rúbrica de abajo. Proporciona retroalimentación integral incluyendo fortalezas, oportunidades, puntuaciones de rúbrica y análisis a nivel de segmento.        
         Enfócate en proporcionar retroalimentación constructiva y accionable. Asegúrate de que todas las puntuaciones sean enteros 1-5 y que la puntuación general se calcule como el promedio ponderado de las puntuaciones de rúbrica.
     
     rubric:
+      rubric_title: "RÚBRICA DE EVALUACIÓN"
       scores:
         min: 1
         max: 5

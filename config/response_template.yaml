@@ -1,0 +1,78 @@
+# Response JSON templates for prompts
+# Separated from prompt.yaml to simplify editing format
+
+languages:
+  en:
+    response_format: |
+      PROVIDE YOUR EVALUATION IN THE FOLLOWING JSON FORMAT:
+      {
+        "overall_score": 4.2,
+        "strengths": [
+          "Clear executive summary with logical structure",
+          "Strong evidence-based arguments with credible sources",
+          "Effective use of financial metrics"
+        ],
+        "opportunities": [
+          "Strengthen risk mitigation strategies",
+          "Add more specific implementation timeline",
+          "Enhance strategic alignment section"
+        ],
+        "rubric_scores": {
+          "structure": {"score": 4, "justification": "Clear organization with logical flow"},
+          "arguments_and_evidence": {"score": 5, "justification": "Strong evidence from credible sources"},
+          "strategic_alignment": {"score": 4, "justification": "Good strategic alignment"},
+          "implementation_and_risks": {"score": 3, "justification": "Basic implementation plan"}
+        },
+        "segment_feedback": [
+          {
+            "segment": "The executive summary effectively...",
+            "comment": "Strong opening that clearly states the investment opportunity",
+            "questions": [
+              "How could this summary be even more compelling?",
+              "What additional context would strengthen the case?"
+            ],
+            "suggestions": [
+              "Consider adding a brief market context",
+              "Include a clear timeline for implementation"
+            ]
+          }
+        ]
+      }
+
+  es:
+    response_format: |
+      PROPORCIONA TU EVALUACIÓN EN EL SIGUIENTE FORMATO JSON:
+      {
+        "overall_score": 4.2,
+        "strengths": [
+          "Resumen ejecutivo claro con estructura lógica",
+          "Argumentos sólidos basados en evidencia con fuentes creíbles",
+          "Uso efectivo de métricas financieras"
+        ],
+        "opportunities": [
+          "Fortalecer estrategias de mitigación de riesgos",
+          "Agregar cronograma de implementación más específico",
+          "Mejorar sección de alineación estratégica"
+        ],
+        "rubric_scores": {
+          "structure": {"score": 4, "justification": "Organización clara con flujo lógico"},
+          "arguments_and_evidence": {"score": 5, "justification": "Evidencia sólida de fuentes creíbles"},
+          "strategic_alignment": {"score": 4, "justification": "Buena alineación estratégica"},
+          "implementation_and_risks": {"score": 3, "justification": "Plan de implementación básico"}
+        },
+        "segment_feedback": [
+          {
+            "segment": "El resumen ejecutivo efectivamente...",
+            "comment": "Apertura sólida que claramente establece la oportunidad de inversión",
+            "questions": [
+              "¿Cómo podría ser este resumen aún más convincente?",
+              "¿Qué contexto adicional fortalecería el caso?"
+            ],
+            "suggestions": [
+              "Considera agregar un breve contexto de mercado",
+              "Incluye un cronograma claro para la implementación"
+            ]
+          }
+        ]
+      }
+

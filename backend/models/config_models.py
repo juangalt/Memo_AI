@@ -40,6 +40,7 @@ class RubricConfig(BaseModel):
     """Rubric configuration with 4 core criteria"""
     scores: RubricScores = Field(..., description="Scoring range configuration")
     criteria: Dict[str, RubricCriterion] = Field(..., description="Rubric criteria")
+    rubric_title: Optional[str] = Field(None, description="Localized title for the rubric section")
     
     @validator('criteria')
     def validate_criteria_weights(cls, v):
