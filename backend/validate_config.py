@@ -10,8 +10,7 @@ import logging
 from pathlib import Path
 from services.path_utils import resolve_config_dir_with_fallback
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 def validate_yaml_file(file_path, required_fields=None):

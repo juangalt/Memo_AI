@@ -38,9 +38,13 @@ from services.llm_service import EnhancedLLMService
 # Import authentication decorators
 from decorators import require_auth
 
-# Configure logging (will be updated after config loading)
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s:%(name)s:%(message)s')
-logger = logging.getLogger(__name__)
+# Import centralized logging configuration
+from logging_config import configure_logging, get_logger
+
+# Configure logging centrally with default level
+# Will be updated during startup based on deployment config
+configure_logging()
+logger = get_logger(__name__)
 
 # Function to update logging level based on config
 def update_logging_level():
@@ -54,13 +58,26 @@ def update_logging_level():
             env_config = env_settings.get(app_env, {})
 
             log_level_str = env_config.get('log_level', 'INFO')
-            log_level = getattr(logging, log_level_str.upper(), logging.INFO)
-
-            # Update the root logger
-            logging.getLogger().setLevel(log_level)
+            
+            # Use centralized logging configuration to update level
+            from logging_config import set_log_level
+            set_log_level(log_level_str)
             logger.info(f"Updated logging level to {log_level_str} for {app_env} environment")
+            
+            # Also log the environment configuration details for debugging
+            logger.info(f"Environment: {app_env}, Log Level: {log_level_str}")
+            logger.debug(f"Full environment config: {env_config}")
+        else:
+            logger.warning("No deployment configuration found, using default log level")
     except Exception as e:
         logger.error(f"Failed to update logging level: {e}")
+        # Fallback to default level
+        try:
+            from logging_config import set_log_level
+            set_log_level('INFO')
+            logger.info("Set fallback log level to INFO")
+        except Exception as fallback_error:
+            logger.error(f"Failed to set fallback log level: {fallback_error}")
 
 # Import centralized response helpers
 from utils.responses import create_standardized_response, create_error_response

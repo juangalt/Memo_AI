@@ -13,8 +13,7 @@ try:
 except ImportError:
     from backend.models.config_models import Language
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 class DetectionMethod(str, Enum):

@@ -13,8 +13,7 @@ import yaml
 import hashlib
 from .path_utils import resolve_config_dir_with_fallback
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 class AuthService:

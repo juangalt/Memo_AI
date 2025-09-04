@@ -34,6 +34,212 @@
 
 ## 🚀 Recent Changes
 
+### [2025-09-04] Docker Compose Environment Variable Integration for Log Level - COMPLETED
+
+**Type**: Enhancement & Integration  
+**Impact**: Environment-Based Configuration & Logging Management  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Docker Compose APP_ENV environment variable now properly defines log level based on deployment.yaml configuration
+
+**Implementation Summary**:
+- **Environment Variable Integration**: `APP_ENV` from docker-compose.yml now controls log level via deployment.yaml
+- **Dynamic Log Level Selection**: Automatic log level selection based on environment (development=DEBUG, staging=INFO, production=INFO)
+- **Docker Integration**: Seamless environment variable passing from docker-compose to container
+- **Configuration-Driven**: Log levels defined in deployment.yaml for easy management
+- **Fallback Safety**: Graceful degradation if configuration fails
+
+**Technical Implementation**:
+
+**1. Docker Compose Configuration** (`docker-compose.yml`):
+```yaml
+environment:
+  - APP_ENV=${APP_ENV:-production}  # Defaults to production if not set
+```
+
+**2. Environment File (.env)**:
+```bash
+APP_ENV=development      # Sets development environment
+```
+
+**3. Deployment Configuration** (`config/deployment.yaml`):
+```yaml
+environment:
+  env_specific_settings:
+    development:
+      log_level: DEBUG
+    staging:
+      log_level: INFO
+    production:
+      log_level: INFO
+```
+
+**4. Logging Configuration Flow**:
+```
+Startup → configure_logging() → APP_ENV=development → DEBUG level
+Startup → update_logging_level() → deployment.yaml → DEBUG level (confirmation)
+```
+
+**5. Environment Variable Priority**:
+```
+1. DEBUG environment variable (highest priority)
+2. LOG_LEVEL environment variable  
+3. APP_ENV environment variable (reads from deployment.yaml)
+4. Default fallback (INFO)
+```
+
+**Enhanced Logging Configuration** (`backend/logging_config.py`):
+```python
+# Check APP_ENV for default log level
+app_env = os.getenv('APP_ENV', 'production')
+if app_env == 'development':
+    log_level = 'DEBUG'
+elif app_env == 'staging':
+    log_level = 'INFO'
+else:  # production
+    log_level = 'INFO'
+```
+
+**Runtime Log Level Updates** (`backend/main.py`):
+```python
+def update_logging_level():
+    """Update logging level based on configuration"""
+    try:
+        deployment_config = config_service.get_deployment_config()
+        if deployment_config:
+            env_settings = deployment_config.get('environment', {}).get('env_specific_settings', {})
+            app_env = os.environ.get('APP_ENV', 'production')
+            env_config = env_settings.get(app_env, {})
+            
+            log_level_str = env_config.get('log_level', 'INFO')
+            
+            # Use centralized logging configuration to update level
+            from logging_config import set_log_level
+            set_log_level(log_level_str)
+            logger.info(f"Updated logging level to {log_level_str} for {app_env} environment")
+    except Exception as e:
+        logger.error(f"Failed to update logging level: {e}")
+        # Fallback to default level
+        try:
+            from logging_config import set_log_level
+            set_log_level('INFO')
+            logger.info("Set fallback log level to INFO")
+        except Exception as fallback_error:
+            logger.error(f"Failed to set fallback log level: {fallback_error}")
+```
+
+**Verification Results**:
+- ✅ **Environment Detection**: `APP_ENV=development` correctly detected
+- ✅ **Log Level Setting**: Development environment sets log level to DEBUG
+- ✅ **Configuration Integration**: deployment.yaml log levels properly applied
+- ✅ **Docker Integration**: Environment variable passed from docker-compose to container
+- ✅ **Fallback Safety**: Graceful degradation if configuration fails
+- ✅ **Runtime Updates**: Log level updated during startup based on deployment config
+
+**Benefits Achieved**:
+✅ **Environment-Aware Logging**: Automatic log level selection based on deployment environment  
+✅ **Docker Integration**: Seamless environment variable passing from docker-compose  
+✅ **Configuration-Driven**: Log levels defined in deployment.yaml for easy management  
+✅ **Fallback Safety**: Graceful degradation if configuration fails  
+✅ **Consistent Behavior**: All modules use same log level from centralized configuration  
+✅ **Production Ready**: Different log levels for different environments (DEBUG for dev, INFO for prod)  
+
+**Current Status**:
+The `APP_ENV` environment variable is now properly defining the log level based on the `deployment.yaml` configuration parameters:
+
+- **Development**: `APP_ENV=development` → `log_level: DEBUG` → All log levels visible
+- **Staging**: `APP_ENV=staging` → `log_level: INFO` → DEBUG messages hidden
+- **Production**: `APP_ENV=production` → `log_level: INFO` → DEBUG messages hidden
+
+The system automatically detects the environment, reads the appropriate configuration, and applies the correct log level during both initial startup and runtime configuration updates.
+
+---
+
+### [2025-09-04] Centralized Logging Configuration Implementation - COMPLETED
+
+**Type**: Refactor & Enhancement  
+**Impact**: Logging Consistency & Maintainability  
+**Priority**: High  
+
+**Status**: ✅ **COMPLETED** - Implemented centralized logging configuration eliminating inconsistent logging across modules
+
+**Implementation Summary**:
+- **Centralized Logging Module**: Created `backend/logging_config.py` with comprehensive logging configuration
+- **Unified Configuration**: All modules now use consistent logging format and levels
+- **Environment Integration**: Support for environment variables (DEBUG, LOG_LEVEL, LOG_FILE, LOG_FORMAT)
+- **Service Integration**: Applied centralized logging to all backend services and modules
+- **Testing**: Comprehensive unit tests and integration verification
+
+**Technical Implementation**:
+
+**1. Logging Configuration Module** (`backend/logging_config.py`):
+```python
+def configure_logging(
+    log_level: Optional[str] = None,
+    log_format: Optional[str] = None,
+    log_file: Optional[str] = None
+) -> None:
+    """Configure logging for the entire application"""
+    # Environment variable support
+    # Handler management (console + optional file)
+    # Formatter configuration
+    # Third-party logger propagation control
+```
+
+**2. Key Features**:
+- **Dynamic Log Levels**: Support for DEBUG, INFO, WARNING, ERROR, CRITICAL
+- **Environment Variables**: DEBUG, LOG_LEVEL, LOG_FILE, LOG_FORMAT
+- **Handler Management**: Console output + optional file logging
+- **Format Consistency**: Standard format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
+- **Third-Party Control**: Disables propagation for uvicorn/fastapi to avoid duplicates
+
+**3. Service Integration**:
+- **Main Application**: `backend/main.py` - Centralized logging configuration at startup
+- **Authentication Service**: `backend/services/auth_service.py` - Removed `logging.basicConfig`
+- **LLM Service**: `backend/services/llm_service.py` - Removed `logging.basicConfig`
+- **Config Manager**: `backend/services/config_manager.py` - Removed `logging.basicConfig`
+- **Language Detection**: `backend/services/language_detection.py` - Removed `logging.basicConfig`
+- **Database Initialization**: `backend/init_db.py` - Removed `logging.basicConfig`
+- **Config Validation**: `backend/validate_config.py` - Removed `logging.basicConfig`
+
+**4. Testing Implementation**:
+- **Unit Tests**: `tests/unit/test_logging_config.py` with 12 comprehensive test cases
+- **Integration Verification**: Test script confirming consistent logging across modules
+- **Coverage**: Configuration, custom levels, file handling, environment variables, error handling
+
+**5. Logging Consistency**:
+- **Before**: Each module called `logging.basicConfig()` separately with different formats
+- **After**: Single `configure_logging()` call ensures consistent format across all modules
+- **Result**: Unified logging format: `2025-09-04 03:37:09,472 - module_name - INFO - message`
+
+**Benefits Achieved**:
+✅ **Consistent Format**: All log messages use identical timestamp and formatting  
+✅ **Centralized Control**: Single configuration point for all logging behavior  
+✅ **Environment Flexibility**: Easy log level and file configuration via environment variables  
+✅ **Maintainability**: No more scattered logging configuration across modules  
+✅ **Performance**: Efficient handler management and third-party logger control  
+✅ **Testing**: Comprehensive test coverage for all logging functionality  
+
+**Files Modified**:
+- `backend/logging_config.py` - **NEW** - Centralized logging configuration module
+- `backend/main.py` - Updated to use centralized logging and removed `logging.basicConfig`
+- `backend/services/auth_service.py` - Removed `logging.basicConfig`
+- `backend/services/llm_service.py` - Removed `logging.basicConfig`
+- `backend/services/config_manager.py` - Removed `logging.basicConfig`
+- `backend/services/language_detection.py` - Removed `logging.basicConfig`
+- `backend/init_db.py` - Removed `logging.basicConfig`
+- `backend/validate_config.py` - Removed `logging.basicConfig`
+- `tests/unit/test_logging_config.py` - **NEW** - Comprehensive unit tests
+
+**Verification Results**:
+- **No `basicConfig` Calls**: `grep -r "basicConfig" backend/` returns no results
+- **Consistent Format**: All log messages follow `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
+- **Module Integration**: All services successfully use centralized logging configuration
+- **Backend Startup**: Application starts correctly with new logging system
+- **Health Endpoints**: All functionality preserved with improved logging consistency
+
+---
+
 ### [2025-09-04] Health Endpoint Structure Consistency Fix - COMPLETED
 
 **Type**: Bug Fix & API Consistency  

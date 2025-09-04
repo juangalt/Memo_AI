@@ -8,8 +8,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Get logger for this module
 logger = logging.getLogger(__name__)
 
 def init_database():
