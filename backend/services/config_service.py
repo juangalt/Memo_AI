@@ -171,11 +171,17 @@ class ConfigService:
             # Apply environment-specific configurations
             configs = self._apply_environment_specific_configs(configs, app_env)
             
-            # Apply LLM API key override
-            if 'LLM_API_KEY' in os.environ:
-                if 'llm.yaml' in configs and 'api_configuration' in configs['llm.yaml']:
-                    configs['llm.yaml']['api_configuration']['api_key'] = os.environ['LLM_API_KEY']
-                    logger.info("Applied LLM API key from environment")
+            # Apply Claude API key override (new name), with legacy fallback
+            api_key = None
+            if 'CLAUDE_API_KEY' in os.environ and os.environ['CLAUDE_API_KEY']:
+                api_key = os.environ['CLAUDE_API_KEY']
+            elif 'LLM_API_KEY' in os.environ and os.environ['LLM_API_KEY']:
+                api_key = os.environ['LLM_API_KEY']
+                logger.warning("Using legacy LLM_API_KEY; please migrate to CLAUDE_API_KEY")
+
+            if api_key and 'llm.yaml' in configs and 'api_configuration' in configs['llm.yaml']:
+                configs['llm.yaml']['api_configuration']['api_key'] = api_key
+                logger.info("Applied Claude API key from environment overrides")
             
             # Apply session timeout override only if explicitly set (allows YAML defaults to work)
             if 'SESSION_TIMEOUT' in os.environ and os.environ['SESSION_TIMEOUT'].strip():
