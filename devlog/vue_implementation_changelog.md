@@ -34,6 +34,136 @@
 
 ## 🚀 Recent Changes
 
+### [2025-09-04] Prompt Generation: Externalized Templates + Localized Labels — COMPLETED
+
+**Type**: Refactor + i18n + Maintainability  
+**Impact**: Cleaner prompts, easier edits, improved localization  
+**Status**: ✅ COMPLETED
+
+**Summary**:
+- Moved the example response JSON out of `prompt.yaml` into a dedicated `config/response_template.yaml` with per‑language entries.
+- Updated `evaluation_prompt.j2` to inject the response example via a variable instead of hardcoding.
+- Added localized rubric labels to eliminate hardcoded English in the prompt output.
+
+**Files Touched**:
+- New config: `config/response_template.yaml`
+- Template: `backend/templates/evaluation_prompt.j2` (uses `{{ response_template }}`)
+- Service: `backend/services/llm_service.py` (loads response templates, injects `response_template`, stable template path)
+- Config: `config/prompt.yaml` (added `rubric_title`, `scoring_scale_label`, `evaluation_criteria_label`, `weight_label`, `description_label`; removed duplicated JSON example)
+- Models: `backend/models/config_models.py` (RubricConfig extended with optional label fields)
+
+**Key Implementation Details**:
+- Response template injection:
+  - `evaluation_prompt.j2`: replace hardcoded JSON with `{{ response_template }}`
+  - `llm_service.py`: load `config/response_template.yaml`, select by language, fallback to English/empty
+- Localized rubric text (config‑driven):
+  - `rubric_title`, `scoring_scale_label`, `evaluation_criteria_label`, `weight_label`, `description_label`
+  - `_get_rubric_content()` composes rubric using these labels with sensible defaults
+- Template loader hardening:
+  - Use absolute path to `backend/templates` derived from `__file__` to avoid CWD issues
+- Removed static section headers in prompt template:
+  - Dropped “TEXT TO EVALUATE” and “EVALUATION RUBRIC”; title now comes from `rubric_title`
+
+**Verification**:
+- ✅ YAML parses for `config/prompt.yaml` and `config/response_template.yaml`
+- ✅ Jinja template compiles and renders with injected `response_template`
+- ✅ Sample renders show localized rubric titles/labels for EN/ES
+- ✅ Fallback to English template when a language entry is missing
+
+---
+
+### [2025-09-04] Admin Logs Page — COMPLETED
+
+**Type**: Feature Addition  
+**Impact**: Operational visibility and debugging  
+**Status**: ✅ COMPLETED
+
+**Summary**:
+- Added an admin-only logs viewer to inspect recent application logs in-app with level filters and a console-style view.
+- Fetches logs from the backend in-memory log buffer via the admin API, with an automatic mock fallback when the API is unavailable in development.
+
+**Files Touched**:
+- Frontend view: `vue-frontend/src/views/AdminLogs.vue`
+- Router: `vue-frontend/src/router/index.ts` (added `/admin/logs` route with admin guard)
+- Layout: `vue-frontend/src/components/Layout.vue` (added sidebar link for “Logs” under Admin Tools)
+- Backend endpoint: `backend/main.py` (`GET /api/v1/admin/logs`)
+
+**Key Implementation Details**:
+- Pulls logs via `apiClient.get('/api/v1/admin/logs?limit=1000')` when available.
+- Filters by level (DEBUG/INFO/WARNING/ERROR/CRITICAL) with quick “All/None” toggles.
+- Renders a combined console-like block ordered newest → oldest.
+- Shows loading and empty states with clear messaging.
+
+**Verification**:
+- ✅ Admin can navigate to “Logs” from sidebar and see recent logs
+- ✅ Level filters immediately affect the rendered list/console block
+- ✅ “Refresh” fetches the latest logs from API
+- ✅ Auth guard protects the route (non-admins cannot access)
+
+---
+
+### [2025-09-04] Text Input: Ctrl+Enter Submission Shortcut — COMPLETED
+
+**Type**: UX Enhancement  
+**Impact**: Faster submission while typing  
+**Status**: ✅ COMPLETED
+
+**Summary**:
+- Added a keyboard shortcut to submit the memo directly from the textarea using Ctrl+Enter.
+- Prevents inserting a newline on Ctrl+Enter and triggers the existing submit flow with all guards (e.g., empty text, length, in‑flight state).
+
+**Files Touched**:
+- `vue-frontend/src/views/TextInput.vue`
+
+**Key Snippet**:
+```vue
+<textarea
+  v-model="textContent"
+  :maxlength="10000"
+  rows="12"
+  @keydown.ctrl.enter.prevent="submitEvaluation"
+  class="w-full px-3 py-2 border ..."
+  placeholder="Enter your text here (maximum 10,000 characters)..."
+/>
+```
+
+**Verification**:
+- ✅ With focus in textarea, Ctrl+Enter triggers submit
+- ✅ Button state and validation respected (`!canSubmit` and `isSubmitting`)
+- ✅ No unintended newlines inserted on Ctrl+Enter
+
+---
+
+### [2025-09-04] Admin: “View Raw Data” Reliability & UX — COMPLETED
+
+**Type**: Bug Fix + UX Improvement  
+**Impact**: More reliable access to raw prompt/response for admins  
+**Status**: ✅ COMPLETED
+
+**Summary**:
+- Button is now disabled during fetch to prevent double‑clicks and confusion.
+- Added explicit error state in the modal when raw data cannot be fetched (e.g., auth, not found).
+- Coordinated backend change to expose the button whenever either `raw_prompt` OR `raw_response` exists (previously required both), improving observability in partial‑data cases.
+
+**Files Touched**:
+- Frontend: `vue-frontend/src/components/admin/LastEvaluationsViewer.vue`
+  - Disabled state: `:disabled="rawDataLoading"`
+  - Error handling: `rawDataError` state with visible message in modal
+- Backend (coordination): `backend/main.py`
+  - `has_raw_data`: now true if `raw_prompt` OR `raw_response` present
+
+**UI/UX Notes**:
+- The list still renders exactly one “View Raw Data” button per evaluation card.
+- If a fetch error occurs, the modal shows a clear message instead of appearing empty.
+
+**Verification**:
+- ✅ Button visible when either raw field is present
+- ✅ Button becomes disabled while loading
+- ✅ Modal shows loading → error or content as appropriate
+- ✅ Copy‑to‑clipboard actions remain functional
+
+---
+
 ### [2025-09-04] Help Page Rewrite with Updated Rubric - COMPLETED
 
 **Type**: Content & Documentation Update  
