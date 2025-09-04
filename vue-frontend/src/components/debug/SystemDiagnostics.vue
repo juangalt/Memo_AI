@@ -109,32 +109,39 @@ interface HealthResponse {
   timestamp: string
   version: string
   services: {
-    api: string
-    database: string
-    configuration: string
-    llm: string
-    auth: string
-  }
-  database_details?: {
-    tables: string[]
-    journal_mode: string
-    user_count: number
-  }
-  config_details?: {
-    configs_loaded: string[]
-    last_loaded: string
-    config_dir: string
-  }
-  llm_details?: {
-    provider: string
-    model: string
-    api_accessible: boolean
-    config_loaded: boolean
-  }
-  auth_details?: {
-    config_loaded: boolean
-    active_sessions: number
-    brute_force_protection: boolean
+    api: {
+      status: string
+      details: string
+    }
+    database: {
+      status: string
+      tables: string[]
+      journal_mode: string
+      user_count: number
+      db_path: string
+    }
+    configuration: {
+      status: string
+      configs_loaded: string[]
+      last_loaded: string
+      config_dir: string
+    }
+    llm: {
+      status: string
+      details: string
+      model: string
+      provider: string
+    }
+    auth: {
+      status: string
+      service: string
+      config_loaded: boolean
+      active_sessions: number
+      brute_force_protection: boolean
+      session_expiry_hours: number
+      session_token_length: number
+      last_check: string
+    }
   }
   environment?: {
     app_env: string
@@ -213,42 +220,33 @@ const runDiagnostics = async () => {
       }
       
       // Update database status
-      if (health.database_details) {
-        dbStatus.value = {
-          connected: health.services?.database === 'healthy',
-          tableCount: health.database_details.tables?.length || 0,
-          size: 'Unknown', // Not provided by health endpoint
-          lastBackup: 'Never' // Not provided by health endpoint
-        }
-      } else {
-        dbStatus.value = {
-          connected: health.services?.database === 'healthy',
-          tableCount: 0,
-          size: 'Unknown',
-          lastBackup: 'Never'
-        }
+      dbStatus.value = {
+        connected: health.services?.database?.status === 'healthy',
+        tableCount: health.services?.database?.tables?.length || 0,
+        size: 'Unknown', // Not provided by health endpoint
+        lastBackup: 'Never' // Not provided by health endpoint
       }
       
       // Update service status
       serviceStatus.value = [
         {
           name: 'Database',
-          status: health.services?.database || 'unknown',
+          status: health.services?.database?.status || 'unknown',
           responseTime: 0 // Not provided by health endpoint
         },
         {
           name: 'Configuration',
-          status: health.services?.configuration || 'unknown',
+          status: health.services?.configuration?.status || 'unknown',
           responseTime: 0
         },
         {
           name: 'LLM Service',
-          status: health.services?.llm || 'unknown',
+          status: health.services?.llm?.status || 'unknown',
           responseTime: 0
         },
         {
           name: 'Authentication',
-          status: health.services?.auth || 'unknown',
+          status: health.services?.auth?.status || 'unknown',
           responseTime: 0
         }
       ]

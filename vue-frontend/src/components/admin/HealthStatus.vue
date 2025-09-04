@@ -87,32 +87,39 @@ interface HealthResponse {
   timestamp: string
   version: string
   services: {
-    api: string
-    database: string
-    configuration: string
-    llm: string
-    auth: string
-  }
-  database_details?: {
-    tables: string[]
-    journal_mode: string
-    user_count: number
-  }
-  config_details?: {
-    configs_loaded: string[]
-    last_loaded: string
-    config_dir: string
-  }
-  llm_details?: {
-    provider: string
-    model: string
-    api_accessible: boolean
-    config_loaded: boolean
-  }
-  auth_details?: {
-    config_loaded: boolean
-    active_sessions: number
-    brute_force_protection: boolean
+    api: {
+      status: string
+      details: string
+    }
+    database: {
+      status: string
+      tables: string[]
+      journal_mode: string
+      user_count: number
+      db_path: string
+    }
+    configuration: {
+      status: string
+      configs_loaded: string[]
+      last_loaded: string
+      config_dir: string
+    }
+    llm: {
+      status: string
+      details: string
+      model: string
+      provider: string
+    }
+    auth: {
+      status: string
+      service: string
+      config_loaded: boolean
+      active_sessions: number
+      brute_force_protection: boolean
+      session_expiry_hours: number
+      session_token_length: number
+      last_check: string
+    }
   }
 }
 
@@ -160,42 +167,25 @@ const checkHealth = async () => {
     if (result.success && result.data) {
       const health = result.data
       
-      // Extract service statuses from the services object
+      // Extract service statuses and details from the services object
       if (health.services) {
         healthData.value = {
-          database: { status: health.services.database || 'unknown' },
-          config: { status: health.services.configuration || 'unknown' },
-          llm: { status: health.services.llm || 'unknown' },
-          auth: { status: health.services.auth || 'unknown' }
-        }
-      }
-      
-      // Add details if available
-      if (health.database_details && healthData.value.database) {
-        healthData.value.database = {
-          ...healthData.value.database,
-          details: `Tables: ${health.database_details.tables?.length || 0}, Users: ${health.database_details.user_count || 0}`
-        }
-      }
-      
-      if (health.config_details && healthData.value.config) {
-        healthData.value.config = {
-          ...healthData.value.config,
-          details: `Configs: ${health.config_details.configs_loaded?.length || 0}`
-        }
-      }
-      
-      if (health.llm_details && healthData.value.llm) {
-        healthData.value.llm = {
-          ...healthData.value.llm,
-          details: `Provider: ${health.llm_details.provider}, Model: ${health.llm_details.model}`
-        }
-      }
-      
-      if (health.auth_details && healthData.value.auth) {
-        healthData.value.auth = {
-          ...healthData.value.auth,
-          details: `Active Sessions: ${health.auth_details.active_sessions || 0}`
+          database: { 
+            status: health.services.database?.status || 'unknown',
+            details: health.services.database ? `Tables: ${health.services.database.tables?.length || 0}, Users: ${health.services.database.user_count || 0}` : undefined
+          },
+          config: { 
+            status: health.services.configuration?.status || 'unknown',
+            details: health.services.configuration ? `Configs: ${health.services.configuration.configs_loaded?.length || 0}` : undefined
+          },
+          llm: { 
+            status: health.services.llm?.status || 'unknown',
+            details: health.services.llm ? `Provider: ${health.services.llm.provider || 'unknown'}, Model: ${health.services.llm.model || 'unknown'}` : undefined
+          },
+          auth: { 
+            status: health.services.auth?.status || 'unknown',
+            details: health.services.auth ? `Active Sessions: ${health.services.auth.active_sessions || 0}` : undefined
+          }
         }
       }
       
@@ -203,21 +193,21 @@ const checkHealth = async () => {
     }
   } catch (error) {
     console.error('Failed to check health status:', error)
-    // If detailed health fails, fall back to basic health
-    try {
-      const basicResult = await apiClient.get<HealthResponse>('/health')
-      if (basicResult.success && basicResult.data) {
-        const health = basicResult.data
-        if (health.services) {
-          healthData.value = {
-            database: { status: health.services.database || 'unknown' },
-            config: { status: health.services.configuration || 'unknown' },
-            llm: { status: health.services.llm || 'unknown' },
-            auth: { status: health.services.auth || 'unknown' }
+          // If detailed health fails, fall back to basic health
+      try {
+        const basicResult = await apiClient.get<HealthResponse>('/health')
+        if (basicResult.success && basicResult.data) {
+          const health = basicResult.data
+          if (health.services) {
+            healthData.value = {
+              database: { status: health.services.database?.status || 'unknown' },
+              config: { status: health.services.configuration?.status || 'unknown' },
+              llm: { status: health.services.llm?.status || 'unknown' },
+              auth: { status: health.services.auth?.status || 'unknown' }
+            }
           }
         }
-      }
-    } catch (fallbackError) {
+      } catch (fallbackError) {
       console.error('Fallback health check also failed:', fallbackError)
       healthData.value = {
         database: { status: 'unknown' },
