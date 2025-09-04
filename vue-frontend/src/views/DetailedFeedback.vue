@@ -41,13 +41,21 @@
                 class="border rounded-lg overflow-hidden"
               >
                 <!-- Segment Header -->
-                <div class="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-b">
+                <div
+                  class="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 border-b cursor-pointer"
+                  role="button"
+                  tabindex="0"
+                  :aria-expanded="!!expandedSegments[index]"
+                  @click="toggleSegment(index)"
+                  @keydown.enter.prevent="toggleSegment(index)"
+                  @keydown.space.prevent="toggleSegment(index)"
+                >
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                     <h4 class="text-base sm:text-lg font-semibold text-gray-900">
                       Segment {{ index + 1 }}
                     </h4>
                     <button
-                      @click="toggleSegment(index)"
+                      @click.stop="toggleSegment(index)"
                       class="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium"
                     >
                       {{ expandedSegments[index] ? 'Collapse' : 'Expand' }}
