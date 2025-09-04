@@ -42,7 +42,8 @@
           <button
             v-if="evaluation.has_raw_data"
             @click="viewRawData(evaluation)"
-            class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
+            :disabled="rawDataLoading"
+            class="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
           >
             View Raw Data
           </button>
@@ -73,6 +74,10 @@
 
         <div v-if="rawDataLoading" class="text-center py-8">
           <div class="text-gray-500">Loading raw data...</div>
+        </div>
+
+        <div v-else-if="rawDataError" class="text-center py-8">
+          <div class="text-red-600">{{ rawDataError }}</div>
         </div>
 
         <div v-else-if="rawData" class="space-y-6">
@@ -189,6 +194,7 @@ interface RawData {
 const evaluations = ref<Evaluation[]>([])
 const loading = ref(false)
 const rawDataLoading = ref(false)
+const rawDataError = ref<string | null>(null)
 const showRawDataModal = ref(false)
 const selectedEvaluation = ref<Evaluation | null>(null)
 const rawData = ref<RawData | null>(null)
@@ -217,6 +223,7 @@ const refreshData = () => {
 const viewRawData = async (evaluation: Evaluation) => {
   try {
     rawDataLoading.value = true
+    rawDataError.value = null
     showRawDataModal.value = true
     selectedEvaluation.value = evaluation
     
@@ -224,9 +231,12 @@ const viewRawData = async (evaluation: Evaluation) => {
     
     if (result.success) {
       rawData.value = result.data.evaluation
+    } else {
+      rawDataError.value = result.error || 'Failed to load raw data'
     }
   } catch (error) {
     console.error('Failed to load raw data:', error)
+    rawDataError.value = (error as any)?.message || 'Failed to load raw data'
   } finally {
     rawDataLoading.value = false
   }
@@ -236,6 +246,7 @@ const closeRawDataModal = () => {
   showRawDataModal.value = false
   selectedEvaluation.value = null
   rawData.value = null
+  rawDataError.value = null
 }
 
 const copyToClipboard = async (text: string) => {

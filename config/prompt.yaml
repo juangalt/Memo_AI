@@ -17,6 +17,10 @@ languages:
     
     rubric:
       rubric_title: "EVALUATION RUBRIC"
+      scoring_scale_label: "Scoring Scale"
+      evaluation_criteria_label: "Evaluation Criteria"
+      weight_label: "Weight"
+      description_label: "Description"
       scores:
         min: 1
         max: 5
@@ -52,6 +56,10 @@ languages:
     
     rubric:
       rubric_title: "RÚBRICA DE EVALUACIÓN"
+      scoring_scale_label: "Escala de Puntuación"
+      evaluation_criteria_label: "Criterios de Evaluación"
+      weight_label: "Peso"
+      description_label: "Descripción"
       scores:
         min: 1
         max: 5

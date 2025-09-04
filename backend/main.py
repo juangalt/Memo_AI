@@ -1556,7 +1556,8 @@ async def get_last_evaluations(request: Request):
                 "llm_provider": row['llm_provider'],
                 "llm_model": row['llm_model'],
                 "debug_enabled": bool(row['debug_enabled']),
-                "has_raw_data": bool(row['raw_prompt'] and row['raw_response']),
+                # Consider raw data available if either prompt or response exists
+                "has_raw_data": bool(row['raw_prompt'] or row['raw_response']),
                 "submission_preview": row['submission_content'][:100] + "..." if len(row['submission_content']) > 100 else row['submission_content'],
                 "username": row['username'],
                 "is_admin": bool(row['is_admin'])

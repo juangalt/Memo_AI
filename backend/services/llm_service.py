@@ -128,16 +128,20 @@ class EnhancedLLMService:
             lang_config = self.prompt_config.languages[language]
             rubric = lang_config.rubric
             
-            # Title from config (falls back to a sensible default)
+            # Title and labels from config (with sensible defaults)
             rubric_title = getattr(rubric, 'rubric_title', None) or "EVALUATION RUBRIC"
+            scoring_label = getattr(rubric, 'scoring_scale_label', None) or "Scoring Scale"
+            criteria_label = getattr(rubric, 'evaluation_criteria_label', None) or "Evaluation Criteria"
 
             rubric_content = f"{rubric_title}\n"
-            rubric_content += f"Scoring Scale: {rubric.scores.min}-{rubric.scores.max}\n\n"
-            rubric_content += "Evaluation Criteria:\n"
+            rubric_content += f"{scoring_label}: {rubric.scores.min}-{rubric.scores.max}\n\n"
+            rubric_content += f"{criteria_label}:\n"
             
             for criterion_key, criterion in rubric.criteria.items():
-                rubric_content += f"\n{criterion.name} (Weight: {criterion.weight}%)\n"
-                rubric_content += f"Description: {criterion.description}\n"
+                weight_label = getattr(rubric, 'weight_label', None) or "Weight"
+                description_label = getattr(rubric, 'description_label', None) or "Description"
+                rubric_content += f"\n{criterion.name} ({weight_label}: {criterion.weight}%)\n"
+                rubric_content += f"{description_label}: {criterion.description}\n"
             
             return rubric_content
             

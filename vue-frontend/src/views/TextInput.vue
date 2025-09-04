@@ -18,6 +18,7 @@
             v-model="textContent"
             :maxlength="10000"
             rows="12"
+            @keydown.ctrl.enter.prevent="submitEvaluation"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter your text here (maximum 10,000 characters)..."
           />
