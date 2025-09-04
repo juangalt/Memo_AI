@@ -35,18 +35,22 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { computed } from 'vue'
 
 const router = useRouter()
-const authStore = useAuthStore()
 
-const isAuthenticated = authStore.isAuthenticated
-const isAdmin = authStore.isAdmin
-const username = authStore.username
+// Use the global auth store instance that the router also uses
+const authStore = computed(() => (window as any).authStoreInstance)
+
+const isAuthenticated = computed(() => authStore.value?.isAuthenticated || false)
+const isAdmin = computed(() => authStore.value?.isAdmin || false)
+const username = computed(() => authStore.value?.username || '')
 
 const handleLogout = async () => {
-  await authStore.logout()
-  router.push('/')
+  if (authStore.value) {
+    await authStore.value.logout()
+    router.push('/')
+  }
 }
 </script>
 

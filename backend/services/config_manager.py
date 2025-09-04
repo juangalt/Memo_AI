@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, Tuple, List
 from datetime import datetime
 import shutil
 import tempfile
+from .path_utils import resolve_config_dir_with_fallback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,12 +22,7 @@ class ConfigManager:
     def __init__(self, config_path: str = None):
         """Initialize config manager with automatic path detection"""
         if config_path is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_path = '/app/config'
-            else:
-                config_path = '../config'
+            config_path = resolve_config_dir_with_fallback()
         
         self.config_path = config_path
         self.config_files = {

@@ -8,7 +8,10 @@ from typing import Dict, Any, Optional, Tuple
 from enum import Enum
 
 # Import Language enum from config models to ensure consistency
-from models.config_models import Language
+try:
+    from models.config_models import Language
+except ImportError:
+    from backend.models.config_models import Language
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

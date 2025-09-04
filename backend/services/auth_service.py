@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, Tuple, List
 from datetime import datetime, timedelta
 import yaml
 import hashlib
+from .path_utils import resolve_config_dir_with_fallback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,12 +23,7 @@ class AuthService:
     def __init__(self, config_path: str = None):
         """Initialize auth service with automatic path detection"""
         if config_path is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_path = '/app/config'
-            else:
-                config_path = '../config'
+            config_path = resolve_config_dir_with_fallback()
         
         self.config_path = config_path
         self.auth_config = None

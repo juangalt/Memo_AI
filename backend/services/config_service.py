@@ -8,6 +8,7 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
+from .path_utils import resolve_config_dir_with_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +18,7 @@ class ConfigService:
     def __init__(self, config_dir: Optional[str] = None):
         """Initialize configuration service"""
         if config_dir is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_dir = '/app/config'
-            else:
-                config_dir = os.getenv('CONFIG_DIR', '../config')
+            config_dir = resolve_config_dir_with_fallback()
         
         self.config_dir = Path(config_dir)
         self.configs = {}

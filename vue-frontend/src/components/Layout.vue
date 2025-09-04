@@ -91,10 +91,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import AuthStatus from './AuthStatus.vue'
 
-const authStore = useAuthStore()
-const isAdmin = computed(() => authStore.isAdmin)
+// Use the global auth store instance that the router also uses
+const authStore = computed(() => (window as any).authStoreInstance)
+const isAdmin = computed(() => authStore.value?.isAdmin || false)
 </script>
 

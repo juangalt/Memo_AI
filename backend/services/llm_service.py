@@ -13,10 +13,14 @@ import anthropic
 from anthropic import Anthropic
 import yaml
 from jinja2 import Environment, FileSystemLoader, Template
+from .path_utils import resolve_config_dir_with_fallback
 
 # Import new components
-from models.config_models import PromptConfig, LLMConfig, Language
-from services.language_detection import RobustLanguageDetector, DetectionResult
+try:
+    from models.config_models import PromptConfig, LLMConfig, Language
+except ImportError:
+    from backend.models.config_models import PromptConfig, LLMConfig, Language
+from .language_detection import RobustLanguageDetector, DetectionResult
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,12 +32,7 @@ class EnhancedLLMService:
     def __init__(self, config_path: str = None):
         """Initialize enhanced LLM service with automatic path detection"""
         if config_path is None:
-            # In container, config is mounted at /app/config
-            # For development, fallback to ../config
-            if os.path.exists('/app/config'):
-                config_path = '/app/config'
-            else:
-                config_path = '../config'
+            config_path = resolve_config_dir_with_fallback()
         
         self.config_path = config_path
         self.client = None

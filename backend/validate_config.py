@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 from pathlib import Path
+from services.path_utils import resolve_config_dir_with_fallback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -148,9 +149,7 @@ def validate_auth_config(config):
 
 def validate_all_configs():
     """Validate all 4 essential configuration files"""
-    config_dir = os.getenv('CONFIG_DIR', '/app/config')
-    if not os.path.exists(config_dir):
-        config_dir = '../config'  # Fallback for local development from backend directory
+    config_dir = resolve_config_dir_with_fallback()
     
     logger.info(f"Validating configuration files in: {config_dir}")
     
@@ -230,9 +229,7 @@ def validate_all_configs():
 
 def check_configuration_files():
     """Check if all required configuration files exist"""
-    config_dir = os.getenv('CONFIG_DIR', '/app/config')
-    if not os.path.exists(config_dir):
-        config_dir = '../config'  # Fallback for local development from backend directory
+    config_dir = resolve_config_dir_with_fallback()
     
     required_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
     missing_files = []
