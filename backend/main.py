@@ -21,15 +21,9 @@ from models import db_manager, Session, Submission, Evaluation
 from services import (
     config_service, 
     get_auth_service,
-    authenticate,
-    validate_session,
-    logout,
     get_config_manager,
     read_config_file,
-    write_config_file,
-    create_user,
-    list_users,
-    delete_user
+    write_config_file
 )
 
 # Import new enhanced LLM service
@@ -168,10 +162,10 @@ async def auth_logout(request: Request):
             )
         
         # Validate session and logout
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if valid:
-            auth_service = get_auth_service()
             logout_success = auth_service.logout(session_token)
             
             if logout_success:
@@ -265,7 +259,8 @@ async def create_user_endpoint(request: Request):
             )
         
         # Validate session and check admin access
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -328,7 +323,8 @@ async def create_user_endpoint(request: Request):
             )
         
         # Create user
-        success, user_id, error = create_user(username, password)
+        auth_service = get_auth_service(config_service=config_service)
+        success, user_id, error = auth_service.create_user(username, password)
         
         if success:
             return {
@@ -406,7 +402,8 @@ async def list_users_endpoint(request: Request):
             )
         
         # Validate session and check admin access
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -445,7 +442,7 @@ async def list_users_endpoint(request: Request):
             )
         
         # Get users list
-        users = list_users()
+        users = auth_service.list_users()
         
         return {
             "data": {
@@ -504,7 +501,8 @@ async def delete_user_endpoint(username: str, request: Request):
             )
         
         # Validate session and check admin access
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -543,7 +541,7 @@ async def delete_user_endpoint(username: str, request: Request):
             )
         
         # Delete user
-        success = delete_user(username)
+        success = auth_service.delete_user(username)
         
         if success:
             return {
@@ -618,7 +616,8 @@ async def get_config(config_name: str, request: Request):
                 }
             )
         
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         if not valid:
             return JSONResponse(
                 status_code=401,
@@ -713,7 +712,8 @@ async def update_config(config_name: str, request: Request):
                 }
             )
         
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         if not valid:
             return JSONResponse(
                 status_code=401,
@@ -832,7 +832,8 @@ async def auth_validate(request: Request):
             )
         
         # Validate session
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -917,11 +918,12 @@ async def auth_login(request: Request):
             )
         
         # Authenticate user with unified auth
-        success, session_token, error = authenticate(username, password)
+        auth_service = get_auth_service(config_service=config_service)
+        success, session_token, error = auth_service.authenticate(username, password)
         
         if success:
             # Get user info to return admin status
-            valid, session_data, _ = validate_session(session_token)
+            valid, session_data, _ = auth_service.validate_session(session_token)
             if valid:
                 return {
                     "data": {
@@ -1016,7 +1018,8 @@ async def create_session(request: Request):
             )
         
         # Validate session with unified auth
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -1126,7 +1129,8 @@ async def submit_evaluation(request: Request):
             )
         
         # Validate session
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -1398,7 +1402,8 @@ async def get_last_evaluations(request: Request):
             )
         
         # Validate session and check admin status
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(
@@ -1502,7 +1507,8 @@ async def get_evaluation_raw_data(evaluation_id: int, request: Request):
             )
         
         # Validate session and check admin status
-        valid, session_data, error = validate_session(session_token)
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
         
         if not valid:
             return JSONResponse(

@@ -5,7 +5,7 @@ Authentication decorators for securing endpoints
 import functools
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-from services.auth_service import validate_session
+from services.auth_service import get_auth_service
 from typing import Optional, Callable, Any
 import logging
 
@@ -35,8 +35,12 @@ def require_auth(admin_only: bool = False):
                     }
                 )
             
-            # Validate session
-            valid, session_data, error = validate_session(session_token)
+            # Get auth service instance with shared config service
+            from services.config_service import config_service
+            auth_service = get_auth_service(config_service=config_service)
+            
+            # Validate session using injected auth service
+            valid, session_data, error = auth_service.validate_session(session_token)
             
             if not valid:
                 raise HTTPException(

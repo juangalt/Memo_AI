@@ -13,12 +13,14 @@ try:
     from services.auth_service import AuthService
     from services.llm_service import EnhancedLLMService
     from utils.responses import create_standardized_response, create_error_response
+    from decorators import require_auth
 except ImportError:
     # When imported from tests or other contexts
     from ..services.config_service import ConfigService
     from ..services.auth_service import AuthService
     from ..services.llm_service import EnhancedLLMService
     from ..utils.responses import create_standardized_response, create_error_response
+    from ..decorators import require_auth
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,71 +30,9 @@ router = APIRouter(prefix="/health", tags=["health"])
 
 # Shared service instances (instantiated once)
 config_service = ConfigService()
-auth_service = AuthService()
+auth_service = AuthService(config_service=config_service)
 
-def require_auth(admin_only: bool = False):
-    """Simple authentication decorator to avoid circular imports"""
-    def decorator(func):
-        async def wrapper(request: Request):
-            # Extract session token from header
-            session_token = request.headers.get("X-Session-Token", "")
-            
-            if not session_token:
-                raise HTTPException(
-                    status_code=401,
-                    detail={
-                        "code": "AUTHENTICATION_ERROR",
-                        "message": "Authentication required",
-                        "field": "session_token",
-                        "details": "Please log in to access this endpoint"
-                    }
-                )
-            
-            # Validate session using auth service
-            try:
-                valid, session_data, error = auth_service.validate_session(session_token)
-                
-                if not valid:
-                    raise HTTPException(
-                        status_code=401,
-                        detail={
-                            "code": "AUTHENTICATION_ERROR",
-                            "message": "Invalid session",
-                            "field": "session_token",
-                            "details": error or "Please log in again"
-                        }
-                    )
-                
-                # Check admin requirement if needed
-                if admin_only and not session_data.get('is_admin', False):
-                    raise HTTPException(
-                        status_code=403,
-                        detail={
-                            "code": "AUTHORIZATION_ERROR",
-                            "message": "Admin access required",
-                            "field": None,
-                            "details": "This endpoint requires administrator privileges"
-                        }
-                    )
-                
-                # Add session data to request state for use in the function
-                request.state.session_data = session_data
-                
-            except Exception as e:
-                raise HTTPException(
-                    status_code=500,
-                    detail={
-                        "code": "AUTHENTICATION_ERROR",
-                        "message": "Authentication service error",
-                        "field": None,
-                        "details": str(e)
-                    }
-                )
-            
-            return await func(request)
-        
-        return wrapper
-    return decorator
+
 
 def get_llm_service() -> EnhancedLLMService:
     """Get LLM service instance with error handling"""

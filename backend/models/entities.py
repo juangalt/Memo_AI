@@ -130,12 +130,14 @@ class Session:
         self.is_active = is_active
     
     @classmethod
-    def create(cls, session_id: str, user_id: Optional[int] = None, is_admin: bool = False) -> 'Session':
+    def create(cls, session_id: str, user_id: Optional[int] = None, is_admin: bool = False, config_service=None) -> 'Session':
         """Create a new session"""
         try:
-            # Get session timeout from configuration service
-            from services.config_service import ConfigService
-            config_service = ConfigService()
+            # Use injected config service or get default if not provided
+            if config_service is None:
+                from services.config_service import config_service as default_config_service
+                config_service = default_config_service
+            
             auth_config = config_service.get_auth_config()
             
             # Default to 1 hour if configuration is not available

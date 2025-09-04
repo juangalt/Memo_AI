@@ -72,7 +72,7 @@
     <footer class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-4">
       <div class="text-center">
         <p class="text-sm text-gray-500">
-          © Copyright FGS
+          © FGS
         </p>
       </div>
     </footer>

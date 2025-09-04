@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """Service for unified user and admin authentication"""
     
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, config_service=None):
         """Initialize auth service with automatic path detection"""
         if config_path is None:
             config_path = resolve_config_dir_with_fallback()
         
         self.config_path = config_path
+        self.config_service = config_service
         self.auth_config = None
         self.login_attempts = {}  # Track login attempts for brute force protection
         
@@ -150,7 +151,8 @@ class AuthService:
             session = Session.create(
                 session_id=session_token,
                 user_id=user.id,
-                is_admin=user.is_admin
+                is_admin=user.is_admin,
+                config_service=self.config_service
             )
             
             # Record successful login
@@ -447,95 +449,20 @@ class AuthService:
 # Global auth service instance
 auth_service = None
 
-def get_auth_service(config_path: str = None) -> AuthService:
+def get_auth_service(config_path: str = None, config_service=None) -> AuthService:
     """
     Get the global authentication service instance
     
     Args:
         config_path: Optional path to config directory
+        config_service: Optional ConfigService instance to inject
     """
     global auth_service
     if auth_service is None:
-        auth_service = AuthService(config_path)
-    elif config_path is not None:
-        # Create new instance with custom config
-        return AuthService(config_path)
+        auth_service = AuthService(config_path, config_service)
+    elif config_path is not None or config_service is not None:
+        # Create new instance with custom config or service
+        return AuthService(config_path, config_service)
     return auth_service
 
-def authenticate(username: str, password: str) -> Tuple[bool, Optional[str], Optional[str]]:
-    """
-    Authenticate any user type
-    
-    Args:
-        username: Username
-        password: Password
-        
-    Returns:
-        Tuple of (success, session_token, error_message)
-    """
-    service = get_auth_service()
-    return service.authenticate(username, password)
 
-def validate_session(session_token: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
-    """
-    Validate any user session
-    
-    Args:
-        session_token: Session token to validate
-        
-    Returns:
-        Tuple of (valid, session_data, error_message)
-    """
-    service = get_auth_service()
-    return service.validate_session(session_token)
-
-def logout(session_token: str) -> bool:
-    """
-    Logout any user type
-    
-    Args:
-        session_token: Session token to invalidate
-        
-    Returns:
-        True if logout successful
-    """
-    service = get_auth_service()
-    return service.logout(session_token)
-
-def create_user(username: str, password: str, is_admin: bool = False) -> Tuple[bool, Optional[str], Optional[str]]:
-    """
-    Create new user account
-    
-    Args:
-        username: Username for new user
-        password: Password for new user
-        is_admin: Whether the user should have admin privileges
-        
-    Returns:
-        Tuple of (success, user_id, error_message)
-    """
-    service = get_auth_service()
-    return service.create_user(username, password, is_admin)
-
-def list_users() -> List[Dict[str, Any]]:
-    """
-    List all users (admin-only function)
-    
-    Returns:
-        List of user information (without passwords)
-    """
-    service = get_auth_service()
-    return service.list_users()
-
-def delete_user(username: str) -> bool:
-    """
-    Delete user account (admin-only function)
-    
-    Args:
-        username: Username to delete
-        
-    Returns:
-        True if deletion successful
-    """
-    service = get_auth_service()
-    return service.delete_user(username)
