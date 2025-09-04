@@ -100,6 +100,17 @@
           <span class="text-lg mr-3">🐛</span>
           <span class="font-medium">Debug</span>
         </router-link>
+
+        <router-link
+          v-if="isAdmin"
+          to="/admin/logs"
+          class="flex items-center px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+          :class="{ 'text-blue-600 bg-blue-50 border-r-2 border-blue-600': $route.path === '/admin/logs' }"
+          @click="closeMobileMenu"
+        >
+          <span class="text-lg mr-3">📜</span>
+          <span class="font-medium">Logs</span>
+        </router-link>
       </nav>
     </aside>
 
@@ -164,4 +175,3 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 </script>
-

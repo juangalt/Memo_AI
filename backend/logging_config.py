@@ -8,7 +8,10 @@ formatting and log levels across all application modules.
 import logging
 import os
 import sys
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from collections import deque
+from datetime import datetime
+import traceback
 
 
 def configure_logging(
@@ -111,6 +114,13 @@ def configure_logging(
     
     # Set root logger level
     root_logger.setLevel(numeric_level)
+
+    # Attach in-memory recent logs handler for admin inspection
+    try:
+        _attach_recent_logs_handler(root_logger)
+    except Exception as e:
+        # Do not fail app startup if recent logs handler fails
+        root_logger.warning(f"Failed to attach recent logs handler: {e}")
     
     # Disable propagation for third-party loggers to avoid duplicate messages
     logging.getLogger('uvicorn').propagate = False
@@ -176,3 +186,86 @@ def configure_default_logging() -> None:
     need custom logging configuration.
     """
     configure_logging()
+
+
+# --- In-memory recent logs support (admin-only endpoint uses this) ---
+
+class _RecentLogsHandler(logging.Handler):
+    """Logging handler that keeps a bounded in-memory buffer of recent logs.
+
+    Stores minimal structured fields for safe exposure via the admin API.
+    """
+
+    def __init__(self, max_entries: int = 1000) -> None:
+        super().__init__()
+        self.max_entries = max_entries
+        self.buffer: deque = deque(maxlen=max_entries)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            entry: Dict[str, Any] = {
+                'timestamp': datetime.utcfromtimestamp(record.created).isoformat() + 'Z',
+                'level': record.levelname,
+                'logger': record.name,
+                'message': record.getMessage(),
+            }
+            # Include exception info if present
+            if record.exc_info:
+                entry['details'] = ''.join(traceback.format_exception(*record.exc_info))
+            # Include module/function context for troubleshooting
+            entry['context'] = f"{record.module}.{record.funcName}:{record.lineno}"
+            self.buffer.append(entry)
+        except Exception:
+            # Never raise from logging
+            self.handleError(record)
+
+
+_recent_handler: Optional[_RecentLogsHandler] = None
+
+
+def _attach_recent_logs_handler(root_logger: logging.Logger, max_entries: int = 1000) -> None:
+    global _recent_handler
+    if _recent_handler is None:
+        _recent_handler = _RecentLogsHandler(max_entries=max_entries)
+        _recent_handler.setLevel(root_logger.level)
+        root_logger.addHandler(_recent_handler)
+
+
+def get_recent_logs(limit: int = 200, level: Optional[str] = None, since: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return recent logs as structured dicts.
+
+    Args:
+        limit: Max number of entries to return (most recent first)
+        level: Optional level filter (e.g., 'INFO', 'ERROR')
+        since: Optional ISO timestamp (UTC) to include entries at/after time
+    """
+    global _recent_handler
+    if _recent_handler is None:
+        return []
+
+    entries: List[Dict[str, Any]] = list(_recent_handler.buffer)
+
+    # Filter by level
+    if level:
+        level = level.upper()
+        entries = [e for e in entries if e.get('level') == level]
+
+    # Filter by time
+    if since:
+        try:
+            # Accept with or without trailing Z
+            s = since[:-1] if since.endswith('Z') else since
+            since_dt = datetime.fromisoformat(s)
+            entries = [e for e in entries if _parse_iso(e.get('timestamp')) >= since_dt]
+        except Exception:
+            # Ignore invalid since parameter
+            pass
+
+    # Return most recent first
+    entries = list(reversed(entries))
+    return entries[: max(1, min(limit, 1000))]
+
+
+def _parse_iso(ts: str) -> datetime:
+    s = ts[:-1] if ts.endswith('Z') else ts
+    return datetime.fromisoformat(s)

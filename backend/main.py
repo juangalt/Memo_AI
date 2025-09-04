@@ -33,7 +33,7 @@ from services.llm_service import EnhancedLLMService
 from decorators import require_auth
 
 # Import centralized logging configuration
-from logging_config import configure_logging, get_logger
+from logging_config import configure_logging, get_logger, get_recent_logs
 
 # Configure logging centrally with default level
 # Will be updated during startup based on deployment config
@@ -52,7 +52,7 @@ def update_logging_level():
             env_config = env_settings.get(app_env, {})
 
             log_level_str = env_config.get('log_level', 'INFO')
-            
+
             # Use centralized logging configuration to update level
             from logging_config import set_log_level
             set_log_level(log_level_str)
@@ -229,6 +229,100 @@ async def auth_logout(request: Request):
                     "message": "Logout processing failed",
                     "field": None,
                     "details": "An internal error occurred during logout processing"
+                }]
+            }
+        )
+
+@app.get("/api/v1/admin/logs")
+async def get_admin_logs(request: Request):
+    """Return recent application logs (admin-only).
+
+    Query params:
+      - limit: int (1..1000), default 200
+      - level: optional level filter (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+      - since: optional ISO timestamp (UTC), e.g. 2025-01-01T00:00:00Z
+    """
+    try:
+        session_token = request.headers.get("X-Session-Token", "")
+        if not session_token:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": "placeholder"},
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Authentication required",
+                        "field": "session_token",
+                        "details": "Please provide valid session token"
+                    }]
+                }
+            )
+
+        # Validate session and admin rights
+        auth_service = get_auth_service(config_service=config_service)
+        valid, session_data, error = auth_service.validate_session(session_token)
+        if not valid:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "data": None,
+                    "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": "placeholder"},
+                    "errors": [{
+                        "code": "AUTHENTICATION_ERROR",
+                        "message": "Invalid session",
+                        "field": "session_token",
+                        "details": error
+                    }]
+                }
+            )
+
+        if not session_data.get('is_admin', False):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "data": None,
+                    "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": "placeholder"},
+                    "errors": [{
+                        "code": "PERMISSION_ERROR",
+                        "message": "Admin access required",
+                        "field": "session_token",
+                        "details": "This endpoint requires administrator privileges"
+                    }]
+                }
+            )
+
+        # Parse query params
+        qp = request.query_params
+        try:
+            limit = int(qp.get('limit', '200'))
+        except ValueError:
+            limit = 200
+        limit = max(1, min(limit, 1000))
+        level = qp.get('level')
+        since = qp.get('since')
+
+        # Fetch recent logs from in-memory buffer
+        logs = get_recent_logs(limit=limit, level=level, since=since)
+
+        return {
+            "data": {"logs": logs},
+            "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": "placeholder"},
+            "errors": []
+        }
+
+    except Exception as e:
+        logger.error(f"Get admin logs failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "data": None,
+                "meta": {"timestamp": datetime.utcnow().isoformat(), "request_id": "placeholder"},
+                "errors": [{
+                    "code": "INTERNAL_ERROR",
+                    "message": "Failed to retrieve logs",
+                    "field": None,
+                    "details": "An internal error occurred while retrieving logs"
                 }]
             }
         )
@@ -1590,4 +1684,3 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
-
