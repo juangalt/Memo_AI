@@ -3,12 +3,12 @@
     <div class="max-w-4xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">
-          📚 Help & Documentation
+          📚 {{ $t('help.title') }}
         </h1>
 
         <!-- Quick Start -->
         <div class="mb-12">
-          <h2 class="text-2xl font-semibold text-gray-900 mb-4">🚀 Quick Start</h2>
+          <h2 class="text-2xl font-semibold text-gray-900 mb-4">🚀 {{ $t('help.quickStart') }}</h2>
           <div class="bg-blue-50 rounded-lg p-6">
             <ol class="list-decimal list-inside space-y-3 text-gray-700">
               <li>Go to <strong>Text Input</strong> and paste your business memo or professional text</li>
@@ -22,46 +22,46 @@
 
         <!-- Features Overview -->
         <div class="mb-12">
-          <h2 class="text-2xl font-semibold text-gray-900 mb-4">✨ Key Features</h2>
+          <h2 class="text-2xl font-semibold text-gray-900 mb-4">✨ {{ $t('help.keyFeatures') }}</h2>
           <div class="grid md:grid-cols-2 gap-6">
             <div class="bg-gray-50 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">📝 Text Input</h3>
-              <p class="text-gray-600 mb-3">Submit any business memo, report, proposal, or professional text for evaluation.</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">📝 {{ $t('help.textInput') }}</h3>
+              <p class="text-gray-600 mb-3">{{ $t('help.textInputDesc') }}</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li>• Maximum 10,000 characters</li>
-                <li>• Real-time character counter</li>
-                <li>• Progress tracking during analysis</li>
-                <li>• Support for multiple languages</li>
+                <li>• {{ $t('help.maxCharacters') }}</li>
+                <li>• {{ $t('help.realTimeCounter') }}</li>
+                <li>• {{ $t('help.progressTracking') }}</li>
+                <li>• {{ $t('help.multiLanguageSupport') }}</li>
               </ul>
             </div>
             <div class="bg-gray-50 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">📊 Overall Feedback</h3>
-              <p class="text-gray-600 mb-3">Get comprehensive evaluation with weighted overall score and detailed insights.</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">📊 {{ $t('help.overallFeedback') }}</h3>
+              <p class="text-gray-600 mb-3">{{ $t('help.overallFeedbackDesc') }}</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li>• Weighted overall score (1.0-5.0 scale)</li>
-                <li>• Key strengths identification</li>
-                <li>• Improvement opportunities</li>
-                <li>• Actionable recommendations</li>
+                <li>• {{ $t('help.weightedScore') }}</li>
+                <li>• {{ $t('help.keyStrengths') }}</li>
+                <li>• {{ $t('help.improvementOpportunities') }}</li>
+                <li>• {{ $t('help.actionableRecommendations') }}</li>
               </ul>
             </div>
             <div class="bg-gray-50 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">🎯 Rubric Scores</h3>
-              <p class="text-gray-600 mb-3">Detailed breakdown across 4 core business writing criteria with weighted scoring.</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">🎯 {{ $t('help.rubricScores') }}</h3>
+              <p class="text-gray-600 mb-3">{{ $t('help.rubricScoresDesc') }}</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li>• 4 weighted criteria (total 100%)</li>
-                <li>• Individual scores with justifications</li>
-                <li>• Targeted improvement areas</li>
-                <li>• Professional writing standards</li>
+                <li>• {{ $t('help.weightedScoring') }}</li>
+                <li>• {{ $t('help.justifications') }}</li>
+                <li>• {{ $t('help.improvementOpportunities') }}</li>
+                <li>• {{ $t('help.specificComments') }}</li>
               </ul>
             </div>
             <div class="bg-gray-50 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-3">🔍 Segment Analysis</h3>
-              <p class="text-gray-600 mb-3">Detailed feedback on specific text sections with questions and suggestions.</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">🔍 {{ $t('help.segmentAnalysis') }}</h3>
+              <p class="text-gray-600 mb-3">{{ $t('help.segmentAnalysisDesc') }}</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li>• Section-by-section analysis</li>
-                <li>• Specific improvement questions</li>
-                <li>• Actionable suggestions</li>
-                <li>• Context-aware feedback</li>
+                <li>• {{ $t('help.sectionBySection') }}</li>
+                <li>• {{ $t('help.specificQuestions') }}</li>
+                <li>• {{ $t('help.improvementSuggestions') }}</li>
+                <li>• {{ $t('help.contextAware') }}</li>
               </ul>
             </div>
           </div>
@@ -69,26 +69,26 @@
 
         <!-- Evaluation Rubric -->
         <div class="mb-12">
-          <h2 class="text-2xl font-semibold text-gray-900 mb-4">📋 Evaluation Rubric</h2>
+          <h2 class="text-2xl font-semibold text-gray-900 mb-4">📋 {{ $t('help.evaluationRubric') }}</h2>
           <div class="bg-green-50 rounded-lg p-6 mb-6">
             <p class="text-gray-700 mb-4">
-              Your business memo is evaluated across 4 core criteria using a weighted scoring system (1-5 scale):
+              {{ $t('help.rubricIntro') }}
             </p>
             <div class="grid md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span class="font-semibold">1 - Poor:</span> Significant issues, needs major revision
+                <span class="font-semibold">{{ $t('help.scorePoor') }}</span>
               </div>
               <div>
-                <span class="font-semibold">2 - Below Average:</span> Several areas need improvement
+                <span class="font-semibold">{{ $t('help.scoreBelowAverage') }}</span>
               </div>
               <div>
-                <span class="font-semibold">3 - Average:</span> Adequate but could be enhanced
+                <span class="font-semibold">{{ $t('help.scoreAverage') }}</span>
               </div>
               <div>
-                <span class="font-semibold">4 - Good:</span> Well-written with minor improvements possible
+                <span class="font-semibold">{{ $t('help.scoreGood') }}</span>
               </div>
               <div class="md:col-span-2">
-                <span class="font-semibold">5 - Excellent:</span> Outstanding quality, professional standard
+                <span class="font-semibold">{{ $t('help.scoreExcellent') }}</span>
               </div>
             </div>
           </div>
@@ -97,7 +97,7 @@
             <!-- Structure -->
             <div class="border-l-4 border-blue-500 pl-6">
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-900">📐 Structure (25% Weight)</h3>
+                <h3 class="text-lg font-semibold text-gray-900">📐 {{ $t('help.structureWeight') }}</h3>
                 <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">25%</span>
               </div>
               <p class="text-gray-600 mb-3 font-medium">Pyramid principle, SCQA framework, clarity of opportunity, clear ask</p>

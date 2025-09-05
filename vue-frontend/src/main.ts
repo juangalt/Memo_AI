@@ -3,6 +3,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from '@/stores/auth'
+import { useLanguageStore } from '@/stores/language'
+import { i18n } from './i18n'
 import './assets/styles/main.css'
 
 const app = createApp(App)
@@ -10,10 +12,18 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+app.use(i18n)
+
+// Make i18n available globally for stores
+;(window as any).$i18n = i18n
 
 // Initialize authentication store globally for API client access
 const authStore = useAuthStore()
 ;(window as any).authStoreInstance = authStore
+
+// Initialize language store and detect browser language
+const languageStore = useLanguageStore()
+languageStore.initializeLanguage()
 
 // Initialize session validation on app startup
 // Note: Per auth specs, tokens are stored in memory only

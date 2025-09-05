@@ -3,38 +3,38 @@
     <div class="max-w-md w-full space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          📝 Memo AI Coach
+          📝 {{ $t('app.title') }}
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
-          Intelligent text evaluation and feedback system
+          {{ $t('app.subtitle') }}
         </p>
       </div>
 
       <div class="bg-white py-8 px-6 shadow rounded-lg">
-        <h3 class="text-lg font-medium text-gray-900 mb-6">🔐 Authentication Required</h3>
+        <h3 class="text-lg font-medium text-gray-900 mb-6">🔐 {{ $t('auth.authenticationRequired') }}</h3>
 
         <form @submit.prevent="handleLogin" class="space-y-6">
           <div>
-            <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+            <label for="username" class="block text-sm font-medium text-gray-700">{{ $t('auth.username') }}</label>
             <input
               id="username"
               v-model="form.username"
               type="text"
               required
               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your username"
+              :placeholder="$t('auth.usernamePlaceholder')"
             />
           </div>
 
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <label for="password" class="block text-sm font-medium text-gray-700">{{ $t('auth.password') }}</label>
             <input
               id="password"
               v-model="form.password"
               type="password"
               required
               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter your password"
+              :placeholder="$t('auth.passwordPlaceholder')"
             />
           </div>
 
@@ -44,8 +44,8 @@
               :disabled="isLoading"
               class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              <span v-if="isLoading">Loading...</span>
-              <span v-else>🔑 Login</span>
+              <span v-if="isLoading">{{ $t('common.loading') }}</span>
+              <span v-else>🔑 {{ $t('auth.login') }}</span>
             </button>
           </div>
         </form>
@@ -54,7 +54,7 @@
 
         <div v-if="isLoading" class="mt-4 flex items-center justify-center">
           <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-          <span class="ml-2 text-sm text-gray-600">Authenticating...</span>
+          <span class="ml-2 text-sm text-gray-600">{{ $t('common.loading') }}</span>
         </div>
 
         <div class="mt-6 text-center">
@@ -62,7 +62,7 @@
             to="/"
             class="text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            ← Back to Home
+            ← {{ $t('auth.backToHome') }}
           </router-link>
         </div>
       </div>
@@ -72,7 +72,7 @@
     <footer class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-4">
       <div class="text-center">
         <p class="text-sm text-gray-500">
-          © FGS
+          {{ $t('app.copyright') }}
         </p>
       </div>
     </footer>

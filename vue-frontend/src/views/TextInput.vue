@@ -3,16 +3,16 @@
     <div class="max-w-4xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
-          Submit Text for Evaluation
+          {{ $t('textInput.title') }}
         </h1>
 
         <p class="text-gray-600 mb-6">
-          Enter your text below for comprehensive AI-powered evaluation and feedback.
+          {{ $t('textInput.description') }}
         </p>
 
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            Text to Evaluate
+            {{ $t('textInput.label') }}
           </label>
           <textarea
             v-model="textContent"
@@ -20,7 +20,7 @@
             rows="12"
             @keydown.ctrl.enter.prevent="submitEvaluation"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your text here (maximum 10,000 characters)..."
+            :placeholder="$t('textInput.placeholder')"
           />
 
           <div class="mt-2">
@@ -34,7 +34,7 @@
             :disabled="!canSubmit || isSubmitting"
             class="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            Submit for Evaluation
+            {{ $t('textInput.submitButton') }}
           </button>
         </div>
 
@@ -82,24 +82,24 @@ const submitEvaluation = async () => {
 
   isSubmitting.value = true
   progress.value = 0
-  status.value = '📝 Analyzing text structure...'
-  progressDescription.value = 'Preparing your text for AI evaluation'
+  status.value = '📝 ' + $t('textInput.analyzingStructure')
+  progressDescription.value = $t('textInput.preparingText')
 
   try {
     const progressInterval = setInterval(() => {
       progress.value = Math.min(progress.value + 1, 100)
       if (progress.value <= 30) {
-        status.value = '📝 Analyzing text structure...'
-        progressDescription.value = 'Breaking down your content for analysis'
+        status.value = '📝 ' + $t('textInput.analyzingStructure')
+        progressDescription.value = $t('textInput.breakingDownContent')
       } else if (progress.value <= 60) {
-        status.value = '🧠 Processing with AI...'
-        progressDescription.value = 'AI is evaluating your writing'
+        status.value = '🧠 ' + $t('textInput.processingWithAI')
+        progressDescription.value = $t('textInput.aiEvaluating')
       } else if (progress.value <= 90) {
-        status.value = '📊 Generating feedback...'
-        progressDescription.value = 'Creating detailed recommendations'
+        status.value = '📊 ' + $t('textInput.generatingFeedback')
+        progressDescription.value = $t('textInput.creatingRecommendations')
       } else {
-        status.value = '✅ Finalizing evaluation...'
-        progressDescription.value = 'Almost done!'
+        status.value = '✅ ' + $t('textInput.finalizingEvaluation')
+        progressDescription.value = $t('textInput.almostDone')
       }
     }, 50)
 

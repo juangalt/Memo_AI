@@ -16,7 +16,7 @@
     >
       <!-- Logo and Title in Sidebar -->
       <div class="p-6 border-b border-gray-200">
-        <h1 class="text-xl font-semibold text-gray-900">📝 Memo AI Coach</h1>
+        <h1 class="text-xl font-semibold text-gray-900">📝 {{ $t('app.title') }}</h1>
       </div>
 
       <!-- Navigation Menu -->
@@ -28,7 +28,7 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">📝</span>
-          <span class="font-medium">Text Input</span>
+          <span class="font-medium">{{ $t('navigation.textInput') }}</span>
         </router-link>
         
         <router-link
@@ -38,9 +38,9 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">📊</span>
-          <span class="font-medium">Overall Feedback</span>
+          <span class="font-medium">{{ $t('navigation.overallFeedback') }}</span>
         </router-link>
-        
+
         <router-link
           to="/detailed-feedback"
           class="flex items-center px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
@@ -48,9 +48,9 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">🔍</span>
-          <span class="font-medium">Detailed Feedback</span>
+          <span class="font-medium">{{ $t('navigation.detailedFeedback') }}</span>
         </router-link>
-        
+
         <router-link
           to="/help"
           class="flex items-center px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
@@ -58,13 +58,13 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">📚</span>
-          <span class="font-medium">Help</span>
+          <span class="font-medium">{{ $t('navigation.help') }}</span>
         </router-link>
         
         <!-- Admin Section Divider -->
         <div v-if="isAdmin" class="pt-4 mt-4 border-t border-gray-200">
           <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Admin Tools
+            {{ $t('navigation.adminTools') }}
           </div>
         </div>
         
@@ -76,9 +76,9 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">⚙️</span>
-          <span class="font-medium">Admin</span>
+          <span class="font-medium">{{ $t('navigation.admin') }}</span>
         </router-link>
-        
+
         <router-link
           v-if="isAdmin"
           to="/last-evaluation"
@@ -87,9 +87,9 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">🔍</span>
-          <span class="font-medium">Last Evaluation</span>
+          <span class="font-medium">{{ $t('navigation.lastEvaluation') }}</span>
         </router-link>
-        
+
         <router-link
           v-if="isAdmin"
           to="/debug"
@@ -98,7 +98,7 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">🐛</span>
-          <span class="font-medium">Debug</span>
+          <span class="font-medium">{{ $t('navigation.debug') }}</span>
         </router-link>
 
         <router-link
@@ -109,7 +109,7 @@
           @click="closeMobileMenu"
         >
           <span class="text-lg mr-3">📜</span>
-          <span class="font-medium">Logs</span>
+          <span class="font-medium">{{ $t('navigation.logs') }}</span>
         </router-link>
       </nav>
     </aside>
@@ -133,8 +133,9 @@
             <!-- Spacer for mobile -->
             <div class="lg:hidden flex-1"></div>
 
-            <!-- Auth Status (right-aligned on large screens) -->
-            <div class="ml-auto">
+            <!-- Language Switcher and Auth Status (right-aligned on large screens) -->
+            <div class="ml-auto flex items-center space-x-4">
+              <LanguageSwitcher />
               <AuthStatus />
             </div>
           </div>
@@ -150,7 +151,7 @@
       <footer class="bg-white border-t border-gray-200 py-4">
         <div class="text-center">
           <p class="text-sm text-gray-500">
-            © FGS
+            {{ $t('app.copyright') }}
           </p>
         </div>
       </footer>
@@ -161,6 +162,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AuthStatus from './AuthStatus.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
 // Use the global auth store instance that the router also uses
 const authStore = computed(() => (window as any).authStoreInstance)

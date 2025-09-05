@@ -3,7 +3,7 @@
     <div class="max-w-6xl mx-auto">
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-6">
-          📊 Detailed Feedback
+          📊 {{ $t('feedback.detailedTitle') }}
         </h1>
 
         <div v-if="hasEvaluation" class="space-y-8">
@@ -12,7 +12,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div>
                 <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                  Overall Evaluation Summary
+                  {{ $t('feedback.evaluationSummary') }}
                 </h2>
                 <div class="text-2xl sm:text-3xl font-bold text-blue-600">
                   {{ overallScore }}/5.0
@@ -22,8 +22,8 @@
                 </p>
               </div>
               <div class="text-left sm:text-right text-xs sm:text-sm text-gray-600">
-                <div>Processing Time: {{ processingTime }}s</div>
-                <div>Created: {{ formatDate(createdAt) }}</div>
+                <div>{{ $t('feedback.processingTime') }}: {{ processingTime }}s</div>
+                <div>{{ $t('feedback.created') }}: {{ formatDate(createdAt) }}</div>
               </div>
             </div>
           </div>
@@ -31,7 +31,7 @@
           <!-- Segment Feedback -->
           <div v-if="segmentFeedback.length" class="space-y-4 sm:space-y-6">
             <h3 class="text-xl sm:text-2xl font-semibold text-gray-900">
-              📝 Segment-Level Analysis
+              📝 {{ $t('feedback.segmentAnalysis') }}
             </h3>
             
             <div class="space-y-4 sm:space-y-6">
@@ -52,13 +52,13 @@
                 >
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                     <h4 class="text-base sm:text-lg font-semibold text-gray-900">
-                      Segment {{ index + 1 }}
+                      {{ $t('common.segment') }} {{ index + 1 }}
                     </h4>
                     <button
                       @click.stop="toggleSegment(index)"
                       class="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium"
                     >
-                      {{ expandedSegments[index] ? 'Collapse' : 'Expand' }}
+                      {{ expandedSegments[index] ? $t('feedback.collapse') : $t('feedback.expand') }}
                     </button>
                   </div>
                 </div>
@@ -67,7 +67,7 @@
                 <div v-if="expandedSegments[index]" class="p-4 sm:p-6">
                   <!-- Original Text -->
                   <div class="mb-6">
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">Original Text:</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">{{ $t('feedback.originalText') }}:</h5>
                     <div class="bg-gray-50 rounded-lg p-4 text-gray-800 italic">
                       "{{ segment.segment }}"
                     </div>
@@ -75,7 +75,7 @@
 
                   <!-- Comment -->
                   <div class="mb-6">
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">💬 Analysis:</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">💬 {{ $t('feedback.analysis') }}:</h5>
                     <div class="bg-blue-50 rounded-lg p-4 text-gray-800">
                       {{ segment.comment }}
                     </div>
@@ -83,7 +83,7 @@
 
                   <!-- Questions -->
                   <div class="mb-6">
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">🤔 Thought-Provoking Questions:</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">🤔 {{ $t('feedback.thoughtQuestions') }}:</h5>
                     <ul class="space-y-2">
                       <li
                         v-for="(question, qIndex) in segment.questions"
@@ -98,7 +98,7 @@
 
                   <!-- Suggestions -->
                   <div>
-                    <h5 class="text-sm font-medium text-gray-700 mb-2">💡 Suggestions for Improvement:</h5>
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">💡 {{ $t('feedback.suggestions') }}:</h5>
                     <ul class="space-y-2">
                       <li
                         v-for="(suggestion, sIndex) in segment.suggestions"
@@ -119,8 +119,8 @@
           <div v-else class="text-center py-8">
             <div class="text-gray-500">
               <div class="text-4xl mb-4">📝</div>
-              <p class="text-lg mb-2">No detailed segment feedback available</p>
-              <p class="text-sm">Segment-level analysis will appear here when available</p>
+              <p class="text-lg mb-2">{{ $t('feedback.noSegmentFeedback') }}</p>
+              <p class="text-sm">{{ $t('feedback.segmentAnalysisDesc') }}</p>
             </div>
           </div>
 
@@ -132,17 +132,17 @@
                   to="/overall-feedback"
                   class="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors text-center"
                 >
-                  ← Back to Overall Feedback
+                  ←                   {{ $t('feedback.backToOverall') }}
                 </router-link>
                 <router-link
                   to="/text-input"
                   class="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded text-xs sm:text-sm hover:bg-blue-700 transition-colors text-center"
                 >
-                  Submit New Text
+                  {{ $t('feedback.submitNew') }}
                 </router-link>
               </div>
               <div class="text-xs sm:text-sm text-gray-600 text-center sm:text-right">
-                {{ segmentFeedback.length }} segments analyzed
+                {{ segmentFeedback.length }} {{ $t('feedback.segmentsAnalyzed') }}
               </div>
             </div>
           </div>
@@ -152,13 +152,13 @@
         <div v-else class="text-center py-12">
           <div class="text-gray-600">
             <div class="text-6xl mb-4">📊</div>
-            <p class="text-lg mb-4">No evaluation results available</p>
-            <p class="text-sm mb-6">Submit your text for evaluation to see detailed segment feedback</p>
+            <p class="text-lg mb-4">{{ $t('feedback.noEvaluation') }}</p>
+            <p class="text-sm mb-6">{{ $t('feedback.noEvaluationDesc') }}</p>
             <router-link
               to="/text-input"
               class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              🚀 Submit Text for Evaluation
+              🚀 {{ $t('feedback.submitText') }}
             </router-link>
           </div>
         </div>
@@ -166,7 +166,7 @@
         <!-- Loading State -->
         <div v-if="isLoading" class="text-center py-8">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p class="text-sm text-gray-600 mt-2">Loading detailed feedback...</p>
+          <p class="text-sm text-gray-600 mt-2">{{ $t('feedback.loadingDetailed') }}</p>
         </div>
       </div>
     </div>
