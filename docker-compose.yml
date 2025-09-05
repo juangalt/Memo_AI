@@ -61,11 +61,8 @@ services:
       - "traefik.http.routers.backend.middlewares=default-headers@docker,secure-headers@docker,rate-limit@docker"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     environment:
-      - DATABASE_URL=sqlite:///data/memoai.db
-      # New key name (primary)
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///data/memoai.db}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
-      # Legacy key forwarded for backward compatibility
-      - LLM_API_KEY=${LLM_API_KEY}
       - DOMAIN=${DOMAIN}
       - APP_ENV=${APP_ENV:-production}
 

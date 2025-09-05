@@ -39,7 +39,7 @@ The Vue.js frontend provides a single-page application with eight main views:
 7. **Admin** (`/admin`) – system monitoring, configuration validation, and user management (administrators only).
 8. **Debug** (`/debug`) – system diagnostics, API testing, and development tools (administrators only).
 
-Tooltips on each input explain expected format. Navigation links at the top allow switching between views without losing session state. Access to views is controlled by user role and authentication status through Vue Router guards.
+Tooltips on each input explain expected format. A left sidebar provides navigation between views, and the top header displays authentication status and controls aligned to the right. Access to views is controlled by user role and authentication status through Vue Router guards.
 
 ## 4.0 Submitting Text
 1. **Welcome Page**: Start at the beautiful welcome page explaining the application.
@@ -80,13 +80,12 @@ Tooltips on each input explain expected format. Navigation links at the top allo
 - **Development Tools**: Access debugging utilities, environment information, and development aids for system troubleshooting.
 
 ## 6.0 Session Management
-- Session identifier displayed in Text Input page.
-- Session persists for configured duration on backend; refresh or create new session from Admin page.
-- Use the **Reset Session** button in Admin page to clear history and begin a new submission cycle.
+- Sessions persist for the configured duration on the backend; administrators can review session details under Admin → Session Management.
+- Use the **Session Management** tools in the Admin page to refresh or end sessions.
 - **Session Expiration**: Automatic logout occurs when sessions expire, redirecting to the home page and requiring re-authentication.
 
 ## 7.0 Limitations
-- LLM evaluation may run in mock mode if `LLM_API_KEY` is not set; results then are simulated.
+- LLM evaluation may run in mock mode if `CLAUDE_API_KEY` is not set; results then are simulated.
 - Evaluation retrieval endpoint `/api/v1/evaluations/{id}` currently returns placeholder data.
 - Export/import of sessions is planned but not yet implemented.
 - The interface expects plain text; rich formatting is stripped before evaluation.

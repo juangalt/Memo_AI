@@ -14,12 +14,12 @@ Files are mounted read-only into containers at `/app/config/` and validated by P
 Configuration edits made through the Admin interface create timestamped backups under `config/backups/` before any changes are written.
 
 ## 2.0 Environment Variables
-`.env` provides base values such as `DOMAIN`, `LLM_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup.
-Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`).
+`.env` provides base values such as `DOMAIN`, `CLAUDE_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup.
+Environment variables can override YAML fields and runtime values (`CLAUDE_API_KEY`, `SESSION_TIMEOUT`).
 | Variable | Description |
 |----------|-------------|
 | `DOMAIN` | Public domain name used by Traefik for routing and certificate generation |
-| `LLM_API_KEY` | Anthropic key for Claude API access |
+| `CLAUDE_API_KEY` | Anthropic key for Claude API access |
 | `ADMIN_PASSWORD` | Optional: Initial administrator password for database setup (default: admin123) |
 | `MAX_CONCURRENT_USERS` | Target concurrency for performance testing |
 | `SESSION_TIMEOUT` | Override for session expiration in minutes |
@@ -27,7 +27,7 @@ Environment variables can override YAML fields (`LLM_API_KEY`, `SESSION_TIMEOUT`
 ## 3.0 Configuration Files
 
 ### 3.1 `config/rubric.yaml` (DEPRECATED)
-**Status**: This file is deprecated and no longer used. All rubric content has been moved to `prompt.yaml`.
+**Status**: This file is deprecated and no longer used for rubric logic. All rubric content has been moved to `prompt.yaml`.
 
 **Deprecation Notice**:
 ```yaml
@@ -37,7 +37,7 @@ deprecation_date: "2024-01-01"
 replacement_file: "prompt.yaml"
 ```
 
-**Note**: The old rubric structure with individual criteria definitions has been replaced by the new integrated structure in `prompt.yaml`. This file is maintained only for backward compatibility and will be removed in future versions.
+**Note**: The old rubric structure with individual criteria definitions has been replaced by the new integrated structure in `prompt.yaml`. This file is maintained only for backward compatibility and will be removed in future versions. The configuration loader still expects the file to exist; keep a minimal placeholder (like the deprecation block above) in `config/rubric.yaml` to satisfy validation.
 
 ### 3.2 `config/prompt.yaml`
 Holds language-specific prompt templates, instructions, and rubric definitions used to query the LLM.

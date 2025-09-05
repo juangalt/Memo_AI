@@ -28,7 +28,7 @@
 
 ### 1.5 LLM API Errors
 - **Symptom**: Evaluation returns `LLM_ERROR`.
-- **Resolution**: Confirm `LLM_API_KEY` is set. If running in mock mode, ensure expectations accordingly. Check network connectivity to Anthropic API.
+- **Resolution**: Confirm `CLAUDE_API_KEY` is set. If running in mock mode (no key), ensure expectations accordingly. Check network connectivity to Anthropic API.
 
 ### 1.6 Database Locked or Slow
 - **Symptom**: API responses indicate database errors.

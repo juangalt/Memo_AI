@@ -68,7 +68,7 @@ Frontend (Vue.js) ← Traefik
 
 ### Prerequisites
 - **Docker & Docker Compose**: Container runtime and orchestration
-- **LLM API Key**: Anthropic Claude API key (or set `LLM_API_KEY=unset` for mock mode)
+- **Claude API Key**: Anthropic Claude API key (`CLAUDE_API_KEY`). Leave unset for mock mode.
 - **Domain Name**: For production deployment with SSL
 
 ### 🚨 Critical: Tailwind CSS Configuration
@@ -128,7 +128,7 @@ module.exports = {
    ```bash
    # Essential
    DOMAIN=localhost  # Your domain name (defaults to localhost for development)
-   LLM_API_KEY=your-claude-api-key  # or 'unset' for mock mode
+   CLAUDE_API_KEY=your-claude-api-key  # leave unset for mock mode
 
    # Optional (for initial admin user setup)
    ADMIN_PASSWORD=your-admin-password  # Only used during database initialization
@@ -271,8 +271,9 @@ memo_AI/
 
 2. **Development configuration**:
    ```bash
-   # For local development
-   LLM_API_KEY=unset  # Use mock mode for development
+   # For local development (mock mode)
+   # Leave key unset for mock responses
+   # CLAUDE_API_KEY=
    DEBUG_MODE=true
    ```
 
@@ -326,7 +327,7 @@ memo_AI/
    ```bash
    APP_ENV=production
    DOMAIN=your-production-domain.com  # Replace with your actual production domain
-   LLM_API_KEY=your-actual-claude-api-key
+   CLAUDE_API_KEY=your-actual-claude-api-key
    # Optional: ADMIN_PASSWORD=your-secure-admin-password  # Only for initial admin setup
    ```
 
@@ -557,8 +558,8 @@ npm run build
 - **WAL mode**: Verify `PRAGMA journal_mode = WAL` is set
 
 #### LLM Service Problems
-- **API key**: Verify `LLM_API_KEY` is set and valid
-- **Mock mode**: Set `LLM_API_KEY=unset` for development
+- **API key**: Verify `CLAUDE_API_KEY` is set and valid
+- **Mock mode**: Leave `CLAUDE_API_KEY` unset for development
 - **Rate limits**: Check Claude API usage and limits
 
 #### Container Issues

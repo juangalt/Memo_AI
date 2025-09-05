@@ -221,7 +221,7 @@ All runtime behavior controlled by **4 YAML files** in `config/` with Pydantic v
 - Sets security settings, rate limiting, input validation
 
 ### **Environment Variables:**
-- `.env` provides base values: `DOMAIN`, `LLM_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup
+- `.env` provides base values: `DOMAIN`, `CLAUDE_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup
 - Can override YAML fields for flexibility
 - Used for performance settings and sensitive data
 
@@ -443,7 +443,7 @@ cd vue-frontend && npm run test
 
 ### **Test Data:**
 - Tests interact with running containers
-- Use mock LLM responses for local development (unset `LLM_API_KEY`)
+- Use mock LLM responses for local development (leave `CLAUDE_API_KEY` unset)
 - Performance tests adjustable via environment variables
 - **Language Detection**: 100+ English and Spanish test samples with edge cases
 - **Prompt Generation**: Various rubric structures and text lengths for testing

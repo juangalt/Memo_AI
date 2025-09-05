@@ -34,6 +34,30 @@
 
 ## 🚀 Recent Changes
 
+### [2025-09-05] Header: Right-align Auth/Logout Controls — COMPLETED
+
+Type: UI/UX + Responsive Layout  
+Impact: Clearer global navigation; consistent placement of auth controls  
+Status: ✅ COMPLETED
+
+Summary:
+- Moved the authentication status and logout controls to the right side of the top header on large screens while preserving good mobile behavior.
+- Ensures a familiar, conventional placement for account controls and reduces visual competition with the left sidebar nav.
+
+Files Touched:
+- `vue-frontend/src/components/Layout.vue`
+
+Key Implementation Details:
+- Updated header container to right-align on wide viewports: `flex items-center justify-between lg:justify-end`.
+- Wrapped the `AuthStatus` component in a right-pushing container: `<div class="ml-auto"> <AuthStatus /> </div>`.
+- Preserved mobile layout with the hamburger button on the left and auth on the right via existing spacer and responsive classes.
+
+Verification:
+- Desktop (≥1024px): Auth/avatar and Logout appear aligned to the top-right of the header.
+- Mobile (<1024px): Hamburger remains on the left; auth controls remain accessible and do not overlap.
+- Auth flow: Login → header shows username/avatar on the right; Logout returns to home and clears session state.
+
+
 ### [2025-09-04] Prompt Generation: Externalized Templates + Localized Labels — COMPLETED
 
 **Type**: Refactor + i18n + Maintainability  

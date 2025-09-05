@@ -105,10 +105,10 @@ class EnhancedLLMService:
     def _initialize_client(self):
         """Initialize Claude API client"""
         try:
-            # Prefer new variable name; support legacy LLM_API_KEY for compatibility
-            api_key = os.getenv('CLAUDE_API_KEY') or os.getenv('LLM_API_KEY')
+            # Read Claude API key from environment
+            api_key = os.getenv('CLAUDE_API_KEY')
             if not api_key:
-                logger.warning("CLAUDE_API_KEY not set (LLM_API_KEY legacy not found) - using mock mode")
+                logger.warning("CLAUDE_API_KEY not set - using mock mode")
                 self.client = None
                 return
             

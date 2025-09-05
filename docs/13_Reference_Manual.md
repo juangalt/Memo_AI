@@ -41,7 +41,7 @@
 
 ## 3.0 Configuration Keys
 See detailed descriptions in `docs/04_Configuration_Guide.md`. Important keys include:
-- `LLM_API_KEY` – environment variable for Anthropic access.
+- `CLAUDE_API_KEY` – environment variable for Anthropic access.
 - `session_management.session_timeout` – auth.yaml.
 - `provider.model` – llm.yaml.
 - `rubric.criteria[*].weight` – rubric.yaml weights for scoring.

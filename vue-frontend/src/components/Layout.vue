@@ -119,7 +119,7 @@
       <!-- Top Header with Auth Status -->
       <header class="bg-white shadow-sm border-b border-gray-200">
         <div class="px-4 sm:px-6 lg:px-8 py-4">
-          <div class="flex justify-between items-center">
+          <div class="flex items-center justify-between lg:justify-end">
             <!-- Mobile Menu Button -->
             <button
               @click="toggleMobileMenu"
@@ -133,8 +133,10 @@
             <!-- Spacer for mobile -->
             <div class="lg:hidden flex-1"></div>
 
-            <!-- Auth Status -->
-            <AuthStatus />
+            <!-- Auth Status (right-aligned on large screens) -->
+            <div class="ml-auto">
+              <AuthStatus />
+            </div>
           </div>
         </div>
       </header>
