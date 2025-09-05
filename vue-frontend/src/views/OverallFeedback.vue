@@ -100,10 +100,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useEvaluationStore } from '@/stores/evaluation'
 import Layout from '@/components/Layout.vue'
 import DynamicRubricScores from '@/components/DynamicRubricScores.vue'
 
+const { t } = useI18n()
 const evaluationStore = useEvaluationStore()
 
 const hasEvaluation = computed(() => evaluationStore.hasEvaluation)
@@ -128,11 +130,11 @@ const formatDate = (dateString: string | Date): string => {
 }
 
 const getScoreDescription = (score: number): string => {
-  if (score >= 4.5) return $t('scoring.outstanding')
-  if (score >= 4.0) return $t('scoring.veryGood')
-  if (score >= 3.5) return $t('scoring.good')
-  if (score >= 3.0) return $t('scoring.fair')
-  if (score >= 2.0) return $t('scoring.needsImprovement')
-  return $t('scoring.requiresRevision')
+  if (score >= 4.5) return t('scoring.outstanding')
+  if (score >= 4.0) return t('scoring.veryGood')
+  if (score >= 3.5) return t('scoring.good')
+  if (score >= 3.0) return t('scoring.fair')
+  if (score >= 2.0) return t('scoring.needsImprovement')
+  return t('scoring.requiresRevision')
 }
 </script>

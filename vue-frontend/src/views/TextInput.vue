@@ -54,12 +54,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useEvaluationStore } from '@/stores/evaluation'
 import Layout from '@/components/Layout.vue'
 import CharacterCounter from '@/components/CharacterCounter.vue'
 import ProgressBar from '@/components/ProgressBar.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const evaluationStore = useEvaluationStore()
 
 const textContent = ref('')
@@ -82,24 +84,24 @@ const submitEvaluation = async () => {
 
   isSubmitting.value = true
   progress.value = 0
-  status.value = '📝 ' + $t('textInput.analyzingStructure')
-  progressDescription.value = $t('textInput.preparingText')
+  status.value = '📝 ' + t('textInput.analyzingStructure')
+  progressDescription.value = t('textInput.preparingText')
 
   try {
     const progressInterval = setInterval(() => {
       progress.value = Math.min(progress.value + 1, 100)
       if (progress.value <= 30) {
-        status.value = '📝 ' + $t('textInput.analyzingStructure')
-        progressDescription.value = $t('textInput.breakingDownContent')
+        status.value = '📝 ' + t('textInput.analyzingStructure')
+        progressDescription.value = t('textInput.breakingDownContent')
       } else if (progress.value <= 60) {
-        status.value = '🧠 ' + $t('textInput.processingWithAI')
-        progressDescription.value = $t('textInput.aiEvaluating')
+        status.value = '🧠 ' + t('textInput.processingWithAI')
+        progressDescription.value = t('textInput.aiEvaluating')
       } else if (progress.value <= 90) {
-        status.value = '📊 ' + $t('textInput.generatingFeedback')
-        progressDescription.value = $t('textInput.creatingRecommendations')
+        status.value = '📊 ' + t('textInput.generatingFeedback')
+        progressDescription.value = t('textInput.creatingRecommendations')
       } else {
-        status.value = '✅ ' + $t('textInput.finalizingEvaluation')
-        progressDescription.value = $t('textInput.almostDone')
+        status.value = '✅ ' + t('textInput.finalizingEvaluation')
+        progressDescription.value = t('textInput.almostDone')
       }
     }, 50)
 
