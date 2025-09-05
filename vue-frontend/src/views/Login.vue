@@ -1,6 +1,12 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
+  <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Language Switcher -->
+    <div class="absolute top-4 right-4">
+      <LanguageSwitcher />
+    </div>
+
+    <div class="flex items-center justify-center min-h-[calc(100vh-6rem)]">
+      <div class="max-w-md w-full space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           📝 {{ $t('app.title') }}
@@ -67,6 +73,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Footer -->
     <footer class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-4">
@@ -83,6 +90,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

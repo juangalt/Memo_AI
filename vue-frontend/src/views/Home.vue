@@ -3,13 +3,20 @@
     <!-- Header -->
     <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="text-center">
-          <h1 class="text-4xl font-bold text-gray-900 mb-2">
-            📝 {{ $t('app.title') }}
-          </h1>
-          <p class="text-lg text-gray-600">
-            {{ $t('app.subtitle') }}
-          </p>
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <div class="text-center">
+              <h1 class="text-4xl font-bold text-gray-900 mb-2">
+                📝 {{ $t('app.title') }}
+              </h1>
+              <p class="text-lg text-gray-600">
+                {{ $t('app.subtitle') }}
+              </p>
+            </div>
+          </div>
+          <div class="ml-4">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     </header>
@@ -33,7 +40,7 @@
             :to="isAuthenticated ? '/text-input' : '/login'"
             class="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
           >
-            🔑 Log In
+            🔑 {{ $t('auth.login') }}
           </router-link>
           <button
             @click="scrollToFeatures"
@@ -117,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
