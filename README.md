@@ -149,7 +149,7 @@ module.exports = {
 The system uses **4 essential YAML configuration files** for complete runtime behavior control:
 
 ### Core Configuration Files
-- **`config/rubric.yaml`**: Evaluation rubric, criteria, weights, and scoring guidance
+- Rubric configuration is now embedded in `config/prompt.yaml` (rubric.yaml removed)
 - **`config/prompt.yaml`**: LLM prompt templates, system messages, and user instructions
 - **`config/llm.yaml`**: Claude API configuration, timeouts, retries, and performance limits
 - **`config/auth.yaml`**: Authentication, session management, and security settings
@@ -212,7 +212,6 @@ memo_AI/
 │   ├── Dockerfile          # Frontend container definition
 │   └── package.json        # Node.js dependencies
 ├── config/                  # YAML configuration files
-│   ├── rubric.yaml         # Evaluation rubric and criteria
 │   ├── prompt.yaml         # LLM prompt templates
 │   ├── llm.yaml           # LLM provider configuration
 │   ├── auth.yaml           # Authentication settings

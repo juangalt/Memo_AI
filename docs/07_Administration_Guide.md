@@ -38,8 +38,8 @@ The Admin dashboard consists of the following components:
 - **Security**: Only accessible to authenticated admin users
 
 #### ConfigValidator Component
-- **Configuration File Management**: View and edit all 4 YAML configuration files
-- **File Selection**: Dropdown to select rubric.yaml, prompt.yaml, llm.yaml, or auth.yaml
+- **Configuration File Management**: View and edit the YAML configuration files
+- **File Selection**: Dropdown to select prompt.yaml, llm.yaml, or auth.yaml (rubric is embedded in prompt.yaml)
 - **Content Display**: Syntax-highlighted YAML content display
 - **Edit Mode**: Inline editing with validation
 - **Backup Creation**: Automatic timestamped backups before changes

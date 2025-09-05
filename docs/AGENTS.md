@@ -192,12 +192,7 @@ The Vue.js frontend provides a single-page application with router-based navigat
 ## ⚙️ Configuration Management
 
 ### **YAML Configuration Files:**
-All runtime behavior controlled by **4 YAML files** in `config/` with Pydantic validation:
-
-#### **`config/rubric.yaml`**
-- Defines evaluation rubric and scoring categories with dynamic structure support
-- Contains criteria with weights and scoring guidance
-- **No Framework Dependencies**: Removed deprecated framework system for cleaner configuration
+All runtime behavior controlled by **3 YAML files** in `config/` with Pydantic validation (plus `deployment.yaml` for environment settings):
 - **Dynamic Structure**: Criteria can be added, removed, or modified without code changes
 - **Weight Validation**: Pydantic ensures total weights equal 100%
 
@@ -252,7 +247,7 @@ All endpoints return JSON with `data`, `meta`, and `errors` keys.
 - `GET /health/config` - Configuration health
 - `GET /health/llm` - LLM service health
 - `GET /health/auth` - Authentication service health
-- `GET /health/language_detection` - Language detection service health
+<!-- Removed: language detection health endpoint is not exposed separately -->
 - `GET /docs` - Swagger UI with OpenAPI schema
 
 ### **Authentication Endpoints:**
@@ -363,10 +358,10 @@ docs/          # Comprehensive project documentation
 - Add new endpoints by extending `backend/main.py`
 
 ### **Frontend Development (Vue.js):**
-- Entry point: `vue-frontend/src/main.js`
+- Entry point: `vue-frontend/src/main.ts`
 - `vue-frontend/src/services/api.ts` provides HTTP client with automatic authentication headers and standardized response handling
-- `vue-frontend/src/stores/auth.js` manages authentication state using Pinia
-- `vue-frontend/src/router/index.js` handles route-based navigation and access control
+- `vue-frontend/src/stores/auth.ts` manages authentication state using Pinia
+- `vue-frontend/src/router/index.ts` handles route-based navigation and access control
 - Follow Vue 3 Composition API patterns for reactive components
 - Views should be added under `vue-frontend/src/views/` with corresponding routes
 - Components should be added under `vue-frontend/src/components/` with clear, commented functions

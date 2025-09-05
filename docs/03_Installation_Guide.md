@@ -26,8 +26,7 @@ The `.env` file is used by both the deploy script and `docker-compose.yml` to se
 
 ## 3.0 Configuration Files
 Ensure `config/` contains:
-- `rubric.yaml`
-- `prompt.yaml`
+- `prompt.yaml` (includes rubric configuration)
 - `llm.yaml`
 - `auth.yaml`
 All files are mounted read-only into containers at `/app/config`.

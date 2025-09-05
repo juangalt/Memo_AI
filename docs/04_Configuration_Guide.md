@@ -9,7 +9,7 @@
 ---
 
 ## 1.0 Configuration Overview
-All runtime behavior is controlled by four YAML files in `config/`.
+All runtime behavior is controlled by three YAML files in `config/` (prompt.yaml, llm.yaml, auth.yaml). An additional `deployment.yaml` provides environment-specific settings.
 Files are mounted read-only into containers at `/app/config/` and validated by Pydantic models in `backend/models/config_models.py`.
 Configuration edits made through the Admin interface create timestamped backups under `config/backups/` before any changes are written.
 
@@ -26,18 +26,8 @@ Environment variables can override YAML fields and runtime values (`CLAUDE_API_K
 
 ## 3.0 Configuration Files
 
-### 3.1 `config/rubric.yaml` (DEPRECATED)
-**Status**: This file is deprecated and no longer used for rubric logic. All rubric content has been moved to `prompt.yaml`.
-
-**Deprecation Notice**:
-```yaml
-status: "deprecated"
-message: "This file is no longer used. All rubric content has been moved to prompt.yaml"
-deprecation_date: "2024-01-01"
-replacement_file: "prompt.yaml"
-```
-
-**Note**: The old rubric structure with individual criteria definitions has been replaced by the new integrated structure in `prompt.yaml`. This file is maintained only for backward compatibility and will be removed in future versions. The configuration loader still expects the file to exist; keep a minimal placeholder (like the deprecation block above) in `config/rubric.yaml` to satisfy validation.
+### 3.1 `config/prompt.yaml`
+Holds language-specific prompt templates, instructions, and the rubric definitions used to query the LLM.
 
 ### 3.2 `config/prompt.yaml`
 Holds language-specific prompt templates, instructions, and rubric definitions used to query the LLM.
@@ -288,8 +278,8 @@ performance:
 ## 7.0 Configuration Migration
 
 ### 7.1 From Framework System
-The new configuration system removes the deprecated framework system:
-- **Removed**: `frameworks` section from `rubric.yaml`
+The new configuration system removes the deprecated framework system and consolidates rubric into prompt.yaml:
+- **Removed**: `frameworks` section (rubric now defined in prompt.yaml)
 - **Removed**: `evaluation_framework` section
 - **Removed**: `segment_evaluation` section
 - **Added**: Language-specific prompt configurations

@@ -22,11 +22,11 @@
 - `backend/utils/logger.py` – shared logging setup for consistent format.
 
 ### Frontend (Vue.js)
-- `vue-frontend/src/main.js` – Vue.js application entry point with router and store setup.
-- `vue-frontend/src/services/api.js` – Axios HTTP client with automatic authentication headers.
-- `vue-frontend/src/stores/auth.js` – Pinia store for authentication state management.
-- `vue-frontend/src/stores/evaluation.js` – Pinia store for evaluation state management.
-- `vue-frontend/src/router/index.js` – Vue Router configuration with route guards.
+- `vue-frontend/src/main.ts` – Vue.js application entry point with router and store setup.
+- `vue-frontend/src/services/api.ts` – Axios HTTP client with automatic authentication headers.
+- `vue-frontend/src/stores/auth.ts` – Pinia store for authentication state management.
+- `vue-frontend/src/stores/evaluation.ts` – Pinia store for evaluation state management.
+- `vue-frontend/src/router/index.ts` – Vue Router configuration with route guards.
 - `vue-frontend/src/views/` – Vue components for each application view (Login, TextInput, etc.).
 - `vue-frontend/src/components/` – Reusable Vue components (Layout, ProgressBar, etc.).
 
@@ -44,7 +44,7 @@ See detailed descriptions in `docs/04_Configuration_Guide.md`. Important keys in
 - `CLAUDE_API_KEY` – environment variable for Anthropic access.
 - `session_management.session_timeout` – auth.yaml.
 - `provider.model` – llm.yaml.
-- `rubric.criteria[*].weight` – rubric.yaml weights for scoring.
+- `languages.<lang>.rubric.criteria.<key>.weight` – weights defined inside prompt.yaml rubric section.
 - `prompt.templates.evaluation_prompt.user_template` – base template for LLM evaluation.
 
 ## 4.0 Constants and Defaults

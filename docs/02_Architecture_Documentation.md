@@ -92,7 +92,7 @@ Frontend (Vue.js) <- Traefik
 - Configuration models (`config_models.py`) provide Pydantic validation for all YAML configurations.
 - Vue.js `services/api.js` provides HTTP client with automatic authentication headers.
 - Vue.js `stores/auth.js` manages authentication state and session validation.
-- Vue.js `router/index.js` enforces route-based access control.
+- Vue.js `router/index.ts` enforces route-based access control.
 
 Sequence example for evaluation submission:
 1. User authenticates via Vue.js login interface.

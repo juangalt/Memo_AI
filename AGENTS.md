@@ -57,7 +57,7 @@ Memo AI Coach is an **instructional text evaluation system** that provides AI-ge
 - **FastAPI backend** with RESTful API and authentication middleware
 - **Vue.js 3 frontend** with TypeScript and modern reactive interface
 - **SQLite database** with WAL mode for 100+ concurrent users
-- **YAML-based configuration** for rubric, prompts, LLM, and authentication
+- **YAML-based configuration** for prompts (with rubric), LLM, authentication, and deployment
 - **Claude LLM integration** with mock mode for development
 - **Secure Authentication** – session-based authentication with role-based access control
 - **Beautiful Welcome Page** – Professional landing page with application overview
@@ -172,17 +172,13 @@ The Vue.js frontend provides a single-page application with router-based navigat
 ## ⚙️ Configuration Management
 
 ### **YAML Configuration Files:**
-All runtime behavior controlled by **4 YAML files** in `config/`:
-
-#### **`config/rubric.yaml`**
-- Defines evaluation rubric and scoring categories
-- Contains criteria with weights and scoring guidance
-- Includes evaluation framework for strengths and opportunities
+All runtime behavior controlled by **3 YAML files** in `config/` (prompt.yaml, llm.yaml, auth.yaml). An additional `deployment.yaml` provides environment-specific settings.
 
 #### **`config/prompt.yaml`**
 - Holds prompt templates and instruction lists for LLM
 - Contains system messages and user templates
 - Defines prompt variables for dynamic field injection
+- Includes the complete rubric definition per language
 
 #### **`config/llm.yaml`**
 - Configures LLM provider and runtime limits
@@ -195,7 +191,7 @@ All runtime behavior controlled by **4 YAML files** in `config/`:
 - Sets security settings, rate limiting, input validation
 
 ### **Environment Variables:**
-- `.env` provides base values: `DOMAIN`, `LLM_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup
+- `.env` provides base values: `DOMAIN`, `CLAUDE_API_KEY`, and optional `ADMIN_PASSWORD` for initial setup
 - Can override YAML fields for flexibility
 - Used for performance settings and sensitive data
 
@@ -322,7 +318,7 @@ docs/          # Comprehensive project documentation
 - Add new endpoints by extending `backend/main.py`
 
 ### **Frontend Development (Vue.js):**
-- Entry point: `vue-frontend/src/main.js`
+- Entry point: `vue-frontend/src/main.ts`
 - `vue-frontend/src/services/api.ts` provides HTTP client with automatic authentication headers and standardized response handling
 - `vue-frontend/src/stores/auth.js` manages authentication state using Pinia
 - `vue-frontend/src/router/index.js` handles route-based navigation and access control
@@ -382,7 +378,7 @@ python3 tests/run_production_tests.py
 
 ### **Test Data:**
 - Tests interact with running containers
-- Use mock LLM responses for local development (unset `LLM_API_KEY`)
+- Use mock LLM responses for local development (leave `CLAUDE_API_KEY` unset)
 - Performance tests adjustable via environment variables
 
 ---
@@ -483,8 +479,8 @@ python3 tests/run_production_tests.py
 
 ### **Essential Files:**
 - `backend/main.py` - FastAPI application entry point
-- `vue-frontend/src/main.js` - Vue.js application entry point
-- `config/*.yaml` - Configuration files (4 essential files)
+- `vue-frontend/src/main.ts` - Vue.js application entry point
+- `config/*.yaml` - Configuration files (3 essential files + deployment.yaml)
 - `docker-compose.yml` - Container orchestration
 - `docs/` - **Authoritative project specifications**
 

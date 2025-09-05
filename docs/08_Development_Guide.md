@@ -181,10 +181,10 @@ class EnhancedLLMService:
 ```
 
 ## 4.0 Frontend Development
-- Entry point: `vue-frontend/src/main.js`.
-- `vue-frontend/src/services/api.js` provides HTTP client with automatic authentication headers.
-- `vue-frontend/src/stores/auth.js` manages authentication state using Pinia.
-- `vue-frontend/src/router/index.js` handles route-based navigation and access control.
+- Entry point: `vue-frontend/src/main.ts`.
+- `vue-frontend/src/services/api.ts` provides HTTP client with automatic authentication headers.
+- `vue-frontend/src/stores/auth.ts` manages authentication state using Pinia.
+- `vue-frontend/src/router/index.ts` handles route-based navigation and access control.
 - Follow Vue 3 Composition API patterns for reactive components.
 - Views should be added under `vue-frontend/src/views/` with corresponding routes.
 - Components should be added under `vue-frontend/src/components/` with clear, commented functions.

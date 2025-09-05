@@ -459,7 +459,7 @@ All health endpoints return standardized `{data, meta, errors}` format and respo
     "status": "healthy",
     "timestamp": "2024-01-01T00:00:00Z",
     "configuration": {
-      "configs_loaded": ["rubric.yaml", "prompt.yaml", "llm.yaml", "auth.yaml"],
+      "configs_loaded": ["prompt.yaml", "llm.yaml", "auth.yaml", "deployment.yaml"],
       "last_loaded": "2024-01-01T00:00:00Z",
       "config_dir": "/app/config",
       "validation_status": "valid"

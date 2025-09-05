@@ -32,7 +32,7 @@ class ConfigService:
             configs = {}
             
             # Load each configuration file
-            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
+            config_files = ['prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
             
             for filename in config_files:
                 file_path = self.config_dir / filename
@@ -89,10 +89,6 @@ class ConfigService:
     def _validate_configs(self, configs: Dict[str, Any]) -> None:
         """Validate all configuration files"""
         try:
-            # Validate rubric.yaml
-            if 'rubric.yaml' in configs:
-                self._validate_rubric_config(configs['rubric.yaml'])
-            
             # Validate prompt.yaml
             if 'prompt.yaml' in configs:
                 self._validate_prompt_config(configs['prompt.yaml'])
@@ -115,10 +111,7 @@ class ConfigService:
             logger.error(f"Configuration validation failed: {e}")
             raise
     
-    def _validate_rubric_config(self, config: Dict[str, Any]) -> None:
-        """Validate rubric configuration - now deprecated and skipped"""
-        logger.info("✓ rubric.yaml - Deprecated file, skipping validation")
-        return
+    # rubric.yaml fully removed; no-op validation no longer required
     
     def _validate_prompt_config(self, config: Dict[str, Any]) -> None:
         """Validate prompt configuration with new structure"""
@@ -295,9 +288,7 @@ class ConfigService:
         
         return self.configs.get(config_name)
     
-    def get_rubric_config(self) -> Optional[Dict[str, Any]]:
-        """Get rubric configuration"""
-        return self.get_config('rubric.yaml')
+    # get_rubric_config removed; rubric is now embedded in prompt.yaml
     
     def get_prompt_config(self) -> Optional[Dict[str, Any]]:
         """Get prompt configuration"""
@@ -321,7 +312,7 @@ class ConfigService:
             if not self.configs:
                 self.load_all_configs()
             
-            config_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
+            config_files = ['prompt.yaml', 'llm.yaml', 'auth.yaml', 'deployment.yaml']
             missing_configs = []
             
             for filename in config_files:

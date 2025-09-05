@@ -25,7 +25,6 @@ class ConfigManager:
         
         self.config_path = config_path
         self.config_files = {
-            'rubric': 'rubric.yaml',
             'prompt': 'prompt.yaml',
             'llm': 'llm.yaml',
             'auth': 'auth.yaml'
@@ -104,9 +103,7 @@ class ConfigManager:
             Tuple of (valid, error_message)
         """
         try:
-            if config_name == 'rubric':
-                return self._validate_rubric_config(parsed_data)
-            elif config_name == 'prompt':
+            if config_name == 'prompt':
                 return self._validate_prompt_config(parsed_data)
             elif config_name == 'llm':
                 return self._validate_llm_config(parsed_data)
@@ -119,23 +116,7 @@ class ConfigManager:
             logger.error(f"Configuration validation failed for {config_name}: {e}")
             return False, f"Validation error: {str(e)}"
     
-    def _validate_rubric_config(self, data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
-        """Validate rubric configuration"""
-        try:
-            if 'rubric' not in data:
-                return False, "Missing 'rubric' section"
-            
-            rubric = data['rubric']
-            if 'criteria' not in rubric:
-                return False, "Missing 'criteria' section in rubric"
-            
-            if not isinstance(rubric['criteria'], list):
-                return False, "Criteria must be a list"
-            
-            return True, None
-            
-        except Exception as e:
-            return False, f"Rubric validation error: {str(e)}"
+    # Removed rubric.yaml support; rubric is defined within prompt.yaml
     
     def _validate_prompt_config(self, data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         """Validate prompt configuration"""

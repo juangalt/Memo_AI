@@ -1,6 +1,6 @@
 """
 Configuration validation script for Memo AI Coach
-Validates all 4 essential YAML configuration files with new structure
+Validates all essential YAML configuration files with new structure
 """
 
 import yaml
@@ -36,18 +36,7 @@ def validate_yaml_file(file_path, required_fields=None):
         logger.error(f"✗ {file_path} - Error: {e}")
         return False
 
-def validate_rubric_config(config):
-    """Validate rubric.yaml - now deprecated but should contain deprecation notice"""
-    try:
-        # Check if file contains deprecation notice or status field
-        if 'DEPRECATED' in str(config) or config.get('status') == 'deprecated':
-            logger.info("✓ rubric.yaml - Properly deprecated")
-            return True, "Deprecated file - no longer used"
-        else:
-            return False, "File should contain deprecation notice or status field"
-        
-    except Exception as e:
-        return False, str(e)
+# rubric.yaml has been removed from the system; no validation needed.
 
 def validate_prompt_config(config):
     """Validate prompt.yaml with new context/request/rubric structure"""
@@ -147,17 +136,13 @@ def validate_auth_config(config):
         return False, str(e)
 
 def validate_all_configs():
-    """Validate all 4 essential configuration files"""
+    """Validate all essential configuration files"""
     config_dir = resolve_config_dir_with_fallback()
     
     logger.info(f"Validating configuration files in: {config_dir}")
     
     # Define required configuration files and their validation functions
     config_files = {
-        'rubric.yaml': {
-            'required_fields': [],  # No required fields for deprecated file
-            'validator': validate_rubric_config
-        },
         'prompt.yaml': {
             'required_fields': ['languages', 'default_language', 'confidence_threshold'],
             'validator': validate_prompt_config
@@ -230,7 +215,7 @@ def check_configuration_files():
     """Check if all required configuration files exist"""
     config_dir = resolve_config_dir_with_fallback()
     
-    required_files = ['rubric.yaml', 'prompt.yaml', 'llm.yaml', 'auth.yaml']
+    required_files = ['prompt.yaml', 'llm.yaml', 'auth.yaml']
     missing_files = []
     
     for filename in required_files:
